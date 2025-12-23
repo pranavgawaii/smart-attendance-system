@@ -55,10 +55,10 @@ export default function AdminDashboard() {
             qr_refresh_interval: Number(interval) || 10
         };
 
-        console.log("SENDING EVENT PAYLOAD", payload);
+        console.log("🚀 FRONTEND v2: Preparing payload:", payload);
 
         try {
-            await api.post('/events', payload, {
+            await api.post('/events', JSON.stringify(payload), {
                 headers: {
                     'Content-Type': 'application/json'
                 }
