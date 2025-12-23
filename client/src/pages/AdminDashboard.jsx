@@ -49,18 +49,21 @@ export default function AdminDashboard() {
         }
 
 
-        console.log("🔍 FRONTEND: Creating event with payload:", {
-            name: newEventName,
-            venue: venue || 'TBD',
-            qr_refresh_interval: interval
-        });
+        const payload = {
+            name: newEventName.trim(),
+            venue: venue?.trim() || 'TBD',
+            qr_refresh_interval: Number(interval) || 10
+        };
+
+        console.log("SENDING EVENT PAYLOAD", payload);
 
         try {
-            await api.post('/events', {
-                name: newEventName,
-                venue: venue || 'TBD',
-                qr_refresh_interval: interval
+            await api.post('/events', payload, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
             });
+
             // Reset form
             setNewEventName('');
             setVenue('');
@@ -70,7 +73,6 @@ export default function AdminDashboard() {
         } catch (err) {
             console.error("❌ FRONTEND: CREATE EVENT ERROR", err);
             console.error("❌ Response:", err.response?.data);
-            console.error("❌ Status:", err.response?.status);
             setMessage(err.response?.data?.error || 'Failed to create event');
         }
     };
