@@ -7,6 +7,9 @@ export default function AdminDashboard() {
     const { user, logout } = useAuth();
     const [events, setEvents] = useState([]);
     const [newEventName, setNewEventName] = useState('');
+    const [venue, setVenue] = useState('');
+    const [startTime, setStartTime] = useState('');
+    const [endTime, setEndTime] = useState('');
     const [interval, setInterval] = useState(10);
     const [message, setMessage] = useState('');
     const [actionLoading, setActionLoading] = useState(null);
@@ -40,16 +43,31 @@ export default function AdminDashboard() {
 
     const handleCreateEvent = async (e) => {
         e.preventDefault();
+
+        // Validate required fields
+        if (!newEventName || !startTime || !endTime) {
+            setMessage('Please fill all required fields');
+            return;
+        }
+
         try {
             await api.post('/events', {
                 name: newEventName,
+                venue: venue || 'TBD',
+                start_time: startTime,
+                end_time: endTime,
                 qr_refresh_interval: interval
             });
+            // Reset form
             setNewEventName('');
+            setVenue('');
+            setStartTime('');
+            setEndTime('');
+            setInterval(10);
             setMessage('Event created successfully');
             fetchEvents();
         } catch (err) {
-            setMessage('Failed to create event');
+            setMessage(err.response?.data?.error || 'Failed to create event');
         }
     };
 
@@ -192,31 +210,68 @@ export default function AdminDashboard() {
                 {/* Create Event Section */}
                 <div className="mit-card" style={{ marginBottom: '2rem' }}>
                     <h2 style={{ fontSize: '1.25rem', borderBottom: '1px solid #eee', paddingBottom: '0.5rem', marginBottom: '1.5rem' }}>Create New Session</h2>
-                    <form onSubmit={handleCreateEvent} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                        <div style={{ flex: 2, minWidth: '300px' }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Session Name</label>
-                            <input
-                                type="text"
-                                className="mit-input"
-                                style={{ marginBottom: 0 }}
-                                value={newEventName}
-                                onChange={e => setNewEventName(e.target.value)}
-                                placeholder="e.g. Capgemini's Pre-Placement Talk"
-                                required
-                            />
+                    <form onSubmit={handleCreateEvent} style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                            <div style={{ flex: 2, minWidth: '300px' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Session Name *</label>
+                                <input
+                                    type="text"
+                                    className="mit-input"
+                                    style={{ marginBottom: 0 }}
+                                    value={newEventName}
+                                    onChange={e => setNewEventName(e.target.value)}
+                                    placeholder="e.g. Capgemini's Pre-Placement Talk"
+                                    required
+                                />
+                            </div>
+                            <div style={{ flex: 1, minWidth: '200px' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Venue</label>
+                                <input
+                                    type="text"
+                                    className="mit-input"
+                                    style={{ marginBottom: 0 }}
+                                    value={venue}
+                                    onChange={e => setVenue(e.target.value)}
+                                    placeholder="e.g. Hall A"
+                                />
+                            </div>
                         </div>
-                        <div style={{ flex: 1, minWidth: '150px' }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Refresh (sec)</label>
-                            <input
-                                type="number"
-                                className="mit-input"
-                                style={{ marginBottom: 0 }}
-                                value={interval}
-                                onChange={e => setInterval(Number(e.target.value))}
-                                min="5"
-                            />
+                        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                            <div style={{ flex: 1, minWidth: '200px' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>Start Time *</label>
+                                <input
+                                    type="datetime-local"
+                                    className="mit-input"
+                                    style={{ marginBottom: 0 }}
+                                    value={startTime}
+                                    onChange={e => setStartTime(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div style={{ flex: 1, minWidth: '200px' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>End Time *</label>
+                                <input
+                                    type="datetime-local"
+                                    className="mit-input"
+                                    style={{ marginBottom: 0 }}
+                                    value={endTime}
+                                    onChange={e => setEndTime(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div style={{ flex: 1, minWidth: '150px' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem' }}>QR Refresh (sec)</label>
+                                <input
+                                    type="number"
+                                    className="mit-input"
+                                    style={{ marginBottom: 0 }}
+                                    value={interval}
+                                    onChange={e => setInterval(Number(e.target.value))}
+                                    min="5"
+                                />
+                            </div>
                         </div>
-                        <button type="submit" className="mit-btn" style={{ minWidth: '150px' }}>Create Session</button>
+                        <button type="submit" className="mit-btn" style={{ alignSelf: 'flex-start', minWidth: '150px' }}>Create Session</button>
                     </form>
                     {message && <p style={{ marginTop: '1rem', color: 'green' }}>{message}</p>}
                 </div>

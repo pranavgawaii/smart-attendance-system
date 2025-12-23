@@ -43,9 +43,10 @@ export default function StudentDashboard() {
         if (!user) return;
         try {
             const res = await api.get('/attendance/my-history');
-            setHistory(res.data);
+            setHistory(res.data.history || res.data || []);
         } catch (err) {
             console.error('Failed to load history', err);
+            setHistory([]);
         }
     };
 
