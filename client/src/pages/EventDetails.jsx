@@ -188,7 +188,7 @@ export default function EventDetails() {
 
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', width: '100%', overflowY: 'auto', padding: '1rem 0' }}>
                     <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem', color: 'var(--mit-purple)' }}>AttendEase Session</h1>
+                        <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem', color: 'var(--mit-purple)' }}>Smart Attendance Session</h1>
                         {stats.name && (
                             <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', color: 'var(--text-light)', fontWeight: 'normal' }}>
                                 {stats.name}
