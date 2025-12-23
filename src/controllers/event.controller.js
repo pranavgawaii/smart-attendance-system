@@ -20,6 +20,10 @@ const create = async (req, res) => {
             });
         }
 
+        // 3. Auto-generate times
+        const now = new Date();
+        const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
+
         // 4. Create event with auto-generated times
         const eventData = {
             name,
