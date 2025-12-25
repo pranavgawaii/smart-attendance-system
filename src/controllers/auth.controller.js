@@ -112,8 +112,7 @@ const verifyOtp = async (req, res) => {
 
         if (!isValid) return res.status(400).json({ error: 'Invalid OTP' });
 
-        // Find or Create User
-        // Note: Ideally move this to userModel
+        // Find User - NO AUTO-CREATION
         console.log('[OTP Verify] Finding user for email:', email);
         let userQuery = 'SELECT * FROM users WHERE email = $1';
         let { rows } = await db.query(userQuery, [email]);
@@ -121,39 +120,18 @@ const verifyOtp = async (req, res) => {
         console.log('[OTP Verify] User found:', !!user);
 
         if (!user) {
-            // Create new user
-            // STRICT ADMIN: Only specific email gets admin access
-            const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
-            const role = email === ADMIN_EMAIL ? 'admin' : 'student';
-            console.log('[OTP Verify] Creating new user with role:', role);
-
-            const insertQuery = `
-        INSERT INTO users (name, email, role, user_status)
-        VALUES ($1, $2, $3, 'active')
-        RETURNING *;
-      `;
-            const result = await db.query(insertQuery, ['New User', email, role]);
-            user = result.rows[0];
-            console.log('[OTP Verify] New user created:', user.id);
-        } else {
-            // CHECK STATUS FOR EXISTING USERS
-            if (user.user_status === 'disabled') {
-                console.log('[OTP Verify] User is disabled');
-                return res.status(403).json({ error: 'Account disabled. Contact Admin.' });
-            }
-
-            // FOR EXISTING USERS: Check if they should be admin
-            const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
-            if (email === ADMIN_EMAIL && user.role !== 'admin') {
-                console.log('[OTP Verify] Upgrading user to admin');
-                const updateQuery = 'UPDATE users SET role = $1 WHERE id = $2 RETURNING *';
-                const updateResult = await db.query(updateQuery, ['admin', user.id]);
-                user = updateResult.rows[0];
-            }
+            // User doesn't exist - reject login
+            console.log('[OTP Verify] User not found in database');
+            return res.status(403).json({ error: 'Access denied. Please contact admin to create your account.' });
         }
 
-        // Issue JWT
-        // Issue JWT with FULL profile data
+        // CHECK STATUS FOR EXISTING USERS
+        if (user.user_status === 'disabled') {
+            console.log('[OTP Verify] User is disabled');
+            return res.status(403).json({ error: 'Account disabled. Contact Admin.' });
+        }
+
+        // Issue JWT with user profile data
         console.log('[OTP Verify] Issuing JWT for user:', user.id);
         const token = jwt.sign(
             {
