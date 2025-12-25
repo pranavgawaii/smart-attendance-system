@@ -121,17 +121,16 @@ export default function StudentDashboard() {
 
             let eventId, token;
 
-            // 1. Check if it's a URL (Deep Link format)
-            if (qrData.startsWith('http')) {
-                try {
-                    const url = new URL(qrData);
-                    eventId = url.searchParams.get('event_id');
-                    token = url.searchParams.get('token');
-                } catch (e) {
-                    throw new Error("Invalid QR URL format.");
-                }
+            // Strategy 1: Smart Regex (Works for URLs, deep links, and query strings)
+            // Looks for event_id=... and token=... anywhere in the string
+            const eventIdMatch = qrData.match(/[?&]event_id=([^&]+)/);
+            const tokenMatch = qrData.match(/[?&]token=([^&]+)/);
+
+            if (eventIdMatch && tokenMatch) {
+                eventId = eventIdMatch[1];
+                token = tokenMatch[1];
             }
-            // 2. Check legacy format (EVENT:ID:TOKEN)
+            // Strategy 2: Legacy Format (EVENT:123:456)
             else if (qrData.startsWith('EVENT')) {
                 const parts = qrData.split(':');
                 if (parts.length === 3) {
