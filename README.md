@@ -1,139 +1,200 @@
-# 🎓 AttendEase - Smart Attendance System
+# Smart Attendance & Placement Portal
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Node](https://img.shields.io/badge/Node.js-v18%2B-green.svg)
-![React](https://img.shields.io/badge/React-v18-blue.svg)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791.svg)
+A comprehensive institutional system for managing attendance tracking and placement assessments with QR-based authentication and automated seat allocation.
 
-**AttendEase** is a modern, secure, and efficient web-based application designed to streamline the attendance tracking process for educational institutions and corporate events. By leveraging **Dynamic QR Codes** and **Geolocation**, it ensures authentic presence and eliminates proxy attendance.
+## 🚀 Features
 
----
+### Attendance Management
+- **QR Code Scanning**: Dynamic QR codes with automatic rotation for secure attendance
+- **Manual Entry**: Backup code entry system for reliability
+- **Real-time Tracking**: Live attendance monitoring with session controls
+- **Duplicate Prevention**: Database-level and application-level duplicate checks
+- **Device Fingerprinting**: Anti-proxy measures for attendance integrity
 
-## 🚀 Key Features
+### Assessment & Placement
+- **Student Shortlisting**: Flexible candidate selection for assessments
+- **Automated Seat Allocation**: Intelligent lab and seat assignment
+- **Conflict Detection**: Prevents double-booking and capacity violations
+- **Student Portal**: View allocated seats and assessment details
 
-### 🛡️ For Administrators
-- **Event Management**: Create and schedule events/lectures with ease.
-- **Dynamic QR Generation**: Project a rotating QR code (updates every 10s) to prevent sharing.
-- **Real-Time Monitoring**: Watch live attendance counts and logs as users scan.
-- **Data Export**: Export attendance records to CSV for reporting.
-- **Session Control**: Start, Pause, and Stop attendance phases instantly.
-
-### 🎓 For Students/Attendees
-- **Secure Login**: OTP-based authentication for verified access.
-- **Instant Marking**: Simply scan the projected QR code to mark present.
-- **History Tracking**: View personal attendance history and logs.
-- **Mobile Friendly**: optimized UI for smartphones.
-
----
+### Admin Dashboard
+- **Session Management**: Create, control (pause/resume/stop), and monitor events
+- **User Management**: Manage students and administrators
+- **Lab Configuration**: Define labs with capacity constraints
+- **Reports & Analytics**: Attendance reports and event statistics
 
 ## 🛠️ Tech Stack
 
 ### Frontend
-- **Framework**: [React.js](https://react.dev/) (Vite)
-- **Styling**: Vanilla CSS / CSS Modules for a custom, lightweight design.
-- **Http Client**: Axios
+- **React** with Vite
+- **React Router** for navigation
+- **Axios** for API communication
+- **html5-qrcode** for QR scanning
+- **Lucide React** for icons
 
 ### Backend
-- **Runtime**: [Node.js](https://nodejs.org/) & Express.js
-- **Database**: [PostgreSQL](https://www.postgresql.org/) (via `pg` driver)
-- **Authentication**: JWT (JSON Web Tokens) & OTP (Nodemailer)
-- **Security**: bcrypt for hashing, rotating tokens for QR.
+- **Node.js** with Express
+- **PostgreSQL** for data persistence
+- **JWT** for authentication
+- **bcrypt** for password hashing
 
-### DevOps
-- **Hosting**: Railway / Vercel
-- **Version Control**: Git & GitHub
-
----
-
-## 🏁 Getting Started
-
-Follow these steps to set up the project locally.
+## 📦 Installation
 
 ### Prerequisites
-- **Node.js** (v18 or higher)
-- **PostgreSQL** (Local or Cloud instance like Neon/Railway)
+- Node.js 16+
+- PostgreSQL 14+
+- npm or yarn
 
-### Installation
+### Backend Setup
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/pranavgawaii/smart-attendance-system.git
-   cd smart-attendance-system
-   ```
+```bash
+# Install dependencies
+npm install
 
-2. **Install Backend Dependencies**
-   ```bash
-   npm install
-   ```
+# Configure environment variables
+cp .env.example .env
+# Edit .env with your database credentials and JWT secret
 
-3. **Install Frontend Dependencies**
-   ```bash
-   cd client
-   npm install
-   cd ..
-   ```
+# Initialize database
+psql -U postgres -d your_database -f database/init.sql
 
-### Configuration
+# Start server
+npm run dev
+```
 
-1. Create a `.env` file in the root directory:
-   ```env
-   PORT=3000
-   DATABASE_URL=postgres://user:password@host:port/database
-   JWT_SECRET=your_super_secret_key
-   EMAIL_USER=your_email@gmail.com
-   EMAIL_PASS=your_app_password
-   ADMIN_EMAIL=admin@example.com
-   ```
+### Frontend Setup
 
-2. Create a `.env` file in the `client` directory:
-   ```env
-   VITE_API_BASE_URL=http://localhost:3000
-   ```
+```bash
+cd client
 
-### Running the Application
+# Install dependencies
+npm install
 
-1. **Initialize Database** (Optional if using scripts)
-   ```bash
-   node scripts/patch-events-schema.js
-   ```
+# Configure environment
+# Create .env file with:
+# VITE_API_BASE_URL=http://localhost:3000
 
-2. **Start Backend**
-   ```bash
-   npm run dev
-   ```
+# Start development server
+npm run dev
+```
 
-3. **Start Frontend** (in a new terminal)
-   ```bash
-   cd client
-   npm run dev
-   ```
+## 🌐 Deployment
 
----
+### Railway (Backend)
 
-## 📸 Screenshots
+1. Connect your GitHub repository to Railway
+2. Set environment variables:
+   - `DATABASE_URL`: Railway PostgreSQL connection string
+   - `JWT_SECRET`: Secure random string (32+ characters)
+   - `PORT`: Auto-assigned by Railway
 
-| Admin Dashboard | Student Scanner |
-|:---:|:---:|
-| *(Add Screenshot)* | *(Add Screenshot)* |
+### Vercel (Frontend)
 
----
+1. Import project from GitHub
+2. Set build settings:
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+   - **Root Directory**: `client`
+3. Set environment variable:
+   - `VITE_API_BASE_URL`: Your Railway backend URL
 
-## 🤝 Contributing
+## 🔐 Environment Variables
 
-Contributions are welcome! Please fork the repository and create a pull request for any feature enhancements or bug fixes.
+### Backend (.env)
+```env
+DATABASE_URL=postgresql://user:password@host:port/database
+JWT_SECRET=your-super-secret-jwt-key-min-32-chars
+PORT=3000
+```
 
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+### Frontend (client/.env)
+```env
+VITE_API_BASE_URL=http://localhost:3000
+```
 
----
+## 📚 API Documentation
+
+### Authentication
+- `POST /auth/register` - Register new user
+- `POST /auth/login` - Login and receive JWT token
+
+### Events (Protected)
+- `GET /events` - List all events
+- `POST /events` - Create new event
+- `PUT /events/:id/state` - Update session state (ACTIVE/PAUSED/STOPPED)
+
+### Attendance (Protected)
+- `POST /attendance` - Log attendance (QR or manual)
+- `GET /attendance/my-history` - Get user's attendance history
+
+### Assessments (Protected)
+- `GET /assessments` - List assessments
+- `POST /assessments` - Create assessment
+- `POST /assessments/:id/allocations/generate` - Generate seat allocations
+
+## 🏗️ Database Schema
+
+Key tables:
+- `users` - Student and admin accounts
+- `events` - Attendance sessions
+- `attendance_logs` - Attendance records with UNIQUE constraint
+- `assessments` - Placement assessments
+- `assessment_allocations` - Seat assignments
+- `labs` - Lab configuration
+
+## 🔒 Security Features
+
+- JWT-based authentication
+- Password hashing with bcrypt
+- Role-based access control (Student/Admin)
+- Protected API routes
+- Database-level unique constraints
+- Device fingerprinting for attendance
+- Token expiry handling
+
+## 📱 User Roles
+
+### Student
+- Scan QR codes or enter manual codes
+- View attendance history
+- Check assessment allocations
+- View assigned seats
+
+### Administrator
+- Create and manage events
+- Control session states
+- Manage users and labs
+- Create assessments
+- Generate seat allocations
+- View reports and analytics
+
+## 🧪 Testing
+
+```bash
+# Backend tests
+npm test
+
+# Frontend tests
+cd client && npm test
+```
 
 ## 📄 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+This project is licensed under the MIT License.
 
----
+## 👥 Contributors
 
-> **Note**: This project is currently under active development.
+Built for MIT Art, Design & Technology University - Training & Placement Cell
+
+## 🐛 Known Issues
+
+- QR scanner requires HTTPS in production (browser security requirement)
+- Camera permissions must be granted for QR scanning
+
+## 🔄 Version
+
+Current Version: 1.0.0
+
+## 📞 Support
+
+For issues and questions, please open a GitHub issue.

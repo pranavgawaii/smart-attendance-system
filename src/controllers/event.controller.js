@@ -132,6 +132,17 @@ const getAuditAlerts = async (req, res) => {
     }
 };
 
+const getEventAttendance = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const records = await attendanceModel.findAllByEvent(id);
+        res.status(200).json(records);
+    } catch (error) {
+        console.error('Error fetching event attendance:', error);
+        res.status(500).json({ error: error.message });
+    }
+};
+
 const PDFDocument = require('pdfkit');
 
 const exportCsv = async (req, res) => {
@@ -276,5 +287,6 @@ module.exports = {
     closeAttendance,
     startSession,
     pauseSession,
-    stopSession
+    stopSession,
+    getEventAttendance
 };

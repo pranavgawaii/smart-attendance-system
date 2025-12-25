@@ -87,17 +87,45 @@ const getMyHistory = async (req, res) => {
         const history = await attendanceModel.findByUser(user_id);
 
         // Ensure we always return an array, even if empty
-        res.status(200).json({
-            history: history || [],
-            count: history ? history.length : 0
-        });
+        res.status(200).json(history || []);
     } catch (error) {
         console.error('Error fetching attendance history:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
 
+const updateStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        if (!['PRESENT', 'ABSENT', 'REVOKED'].includes(status)) {
+            return res.status(400).json({ error: 'Invalid status' });
+        }
+
+        const updated = await attendanceModel.updateStatus(id, status);
+        if (!updated) return res.status(404).json({ error: 'Attendance record not found' });
+
+        res.json(updated);
+    } catch (error) {
+        console.error('Error updating status:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
+const getAllAttendance = async (req, res) => {
+    try {
+        const logs = await attendanceModel.findAllLogs();
+        res.json(logs);
+    } catch (error) {
+        console.error('Error fetching global attendance:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
 module.exports = {
     logAttendance,
-    getMyHistory
+    getMyHistory,
+    updateStatus,
+    getAllAttendance
 };

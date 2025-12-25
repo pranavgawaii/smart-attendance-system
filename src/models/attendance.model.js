@@ -69,11 +69,32 @@ const getRecentByEvent = async (event_id, limit = 15) => {
   return rows;
 };
 
+const findAllByEvent = async (event_id) => {
+  const query = `
+    SELECT 
+      attendance_logs.id as log_id,
+      users.id as user_id,
+      users.name, 
+      users.email, 
+      users.enrollment_no, 
+      attendance_logs.scan_time, 
+      attendance_logs.status,
+      attendance_logs.device_hash
+    FROM attendance_logs
+    JOIN users ON attendance_logs.user_id = users.id
+    WHERE attendance_logs.event_id = $1
+    ORDER BY attendance_logs.scan_time DESC;
+  `;
+  const { rows } = await db.query(query, [event_id]);
+  return rows;
+};
+
 const findByUser = async (user_id) => {
   const query = `
     SELECT 
       events.name as event_name,
       events.venue,
+      attendance_logs.event_id,
       attendance_logs.scan_time,
       attendance_logs.status
     FROM attendance_logs
@@ -85,6 +106,27 @@ const findByUser = async (user_id) => {
   return rows;
 };
 
+const findAllLogs = async () => {
+  const query = `
+      SELECT 
+        attendance_logs.id as log_id,
+        users.name as user_name,
+        users.enrollment_no,
+        events.name as event_name,
+        events.id as event_id,
+        attendance_logs.scan_time,
+        attendance_logs.status,
+        attendance_logs.device_hash
+      FROM attendance_logs
+      JOIN users ON attendance_logs.user_id = users.id
+      JOIN events ON attendance_logs.event_id = events.id
+      ORDER BY attendance_logs.scan_time DESC
+      LIMIT 1000;
+    `;
+  const { rows } = await db.query(query);
+  return rows;
+};
+
 module.exports = {
   logAttendance,
   checkDeviceUsed,
@@ -93,5 +135,8 @@ module.exports = {
   countByEvent,
   exportByEvent,
   getRecentByEvent,
-  findByUser
+  findAllByEvent,
+  findAllByEvent,
+  findByUser,
+  findAllLogs
 };

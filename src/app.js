@@ -6,6 +6,9 @@ const eventRoutes = require('./routes/event.routes');
 const qrRoutes = require('./routes/qr.routes');
 const attendanceRoutes = require('./routes/attendance.routes');
 const authRoutes = require('./routes/auth.routes');
+const labRoutes = require('./routes/lab.routes');
+const assessmentRoutes = require('./routes/assessment.routes');
+const studentRoutes = require('./routes/student.routes');
 const { authenticateToken } = require('./middlewares/auth.middleware');
 
 const app = express();
@@ -21,6 +24,9 @@ app.use('/users', userRoutes);
 app.use('/events', authenticateToken, eventRoutes);
 app.use('/qr-sessions', authenticateToken, qrRoutes);
 app.use('/attendance', authenticateToken, attendanceRoutes);
+app.use('/labs', authenticateToken, labRoutes);
+app.use('/assessments', authenticateToken, assessmentRoutes);
+app.use('/student', authenticateToken, studentRoutes);
 
 // Serve Frontend in Production
 const path = require('path');

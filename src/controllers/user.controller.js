@@ -67,7 +67,36 @@ const getProfile = async (req, res) => {
     }
 };
 
+const getAllUsers = async (req, res) => {
+    try {
+        const users = await userModel.findAll();
+        res.json(users);
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
+const adminUpdateUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, enrollment_no, branch, academic_year, user_status } = req.body;
+
+        // Validation if needed
+
+        const updatedUser = await userModel.adminUpdate(id, { name, enrollment_no, branch, academic_year, user_status });
+        if (!updatedUser) return res.status(404).json({ error: 'User not found' });
+
+        res.json(updatedUser);
+    } catch (error) {
+        console.error('Error updating user:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
 module.exports = {
     updateProfile,
-    getProfile
+    getProfile,
+    getAllUsers,
+    adminUpdateUser
 };

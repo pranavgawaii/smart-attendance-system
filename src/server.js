@@ -1,4 +1,5 @@
 const app = require('./app');
+// Trigger restart
 const { pool } = require('./config/db');
 require('dotenv').config();
 const eventModel = require('./models/event.model');

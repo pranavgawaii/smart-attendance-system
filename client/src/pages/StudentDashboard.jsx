@@ -1,433 +1,680 @@
-import { useState, useEffect, useRef } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
+import { useState, useEffect } from 'react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { QrCode, LogOut, MapPin, ClipboardList, Home, History, ScanLine, X } from 'lucide-react';
+import { Html5Qrcode } from "html5-qrcode";
 
 export default function StudentDashboard() {
     const { user, logout } = useAuth();
-    const navigate = useNavigate();
 
-    // States
-    const [view, setView] = useState('home'); // home | scanner | manual | success
-    const [error, setError] = useState('');
-    const [statusData, setStatusData] = useState(null); // For success screen
+    // Data State
+    const [activeEvent, setActiveEvent] = useState(null);
+    const [activeAssessment, setActiveAssessment] = useState(null);
+    const [myAllocation, setMyAllocation] = useState(null);
+    const [history, setHistory] = useState([]);
+
+    // UI State
+    const [activeTab, setActiveTab] = useState('HOME');
+    const [loading, setLoading] = useState(false);
+    const [showProfileMenu, setShowProfileMenu] = useState(false);
+    const [manualCode, setManualCode] = useState('');
     const [manualEventId, setManualEventId] = useState('');
-    const [manualToken, setManualToken] = useState('');
-    const [history, setHistory] = useState([]); // Attendance History
-    const scannerRef = useRef(null);
 
-    // Profile Check
-    useEffect(() => {
-        if (user && user.role === 'student' && !user.enrollment_no) {
-            navigate('/profile-setup');
-        }
-    }, [user, navigate]);
-
-    // Fetch History - Moved definition up to be accessible for useEffect
-    const fetchHistory = async () => {
-        if (!user) return;
-        try {
-            const res = await api.get('/attendance/my-history');
-            setHistory(res.data.history || res.data || []);
-        } catch {
-            // console.error('Failed to load history', err);
-            setHistory([]);
-        }
-    };
-
-    // Check for Deep Link (Direct Scan)
-    const [searchParams] = useSearchParams();
-
-    // START FIX: Moved handleAttendanceSubmit UP so it can be used in useEffect
-    const handleAttendanceSubmit = async (qrData) => { // Removed isDirect
-        try {
-            let payload = {};
-
-            // Helper to extract params from URL or Object
-            const extract = (data) => {
-                if (typeof data === 'string' && data.includes('event_id=')) {
-                    // It's a URL string
-                    const url = new URL(data.startsWith('http') ? data : window.location.origin + data);
-                    return {
-                        eventId: url.searchParams.get('event_id'),
-                        token: url.searchParams.get('token')
-                    };
-                }
-                // Try JSON
-                const parsed = JSON.parse(data);
-                return parsed;
-            };
-
-            try {
-                const data = extract(qrData);
-                if (data.eventId && data.token) { // Ensure keys match EventDetails
-                    payload = {
-                        event_id: data.eventId,
-                        token: data.token,
-                        device_hash: 'browser-' + user.id
-                    };
-                } else {
-                    throw new Error("Invalid QR Format");
-                }
-            } catch (e) {
-                console.error(e);
-                throw new Error("Invalid QR Code. Please use Manual Entry.");
-            }
-
-            const res = await api.post('/attendance', payload);
-
-            setStatusData({
-                name: user.name,
-                enrollment_no: user.enrollment_no,
-                time: new Date().toLocaleString(),
-                message: res.data.message || 'Attendance Marked',
-                isMarked: true
-            });
-            setView('success');
-            fetchHistory(); // Refresh history
-
-        } catch (err) {
-            setError(err.response?.data?.error || err.message || 'Attendance Failed');
-            setView('home'); // Go back to home to show error
-        }
-    };
+    // Scanner State
+    const [isScanning, setIsScanning] = useState(false);
+    const [scanResult, setScanResult] = useState(null);
 
     useEffect(() => {
-        const eventId = searchParams.get('event_id');
-        const token = searchParams.get('token');
-        if (eventId && token && view === 'home' && !statusData) {
-            handleAttendanceSubmit(JSON.stringify({ eventId, token }), true);
-        }
-        // ESLint wanted handleAttendanceSubmit here. Now it's safe because it's defined above.
-        // However, handleAttendanceSubmit is not wrapped in useCallback, so it might cause infinite loop if added.
-        // For now, I will suppress the warning or wrap it. 
-        // Better: Disable the warning for this line as it's a one-off effect on mount/params change.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [searchParams, view]);
-
-    // Fetch History on Mount and after success
-    useEffect(() => {
-        fetchHistory();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user]); // Keeping user dependency 
-
-
-    // Cleanup scanner on unmount
-    useEffect(() => {
-        return () => {
-            if (scannerRef.current) {
-                scannerRef.current.stop().catch(err => console.error("Failed to stop scanner", err));
-            }
-        };
+        fetchData();
+        const interval = setInterval(fetchData, 5000);
+        return () => clearInterval(interval);
     }, []);
 
-    const startScanner = () => {
-        setView('scanner');
-        setError('');
+    useEffect(() => {
+        if (activeEvent) {
+            setManualEventId(activeEvent.id);
+        }
+    }, [activeEvent]);
 
-        // Slight delay to ensure DOM is ready
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const eventsRes = await api.get('/events?active=true');
+            const now = new Date();
+            const currentEvent = eventsRes.data.find(e => {
+                const start = new Date(`${e.date}T${e.start_time}`);
+                const end = new Date(`${e.date}T${e.end_time}`);
+                return now >= start && now <= end;
+            });
+            setActiveEvent(currentEvent || null);
+
+            const allocationRes = await api.get('/student/my-allocation');
+            if (allocationRes.data.status !== 'NO_ACTIVE_ASSESSMENT') {
+                setActiveAssessment({
+                    title: allocationRes.data.assessment_name,
+                    start_time: allocationRes.data.start_time || '00:00',
+                    end_time: allocationRes.data.end_time || '23:59',
+                    status: 'LIVE'
+                });
+
+                if (allocationRes.data.status === 'ALLOCATED') {
+                    setMyAllocation({
+                        lab_name: allocationRes.data.lab_name,
+                        seat_number: allocationRes.data.seat_number
+                    });
+                } else {
+                    setMyAllocation(null);
+                }
+            } else {
+                setActiveAssessment(null);
+                setMyAllocation(null);
+            }
+
+            const historyRes = await api.get('/attendance/my-history');
+            setHistory(historyRes.data);
+
+        } catch (error) {
+            console.error("Dashboard fetch error:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const startScanner = () => {
+        setScanResult(null);
+        setIsScanning(true);
+        setActiveTab('HOME');
+
         setTimeout(() => {
             const html5QrCode = new Html5Qrcode("reader");
-            scannerRef.current = html5QrCode;
-
-            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+            if (html5QrCode.isScanning) return;
 
             html5QrCode.start(
                 { facingMode: "environment" },
-                config,
-                onScanSuccess,
-                onScanFailure
-            ).catch(() => {
-                setError("Camera permission denied or not available.");
-                setView('home');
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                (decodedText) => {
+                    html5QrCode.stop().then(() => {
+                        handleScan(decodedText);
+                        setIsScanning(false);
+                    }).catch(err => console.error(err));
+                },
+                (errorMessage) => { /* ignore */ }
+            ).catch(err => {
+                console.error("Scanner Error", err);
+                setIsScanning(false);
+                alert("Could not start camera. Please ensure permissions are granted.");
             });
-        }, 100);
+        }, 300);
     };
 
-    const stopScanner = async () => {
-        if (scannerRef.current) {
-            try {
-                await scannerRef.current.stop();
-                scannerRef.current = null;
-            } catch (e) {
-                console.error(e);
+    const stopScanner = () => {
+        setIsScanning(false);
+        try {
+            const html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.stop().catch(e => { });
+        } catch (e) { }
+    };
+
+    const handleScan = async (qrData) => {
+        try {
+            if (navigator.vibrate) navigator.vibrate(200);
+
+            const parts = qrData.split(':');
+            if (parts[0] !== 'EVENT' && !parts[1]) {
+                throw new Error("Invalid QR Code format");
             }
-        }
-        setView('home');
-    };
 
-    const onScanSuccess = (decodedText) => {
-        // Stop scanning immediately
-        if (scannerRef.current) {
-            scannerRef.current.stop().then(() => {
-                scannerRef.current = null;
-                handleAttendanceSubmit(decodedText);
-            }).catch(e => console.error(e));
-        }
-    };
+            const eventId = parts[1];
+            const token = parts[2];
 
-    const onScanFailure = () => {
-        // console.warn(`Code scan error = ${error}`);
+            await api.post('/attendance', { event_id: eventId, token });
+
+            setScanResult({ status: 'success', title: 'Marked Present!', message: 'Your attendance has been recorded.' });
+            fetchData();
+
+        } catch (error) {
+            const msg = error.response?.data?.error || error.message || 'Scan failed';
+            setScanResult({ status: 'error', title: 'Attendance Failed', message: msg });
+        }
     };
 
     const handleManualSubmit = async (e) => {
         e.preventDefault();
+        if (!manualCode.trim()) return;
+
+        const targetEventId = manualEventId || activeEvent?.id;
+
+        if (!targetEventId) {
+            alert("Please enter the Event ID.");
+            return;
+        }
+
         try {
-            await api.post('/attendance', {
-                event_id: manualEventId,
-                token: manualToken,
-                device_hash: 'browser-manual-' + user.id
-            });
-            setStatusData({
-                name: user.name,
-                enrollment_no: user.enrollment_no,
-                time: new Date().toLocaleString(),
-                isMarked: true
-            });
-            setView('success');
-            fetchHistory(); // Refresh history
-        } catch (err) {
-            setError(err.response?.data?.error || 'Failed to mark attendance');
+            if (navigator.vibrate) navigator.vibrate(200);
+            await api.post('/attendance', { event_id: targetEventId, token: manualCode });
+            setScanResult({ status: 'success', title: 'Marked Present!', message: 'Manual entry successful.' });
+            setManualCode('');
+            fetchData();
+        } catch (error) {
+            const msg = error.response?.data?.error || error.message || 'Entry failed';
+            alert(msg);
         }
     };
 
+    const isMarkedPresent = activeEvent && history.find(h => h.event_id === activeEvent.id);
+
+    const renderHome = () => (
+        <div style={{ padding: '1.5rem', paddingBottom: '7rem', maxWidth: '640px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+
+            {/* Mark Attendance Card */}
+            <div style={{ background: 'white', padding: '2rem', borderRadius: '24px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', border: '1px solid #f1f5f9' }}>
+                {isMarkedPresent ? (
+                    <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                        <div style={{
+                            width: '80px', height: '80px', background: '#dcfce7', borderRadius: '50%',
+                            color: '#15803d', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            margin: '0 auto 1.5rem auto'
+                        }}>
+                            <ClipboardList size={40} />
+                        </div>
+                        <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.5rem', fontWeight: '700', color: '#166534' }}>Attendance Marked</h3>
+                        <p style={{ margin: '0.5rem 0 0', color: '#15803d', fontSize: '0.9rem' }}>
+                            Recorded at {new Date(isMarkedPresent.scan_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                    </div>
+                ) : isScanning ? (
+                    <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '700', color: '#0f172a' }}>Scanning QR Code</h3>
+                            <button
+                                onClick={stopScanner}
+                                style={{
+                                    background: '#f1f5f9',
+                                    border: 'none',
+                                    padding: '0.5rem',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }}
+                            >
+                                <X size={20} color="#64748b" />
+                            </button>
+                        </div>
+                        <div id="reader" style={{ width: '100%', borderRadius: '16px', overflow: 'hidden' }}></div>
+                    </div>
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                        {/* Header */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.025em' }}>Mark Attendance</h2>
+                            {activeEvent && (
+                                <span style={{ fontSize: '0.75rem', color: '#15803d', fontWeight: '700', background: '#dcfce7', padding: '6px 12px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>LIVE</span>
+                            )}
+                        </div>
+
+                        {/* Primary Action: Scan QR Code */}
+                        <button
+                            onClick={startScanner}
+                            style={{
+                                width: '100%',
+                                padding: '1.25rem',
+                                borderRadius: '12px',
+                                background: '#4c1d95',
+                                color: 'white',
+                                fontWeight: '700',
+                                fontSize: '1rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.75rem',
+                                cursor: 'pointer',
+                                boxShadow: '0 4px 6px -1px rgba(76, 29, 149, 0.3)',
+                                border: 'none',
+                                transition: 'all 0.2s'
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.opacity = '0.9'}
+                            onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+                        >
+                            <ScanLine size={24} /> Scan QR Code
+                        </button>
+
+                        {/* Divider */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <div style={{ height: '1px', flex: 1, background: '#e2e8f0' }}></div>
+                            <span style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8' }}>OR</span>
+                            <div style={{ height: '1px', flex: 1, background: '#e2e8f0' }}></div>
+                        </div>
+
+                        {/* Manual Entry Section */}
+                        <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                            <div style={{ marginBottom: '1.25rem' }}>
+                                <span style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#64748b' }}>MANUAL ENTRY</span>
+                            </div>
+
+                            <form onSubmit={handleManualSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                {/* Side by side inputs */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b' }}>EVENT ID</label>
+                                        <input
+                                            type="text"
+                                            value={manualEventId}
+                                            onChange={(e) => setManualEventId(e.target.value)}
+                                            placeholder="000"
+                                            disabled={!!activeEvent}
+                                            style={{
+                                                width: '100%',
+                                                padding: '0.875rem 1rem',
+                                                borderRadius: '12px',
+                                                border: 'none',
+                                                fontSize: '1rem',
+                                                outline: 'none',
+                                                background: activeEvent ? '#e2e8f0' : 'white',
+                                                color: '#0f172a',
+                                                fontWeight: '600',
+                                                textAlign: 'center'
+                                            }}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b' }}>CODE</label>
+                                        <input
+                                            type="text"
+                                            value={manualCode}
+                                            onChange={(e) => setManualCode(e.target.value)}
+                                            placeholder="XXXXXX"
+                                            maxLength={6}
+                                            style={{
+                                                width: '100%',
+                                                padding: '0.875rem 1rem',
+                                                borderRadius: '12px',
+                                                border: 'none',
+                                                fontSize: '1rem',
+                                                outline: 'none',
+                                                background: 'white',
+                                                color: '#0f172a',
+                                                textAlign: 'center',
+                                                fontWeight: '700',
+                                                letterSpacing: '0.15em',
+                                                textTransform: 'uppercase'
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Submit Button */}
+                                <button
+                                    type="submit"
+                                    disabled={!manualCode.trim()}
+                                    style={{
+                                        width: '100%',
+                                        padding: '0.875rem',
+                                        borderRadius: '12px',
+                                        background: manualCode.trim() ? '#0f172a' : '#e2e8f0',
+                                        border: 'none',
+                                        color: manualCode.trim() ? 'white' : '#94a3b8',
+                                        fontWeight: '600',
+                                        cursor: manualCode.trim() ? 'pointer' : 'not-allowed',
+                                        fontSize: '0.95rem',
+                                        transition: 'all 0.2s',
+                                        opacity: manualCode.trim() ? 1 : 0.6
+                                    }}
+                                >
+                                    Mark Attendance
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Today's Assessment Card */}
+            {(activeAssessment || myAllocation) && (
+                <div style={{ background: 'white', padding: '2rem', borderRadius: '24px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', border: '1px solid #f1f5f9' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                        <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '700', color: '#0f172a' }}>Today's Assessment</h3>
+                        {activeAssessment && (
+                            <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#7e22ce', background: '#f3e8ff', padding: '6px 12px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                {activeAssessment.status}
+                            </span>
+                        )}
+                    </div>
+
+                    {activeAssessment && (
+                        <div style={{ marginBottom: '1.25rem' }}>
+                            <h4 style={{ margin: '0', fontSize: '1.1rem', fontWeight: '600', color: '#334155' }}>{activeAssessment.title}</h4>
+                        </div>
+                    )}
+
+                    {myAllocation && (
+                        <div style={{
+                            background: '#f8fafc',
+                            padding: '1.25rem',
+                            borderRadius: '16px',
+                            border: '1px solid #e2e8f0',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '1rem'
+                        }}>
+                            <div style={{
+                                background: '#dbeafe',
+                                padding: '12px',
+                                borderRadius: '12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
+                                <MapPin size={20} color="#2563eb" />
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '4px' }}>YOUR SEAT</div>
+                                <div style={{ fontSize: '1rem', fontWeight: '700', color: '#0f172a' }}>
+                                    {myAllocation.lab_name} • Seat {myAllocation.seat_number}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+        </div>
+    );
+
+    const renderHistory = () => (
+        <div style={{ padding: '1.5rem', paddingBottom: '7rem', maxWidth: '640px', margin: '0 auto' }}>
+            <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', color: '#0f172a', fontWeight: '800', letterSpacing: '-0.025em' }}>Attendance History</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {history.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '4rem 2rem', background: 'white', borderRadius: '24px', border: '1px solid #f1f5f9' }}>
+                        <div style={{ background: '#f8fafc', width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
+                            <History size={32} color="#94a3b8" />
+                        </div>
+                        <h4 style={{ margin: '0 0 0.5rem 0', color: '#334155', fontSize: '1.1rem', fontWeight: '600' }}>No Records Yet</h4>
+                        <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.9rem' }}>
+                            Your past attendance will appear here.
+                        </p>
+                    </div>
+                ) : (
+                    history.map((h, i) => (
+                        <div key={i} style={{
+                            padding: '1.25rem',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            background: 'white',
+                            borderRadius: '16px',
+                            border: '1px solid #f1f5f9',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+                        }}>
+                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                <div style={{ background: '#dcfce7', padding: '12px', borderRadius: '12px', color: '#166534' }}>
+                                    <ClipboardList size={20} />
+                                </div>
+                                <div>
+                                    <div style={{ fontWeight: '600', color: '#0f172a', fontSize: '1rem' }}>{h.event_name}</div>
+                                    <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '2px' }}>
+                                        {new Date(h.scan_time).toLocaleDateString()} • {new Date(h.scan_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </div>
+                                </div>
+                            </div>
+                            <span style={{ color: '#15803d', fontWeight: '700', fontSize: '0.75rem', background: '#dcfce7', padding: '6px 12px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                Present
+                            </span>
+                        </div>
+                    ))
+                )}
+            </div>
+        </div>
+    );
+
+    if (!user) return null;
+
     return (
-        <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-grey)' }}>
+        <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
 
             {/* Header */}
-            <div className="mit-header" style={{ flexWrap: 'wrap', gap: '1rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <img src="/mitadtlogo.png" alt="MIT ADT Logo" className="mit-logo" />
+            <div style={{
+                background: 'white',
+                padding: '1rem 1.5rem',
+                borderBottom: '1px solid #e2e8f0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                position: 'sticky',
+                top: 0,
+                zIndex: 50,
+                boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <img src="/mitadtlogo.png" alt="Logo" style={{ height: '36px' }} />
                     <div>
-                        <h1 style={{ fontSize: '1.25rem', marginBottom: 0 }}>AttendEase</h1>
-                        <small style={{ color: 'var(--text-light)' }}>MIT ADT University</small>
+                        <div style={{ fontSize: '0.75rem', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Student Portal</div>
+                        <div style={{ fontSize: '0.95rem', fontWeight: '700', color: '#0f172a' }}>{user.name}</div>
                     </div>
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginLeft: 'auto' }}>
+
+                <div style={{ position: 'relative' }}>
                     <button
-                        className="header-profile-btn"
-                        onClick={() => navigate('/profile')}
-                        title="My Profile"
+                        onClick={() => setShowProfileMenu(!showProfileMenu)}
                         style={{
-                            background: '#fff',
-                            border: '1px solid #ddd',
-                            color: '#555',
-                            width: '44px',
-                            height: '44px',
+                            width: '40px',
+                            height: '40px',
                             borderRadius: '50%',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            transition: 'all 0.2s',
-                            padding: 0
-                        }}
-                        onMouseOver={(e) => {
-                            e.currentTarget.style.background = '#f5f5f5';
-                            e.currentTarget.style.borderColor = '#bbb';
-                            e.currentTarget.style.transform = 'scale(1.05)';
-                        }}
-                        onMouseOut={(e) => {
-                            e.currentTarget.style.background = '#fff';
-                            e.currentTarget.style.borderColor = '#ddd';
-                            e.currentTarget.style.transform = 'scale(1)';
-                        }}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="12" cy="7" r="4"></circle>
-                        </svg>
-                    </button>
-                    <button
-                        className="header-signout-btn"
-                        onClick={logout}
-                        title="Sign out"
-                        style={{
-                            background: 'var(--mit-purple)',
-                            border: 'none',
+                            background: '#4c1d95',
                             color: 'white',
-                            padding: '0.6rem 1rem',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            transition: 'all 0.2s',
-                            fontSize: '0.9rem',
-                            fontWeight: '500',
-                            minHeight: '44px'
+                            border: 'none',
+                            fontWeight: '700',
+                            fontSize: '1rem',
+                            cursor: 'pointer',
+                            boxShadow: '0 2px 4px rgba(76, 29, 149, 0.2)'
                         }}
-                        onMouseOver={(e) => {
-                            e.currentTarget.style.opacity = '0.9';
-                            e.currentTarget.style.transform = 'translateY(-1px)';
-                        }}
-                        onMouseOut={(e) => {
-                            e.currentTarget.style.opacity = '1';
-                            e.currentTarget.style.transform = 'translateY(0)';
-                        }}>
-                        Sign out
+                    >
+                        {user.name?.charAt(0)}
                     </button>
+
+                    {showProfileMenu && (
+                        <>
+                            <div
+                                style={{ position: 'fixed', inset: 0, zIndex: 90 }}
+                                onClick={() => setShowProfileMenu(false)}
+                            />
+                            <div style={{
+                                position: 'absolute',
+                                top: '120%',
+                                right: 0,
+                                width: '220px',
+                                background: 'white',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '16px',
+                                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
+                                overflow: 'hidden',
+                                zIndex: 100
+                            }}>
+                                <div style={{ padding: '1.25rem', borderBottom: '1px solid #f1f5f9' }}>
+                                    <p style={{ margin: 0, fontWeight: '700', color: '#0f172a', fontSize: '0.95rem' }}>{user.name}</p>
+                                    <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '0.85rem' }}>{user.enrollment_no}</p>
+                                </div>
+                                <button
+                                    onClick={logout}
+                                    style={{
+                                        width: '100%',
+                                        padding: '1rem 1.25rem',
+                                        background: 'none',
+                                        border: 'none',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.75rem',
+                                        color: '#dc2626',
+                                        fontSize: '0.9rem',
+                                        fontWeight: '600',
+                                        textAlign: 'left',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    <LogOut size={18} /> Sign Out
+                                </button>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
 
             {/* Content Area */}
-            <div className="mit-container" style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ minHeight: 'calc(100vh - 140px)', overflowY: 'auto' }}>
+                {activeTab === 'HOME' && renderHome()}
+                {activeTab === 'HISTORY' && renderHistory()}
 
-                {/* Greeting Card */}
-                {view === 'home' && (
-                    <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                        <h2 style={{ fontSize: '1.5rem', color: 'var(--text-dark)' }}>Welcome, {user?.name}</h2>
-                        <p style={{ color: 'var(--text-light)', marginTop: '0.25rem' }}>Enrollment: <strong>{user?.enrollment_no}</strong></p>
-                    </div>
-                )}
-
-                {error && (
-                    <div style={{ width: '100%', maxWidth: '400px', marginBottom: '1rem', padding: '1rem', background: '#ffebee', color: '#c62828', borderRadius: '4px', textAlign: 'center', border: '1px solid #ffcdd2' }}>
-                        {error}
-                    </div>
-                )}
-
-                {view === 'home' && (
-                    <>
-                        <div className="mit-card" style={{ width: '100%', maxWidth: '400px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                            <p style={{ marginBottom: '1.5rem', textAlign: 'center', color: 'var(--text-light)' }}>
-                                Scan the QR code displayed on the screen to mark your attendance.
-                            </p>
-
-                            <button
-                                onClick={startScanner}
-                                style={{
-                                    width: '100%',
-                                    padding: '1.5rem',
-                                    borderRadius: '8px',
-                                    border: '2px dashed var(--mit-purple)',
-                                    background: '#f3e5f5',
-                                    color: 'var(--mit-purple)',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    cursor: 'pointer',
-                                    transition: 'background 0.2s',
-                                    marginBottom: '1rem'
-                                }}
-                            >
-                                <span style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>📷</span>
-                                <span style={{ fontSize: '1.1rem', fontWeight: '600' }}>Tap to Scan QR</span>
-                            </button>
-
-                            <div style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '1rem', margin: '1rem 0' }}>
-                                <div style={{ flex: 1, height: '1px', background: '#ddd' }}></div>
-                                <span style={{ color: '#999', fontSize: '0.9rem' }}>OR</span>
-                                <div style={{ flex: 1, height: '1px', background: '#ddd' }}></div>
-                            </div>
-
-                            <button
-                                onClick={() => { setView('manual'); setError(''); }}
-                                style={{
-                                    width: '100%',
-                                    padding: '0.8rem',
-                                    background: 'white',
-                                    border: '1px solid #ccc',
-                                    borderRadius: '4px',
-                                    fontSize: '0.95rem',
-                                    color: 'var(--text-dark)',
-                                }}
-                            >
-                                Enter Code Manually
-                            </button>
-                        </div>
-
-
-                        {/* Recent Attendance History */}
-                        {history.length > 0 && (
-                            <div style={{ width: '100%', maxWidth: '400px', marginTop: '2rem' }}>
-                                <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--text-light)', borderBottom: '2px solid var(--mit-purple)', display: 'inline-block', paddingBottom: '4px' }}>
-                                    Past Marked Attendance
-                                </h3>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                    {history.map((record, idx) => (
-                                        <div key={idx} style={{ background: 'white', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid var(--success-green)', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                                                <strong style={{ color: 'var(--mit-purple)', fontSize: '0.95rem' }}>{record.event_name}</strong>
-                                                <span style={{ fontSize: '0.8rem', color: '#888' }}>{new Date(record.scan_time).toLocaleDateString()}</span>
-                                            </div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                                                <span style={{ color: 'var(--text-light)' }}>{record.venue || 'Main Hall'}</span>
-                                                <span style={{ color: 'var(--success-green)', fontWeight: 'bold' }}>{record.status} • {new Date(record.scan_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </>
-                )}
-
-                {view === 'scanner' && (
-                    <div className="mit-card" style={{ width: '100%', maxWidth: '500px', padding: '1rem' }}>
-                        <div id="reader" style={{ width: '100%', borderRadius: '4px', overflow: 'hidden', background: '#000' }}></div>
-                        <button
-                            onClick={stopScanner}
-                            className="mit-btn"
-                            style={{ width: '100%', marginTop: '1rem', background: 'var(--text-light)' }}
-                        >
-                            Cancel Scanning
-                        </button>
-                    </div>
-                )}
-
-                {view === 'manual' && (
-                    <div className="mit-card" style={{ width: '100%', maxWidth: '400px' }}>
-                        <h3 style={{ textAlign: 'center', marginBottom: '1.5rem' }}>Manual Entry</h3>
-                        <form onSubmit={handleManualSubmit}>
-                            <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>Event ID</label>
-                                <input className="mit-input" type="number" required value={manualEventId} onChange={e => setManualEventId(e.target.value)} placeholder="Enter Event ID" />
-                            </div>
-                            <div style={{ marginBottom: '1.5rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem' }}>6-Digit Token</label>
-                                <input className="mit-input" type="text" required value={manualToken} onChange={e => setManualToken(e.target.value)} placeholder="e.g. 123456" />
-                            </div>
-                            <button type="submit" className="mit-btn" style={{ width: '100%' }}>Submit Attendance</button>
-                        </form>
-                        <button onClick={() => setView('home')} style={{ width: '100%', marginTop: '1rem', background: 'none', border: 'none', color: 'var(--text-light)', textDecoration: 'underline' }}>Cancel</button>
-                    </div>
-                )}
-
-                {view === 'success' && statusData && (
-                    <div className="mit-card" style={{ width: '100%', maxWidth: '400px', textAlign: 'center', borderTop: '5px solid var(--success-green)' }}>
+                {/* Result Overlay */}
+                {scanResult && (
+                    <div style={{
+                        position: 'fixed',
+                        inset: 0,
+                        zIndex: 200,
+                        background: 'rgba(0,0,0,0.85)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '2rem'
+                    }}>
                         <div style={{
-                            width: '80px',
-                            height: '80px',
-                            background: 'var(--success-green)',
-                            borderRadius: '50%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            margin: '0 auto 1.5rem auto'
+                            background: 'white',
+                            padding: '2.5rem',
+                            borderRadius: '24px',
+                            textAlign: 'center',
+                            width: '100%',
+                            maxWidth: '360px',
+                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
                         }}>
-                            <span style={{ fontSize: '3rem', color: 'white' }}>✓</span>
+                            <div style={{
+                                width: '80px',
+                                height: '80px',
+                                borderRadius: '50%',
+                                margin: '0 auto 1.5rem auto',
+                                background: scanResult.status === 'success' ? '#dcfce7' : '#fee2e2',
+                                color: scanResult.status === 'success' ? '#166534' : '#991b1b',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
+                                {scanResult.status === 'success' ? <ClipboardList size={40} /> : <X size={40} />}
+                            </div>
+                            <h3 style={{ fontSize: '1.5rem', marginBottom: '0.75rem', color: '#0f172a', fontWeight: '700' }}>{scanResult.title}</h3>
+                            <p style={{ color: '#64748b', marginBottom: '2rem', fontSize: '0.95rem' }}>{scanResult.message}</p>
+                            <button
+                                onClick={() => { setScanResult(null); setActiveTab('HOME'); }}
+                                style={{
+                                    width: '100%',
+                                    padding: '1rem',
+                                    background: '#4c1d95',
+                                    color: 'white',
+                                    borderRadius: '12px',
+                                    border: 'none',
+                                    fontWeight: '700',
+                                    fontSize: '1rem',
+                                    cursor: 'pointer',
+                                    boxShadow: '0 4px 6px -1px rgba(76, 29, 149, 0.3)'
+                                }}
+                            >
+                                Done
+                            </button>
                         </div>
-                        <h2 style={{ color: 'var(--success-green)', marginBottom: '0.5rem' }}>{statusData.message}</h2>
-                        <p style={{ color: 'var(--success-green)', fontWeight: 'bold', marginBottom: '0.25rem' }}>Successfully Marked</p>
-                        <p style={{ color: 'var(--text-light)', fontSize: '0.9rem', marginTop: 0 }}>{statusData.time}</p>
-
-                        <div style={{ marginTop: '2rem', background: 'var(--bg-grey)', padding: '1rem', borderRadius: '4px', textAlign: 'left' }}>
-                            <p style={{ margin: '0.5rem 0' }}><small style={{ color: 'var(--text-light)' }}>NAME</small><br /><strong>{statusData.name}</strong></p>
-                            <p style={{ margin: '0.5rem 0' }}><small style={{ color: 'var(--text-light)' }}>ENROLLMENT</small><br /><strong>{statusData.enrollment_no}</strong></p>
-                        </div>
-
-                        <button
-                            onClick={() => setView('home')}
-                            className="mit-btn"
-                            style={{ width: '100%', marginTop: '1.5rem' }}
-                        >
-                            Return to Dashboard
-                        </button>
                     </div>
                 )}
             </div>
-        </div >
+
+            {/* Bottom Navigation */}
+            <div style={{
+                position: 'fixed',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: '68px',
+                background: 'white',
+                borderTop: '1px solid #e2e8f0',
+                display: 'flex',
+                justifyContent: 'space-around',
+                alignItems: 'center',
+                zIndex: 100,
+                boxShadow: '0 -2px 10px rgba(0,0,0,0.03)'
+            }}>
+                <button
+                    onClick={() => setActiveTab('HOME')}
+                    style={{
+                        background: 'none',
+                        border: 'none',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '4px',
+                        flex: 1,
+                        padding: '8px 0',
+                        color: activeTab === 'HOME' ? '#4c1d95' : '#94a3b8',
+                        cursor: 'pointer'
+                    }}
+                >
+                    <Home size={24} strokeWidth={activeTab === 'HOME' ? 2.5 : 2} />
+                    <span style={{ fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Home</span>
+                </button>
+
+                <button
+                    onClick={() => {
+                        setActiveTab('HOME');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        if (!isMarkedPresent) startScanner();
+                    }}
+                    style={{
+                        background: 'none',
+                        border: 'none',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '4px',
+                        flex: 1,
+                        padding: '8px 0',
+                        transform: 'translateY(-16px)',
+                        cursor: 'pointer'
+                    }}
+                >
+                    <div style={{
+                        width: '64px',
+                        height: '64px',
+                        background: '#4c1d95',
+                        borderRadius: '20px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        boxShadow: '0 10px 25px -5px rgba(76, 29, 149, 0.4)'
+                    }}>
+                        <QrCode size={32} />
+                    </div>
+                </button>
+
+                <button
+                    onClick={() => setActiveTab('HISTORY')}
+                    style={{
+                        background: 'none',
+                        border: 'none',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '4px',
+                        flex: 1,
+                        padding: '8px 0',
+                        color: activeTab === 'HISTORY' ? '#4c1d95' : '#94a3b8',
+                        cursor: 'pointer'
+                    }}
+                >
+                    <History size={24} strokeWidth={activeTab === 'HISTORY' ? 2.5 : 2} />
+                    <span style={{ fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>History</span>
+                </button>
+            </div>
+
+        </div>
     );
 }

@@ -1,17 +1,15 @@
 const db = require('../config/db');
 
-const createUser = async ({ name, email, enrollment_no, branch, role }) => {
+const createUser = async ({ name, email, enrollment_no, branch, role, academic_year }) => {
   const query = `
-    INSERT INTO users (name, email, enrollment_no, branch, role)
-    VALUES ($1, $2, $3, $4, $5)
+    INSERT INTO users (name, email, enrollment_no, branch, role, academic_year, user_status)
+    VALUES ($1, $2, $3, $4, $5, $6, 'active')
     RETURNING *;
   `;
-  const values = [name, email, enrollment_no, branch, role];
+  const values = [name, email, enrollment_no, branch, role, academic_year];
   const { rows } = await db.query(query, values);
   return rows[0];
 };
-
-
 
 const findById = async (id) => {
   const query = 'SELECT * FROM users WHERE id = $1';
@@ -19,14 +17,31 @@ const findById = async (id) => {
   return rows[0];
 };
 
-const updateUser = async (id, { name, enrollment_no, branch }) => {
+const updateUser = async (id, { name, enrollment_no, branch, academic_year }) => {
   const query = `
     UPDATE users 
-    SET name = $1, enrollment_no = $2, branch = $3
-    WHERE id = $4
+    SET name = $1, enrollment_no = $2, branch = $3, academic_year = $4
+    WHERE id = $5
     RETURNING *;
   `;
-  const { rows } = await db.query(query, [name, enrollment_no, branch, id]);
+  const { rows } = await db.query(query, [name, enrollment_no, branch, academic_year, id]);
+  return rows[0];
+};
+
+const findAll = async () => {
+  const query = 'SELECT id, name, email, enrollment_no, branch, role, academic_year, user_status, created_at FROM users ORDER BY created_at DESC';
+  const { rows } = await db.query(query);
+  return rows;
+};
+
+const adminUpdate = async (id, { name, enrollment_no, branch, academic_year, user_status }) => {
+  const query = `
+      UPDATE users 
+      SET name = $1, enrollment_no = $2, branch = $3, academic_year = $4, user_status = $5
+      WHERE id = $6
+      RETURNING *;
+    `;
+  const { rows } = await db.query(query, [name, enrollment_no, branch, academic_year, user_status, id]);
   return rows[0];
 };
 
@@ -34,4 +49,6 @@ module.exports = {
   createUser,
   findById,
   updateUser,
+  findAll,
+  adminUpdate
 };

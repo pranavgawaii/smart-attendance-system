@@ -59,58 +59,67 @@ export default function Login() {
         <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-grey)' }}>
 
             {/* Minimal Header */}
-            <div style={{ padding: '1rem 2rem', background: 'white', borderBottom: '1px solid #eee' }}>
-                <img src="/mitadtlogo.png" alt="MIT Logo" style={{ height: '40px' }} />
+            <div style={{ padding: '2rem 1.5rem', background: 'white', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.75rem' }}>
+                <img src="/mitadtlogo.png" alt="MIT Logo" style={{ height: '60px' }} />
+                <div style={{ textAlign: 'center' }}>
+                    <h1 style={{ fontSize: '1.25rem', margin: 0, color: '#1f2937', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' }}>Training & Placement Cell</h1>
+                    <p style={{ margin: 0, fontSize: '0.9rem', color: '#4b5563', fontWeight: '500' }}>Smart Placement Portal</p>
+                </div>
             </div>
 
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-                <div className="mit-card" style={{ width: '100%', maxWidth: '400px', textAlign: 'center' }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', background: '#f3f4f6' }}>
+                <div className="mit-card" style={{ width: '100%', maxWidth: '400px', textAlign: 'center', padding: '2.5rem 2rem', background: 'white', border: '1px solid #e5e7eb', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)', borderRadius: '12px' }}>
 
-                    <h2 style={{ color: 'var(--mit-purple)', marginTop: '0.5rem' }}>Student Login</h2>
-                    <p style={{ color: 'var(--text-light)', marginBottom: '2rem' }}>Sign in with your university email</p>
+                    <h2 style={{ color: '#111827', marginTop: '0', marginBottom: '0.75rem', fontSize: '1.5rem', fontWeight: '700' }}>Student Access Portal</h2>
+                    <p style={{ color: '#4b5563', marginBottom: '2rem', fontSize: '1rem', lineHeight: '1.5' }}>
+                        Sign in using your official university email to access placement activities.
+                    </p>
 
-                    {error && <div style={{ marginBottom: '1rem', color: 'var(--error-red)', background: '#ffebee', padding: '0.5rem', borderRadius: '4px' }}>{error}</div>}
+                    {error && <div style={{ marginBottom: '1.5rem', color: '#b91c1c', background: '#fef2f2', padding: '1rem', borderRadius: '8px', fontSize: '0.95rem', border: '1px solid #fecaca', fontWeight: '500' }}>{error}</div>}
 
                     {step === 1 ? (
                         <form onSubmit={handleRequestOtp}>
-                            <div style={{ textAlign: 'left' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dark)', fontWeight: '500' }}>Email Address</label>
+                            <div style={{ textAlign: 'left', marginBottom: '1.5rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', color: '#111827', fontWeight: '600', fontSize: '0.95rem' }}>University Email</label>
                                 <input
                                     className="mit-input"
                                     type="email"
                                     required
-                                    placeholder="student@mitadt.edu.in"
+                                    placeholder="your.name@mitadt.edu.in"
                                     value={email}
                                     onChange={e => setEmail(e.target.value)}
+                                    style={{ height: '52px', fontSize: '1rem', borderColor: '#d1d5db', color: '#1f2937', background: '#ffffff' }}
                                 />
                             </div>
-                            <button type="submit" className="mit-btn" style={{ width: '100%' }} disabled={isLoading}>
-                                {isLoading ? 'Sending...' : 'Send Verification Code'}
+                            <button type="submit" className="mit-btn" style={{ width: '100%', height: '52px', fontSize: '1.05rem', justifyContent: 'center', fontWeight: 'bold' }} disabled={isLoading}>
+                                {isLoading ? 'Sending Code...' : 'Send Verification Code'}
                             </button>
                         </form>
                     ) : (
                         <form onSubmit={handleVerifyOtp}>
-                            <div style={{ textAlign: 'left' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dark)', fontWeight: '500' }}>Enter OTP</label>
+                            <div style={{ textAlign: 'left', marginBottom: '1.5rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', color: '#111827', fontWeight: '600', fontSize: '0.95rem' }}>Verification Code</label>
                                 <input
                                     className="mit-input"
                                     type="text"
                                     required
-                                    placeholder="123456"
+                                    placeholder="Enter 6-digit code"
                                     value={otp}
                                     onChange={e => setOtp(e.target.value)}
                                     disabled={isLoading}
+                                    style={{ height: '52px', letterSpacing: '4px', textAlign: 'center', fontSize: '1.5rem', fontWeight: '700', borderColor: '#d1d5db', color: '#1f2937', background: '#ffffff' }}
+                                    maxLength={6}
                                 />
                             </div>
-                            <button type="submit" className="mit-btn" style={{ width: '100%' }} disabled={isLoading}>
-                                {isLoading ? 'Verifying...' : 'Verify & Login'}
+                            <button type="submit" className="mit-btn" style={{ width: '100%', height: '52px', fontSize: '1.05rem', justifyContent: 'center', fontWeight: 'bold' }} disabled={isLoading}>
+                                {isLoading ? 'Verifying...' : 'Access Portal'}
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setStep(1)}
-                                style={{ marginTop: '1rem', background: 'none', border: 'none', color: 'var(--text-light)', textDecoration: 'underline', width: '100%' }}
+                                style={{ marginTop: '1.5rem', background: 'none', border: 'none', color: 'var(--mit-purple)', fontSize: '0.95rem', width: '100%', cursor: 'pointer', fontWeight: '600', textDecoration: 'underline', textUnderlineOffset: '4px' }}
                             >
-                                Change Email
+                                Tried the wrong email? Go back
                             </button>
                         </form>
                     )}

@@ -11,6 +11,7 @@ router.get('/:id/stats', eventController.getStats);
 router.get('/:id/export', eventController.exportCsv);
 router.get('/:id/export-pdf', eventController.exportPdf);
 router.get('/:id/recent-attendance', eventController.getRecentAttendance);
+router.get('/:id/attendance', eventController.getEventAttendance);
 router.get('/:id/audit-alerts', eventController.getAuditAlerts);
 
 router.post('/:id/open-entry', eventController.openEntry);

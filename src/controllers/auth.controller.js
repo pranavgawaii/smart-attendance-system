@@ -110,13 +110,18 @@ const verifyOtp = async (req, res) => {
             const role = email === ADMIN_EMAIL ? 'admin' : 'student';
 
             const insertQuery = `
-        INSERT INTO users (name, email, role)
-        VALUES ($1, $2, $3)
+        INSERT INTO users (name, email, role, user_status)
+        VALUES ($1, $2, $3, 'active')
         RETURNING *;
       `;
             const result = await db.query(insertQuery, ['New User', email, role]);
             user = result.rows[0];
         } else {
+            // CHECK STATUS FOR EXISTING USERS
+            if (user.user_status === 'disabled') {
+                return res.status(403).json({ error: 'Account disabled. Contact Admin.' });
+            }
+
             // FOR EXISTING USERS: Check if they should be admin
             const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
             if (email === ADMIN_EMAIL && user.role !== 'admin') {
