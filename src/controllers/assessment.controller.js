@@ -10,7 +10,18 @@ const createAssessment = async (req, res) => {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        const assessment = await assessmentModel.create({ title, description, date, start_time, end_time });
+        // Combine date and time to create full timestamps for DB
+        // Frontend sends date="YYYY-MM-DD" and time="HH:mm"
+        const fullStartTime = `${date}T${start_time}:00`;
+        const fullEndTime = `${date}T${end_time}:00`;
+
+        const assessment = await assessmentModel.create({
+            title,
+            description,
+            date,
+            start_time: fullStartTime,
+            end_time: fullEndTime
+        });
         res.status(201).json(assessment);
     } catch (error) {
         console.error('Error creating assessment:', error);
