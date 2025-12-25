@@ -92,7 +92,7 @@ const findAllByEvent = async (event_id) => {
 const findByUser = async (user_id) => {
   const query = `
     SELECT 
-      events.name as event_name,
+      events.title as event_name,
       events.venue,
       attendance_logs.event_id,
       attendance_logs.scan_time,
