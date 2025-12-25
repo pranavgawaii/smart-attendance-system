@@ -77,18 +77,26 @@ const requestOtp = async (req, res) => {
 const verifyOtp = async (req, res) => {
     const email = req.body.email?.toLowerCase(); // Change 1: Normalize Email
     const { otp } = req.body;
+
+    console.log('[OTP Verify] Request:', { email, otp: otp ? '***' + otp.slice(-2) : 'missing' });
+
     if (!email || !otp) return res.status(400).json({ error: 'Email and OTP are required' });
 
     try {
         // MAGIC OTP for Test Accounts
         let isValid = false;
         if (email.endsWith('@test.com') && otp === '123456') {
+            console.log('[OTP Verify] Using magic OTP for test account');
             isValid = true;
         } else {
             const record = await otpModel.getLatestOtp(email);
+            console.log('[OTP Verify] DB Record:', record ? { email: record.email, expires_at: record.expires_at } : 'NOT FOUND');
+
             if (!record) return res.status(400).json({ error: 'Invalid or expired OTP' });
 
             isValid = await bcrypt.compare(otp, record.otp_hash);
+            console.log('[OTP Verify] Comparison result:', isValid);
+
             // Clean up used OTPs only if it was a real OTP
             if (isValid) {
                 await otpModel.deleteOtps(email);
