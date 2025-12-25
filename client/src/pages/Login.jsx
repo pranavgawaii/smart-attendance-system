@@ -16,17 +16,20 @@ export default function Login() {
     const handleRequestOtp = async (e) => {
         e.preventDefault();
         setIsLoading(true);
+        setError('');
         try {
             const res = await api.post('/auth/request-otp', { email });
+            console.log('OTP Response:', res.data);
+
             // For Dev: pre-fill OTP if returned
             if (res.data.dev_otp) {
-                alert(`Dev OTP: ${res.data.dev_otp}`);
+                alert(`✅ OTP Generated!\n\nCode: ${res.data.dev_otp}\n\n(In production, this will be emailed to you)`);
                 setOtp(res.data.dev_otp);
             }
             setStep(2);
-            setError('');
         } catch (err) {
-            setError(err.response?.data?.error || 'Failed to send OTP');
+            console.error('OTP Request Error:', err);
+            setError(err.response?.data?.error || 'Failed to send OTP. Please try again.');
         } finally {
             setIsLoading(false);
         }
