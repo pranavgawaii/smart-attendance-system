@@ -120,8 +120,9 @@ export default function StudentDashboard() {
             if (navigator.vibrate) navigator.vibrate(200);
 
             const parts = qrData.split(':');
-            if (parts[0] !== 'EVENT' && !parts[1]) {
-                throw new Error("Invalid QR Code format");
+            // Fixed: Should be OR (||) not AND (&&)
+            if (parts[0] !== 'EVENT' || !parts[1] || !parts[2]) {
+                throw new Error("Invalid QR Code format. Please scan a valid attendance QR code.");
             }
 
             const eventId = parts[1];
