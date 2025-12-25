@@ -38,7 +38,8 @@ const requestOtp = async (req, res) => {
         const otpHash = await bcrypt.hash(otp, 10);
         const expiresAt = new Date(Date.now() + REQUEST_OTP_EXPIRY_MINUTES * 60000);
 
-        await otpModel.saveOtp(email, otpHash, expiresAt);
+        // Store both hash AND plain OTP for dev mode
+        await otpModel.saveOtp(email, otpHash, expiresAt, otp);
 
         // 3. Send Email
         const mailOptions = {
@@ -90,14 +91,20 @@ const verifyOtp = async (req, res) => {
             isValid = true;
         } else {
             const record = await otpModel.getLatestOtp(email);
-            console.log('[OTP Verify] DB Record:', record ? { email: record.email, expires_at: record.expires_at } : 'NOT FOUND');
+            console.log('[OTP Verify] DB Record:', record ? { email: record.email, has_dev_otp: !!record.dev_otp, expires_at: record.expires_at } : 'NOT FOUND');
 
             if (!record) return res.status(400).json({ error: 'Invalid or expired OTP' });
 
-            isValid = await bcrypt.compare(otp, record.otp_hash);
-            console.log('[OTP Verify] Comparison result:', isValid);
+            // Try plain OTP first (dev mode), then hash comparison
+            if (record.dev_otp && record.dev_otp === otp) {
+                console.log('[OTP Verify] Matched using dev_otp (plain text)');
+                isValid = true;
+            } else {
+                isValid = await bcrypt.compare(otp, record.otp_hash);
+                console.log('[OTP Verify] Hash comparison result:', isValid);
+            }
 
-            // Clean up used OTPs only if it was a real OTP
+            // Clean up used OTPs
             if (isValid) {
                 await otpModel.deleteOtps(email);
             }
