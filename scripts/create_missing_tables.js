@@ -26,17 +26,39 @@ async function createMissingTables() {
         `);
         console.log('✅ assessments table created');
 
-        // 2. Create labs table
+        // 2. Create labs table (Updated Schema)
         console.log('Creating labs table...');
         await pool.query(`
             CREATE TABLE IF NOT EXISTS labs (
                 id SERIAL PRIMARY KEY,
                 name VARCHAR(255) NOT NULL UNIQUE,
-                capacity INTEGER NOT NULL,
+                total_seats INTEGER NOT NULL DEFAULT 0,
+                status VARCHAR(20) DEFAULT 'active',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);
-        console.log('✅ labs table created');
+
+        // Fix existing labs table schema (Migration)
+        await pool.query(`
+            DO $$ 
+            BEGIN
+                -- Rename capacity to total_seats if needed
+                IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='labs' AND column_name='capacity') THEN
+                    ALTER TABLE labs RENAME COLUMN capacity TO total_seats;
+                END IF;
+
+                -- Add total_seats if missing (and capacity didn't exist)
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='labs' AND column_name='total_seats') THEN
+                    ALTER TABLE labs ADD COLUMN total_seats INTEGER DEFAULT 0;
+                END IF;
+
+                -- Add status if missing
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='labs' AND column_name='status') THEN
+                    ALTER TABLE labs ADD COLUMN status VARCHAR(20) DEFAULT 'active';
+                END IF;
+            END $$;
+        `);
+        console.log('✅ labs table created/updated');
 
         // 3. Create seat_allocations table
         console.log('Creating seat_allocations table...');
