@@ -4,6 +4,8 @@ const eventController = require('../controllers/event.controller');
 
 router.get('/', eventController.listEvents);
 router.post('/', eventController.create);
+router.put('/:id', eventController.update);
+router.delete('/:id', eventController.remove);
 router.post('/:id/start-qr', eventController.startQr);
 router.post('/:id/stop-qr', eventController.stopQr);
 router.get('/:id/current-qr', eventController.getCurrentQr);

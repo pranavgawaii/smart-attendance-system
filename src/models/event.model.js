@@ -35,10 +35,29 @@ const findAll = async () => {
   return rows;
 };
 
+const updateEvent = async (id, { name, venue, qr_refresh_interval }) => {
+  const query = `
+    UPDATE events 
+    SET name = $1, venue = $2, qr_refresh_interval = $3
+    WHERE id = $4
+    RETURNING *;
+  `;
+  const { rows } = await db.query(query, [name, venue, qr_refresh_interval, id]);
+  return rows[0];
+};
+
+const deleteEvent = async (id) => {
+  const query = 'DELETE FROM events WHERE id = $1 RETURNING id';
+  const { rowCount } = await db.query(query, [id]);
+  return rowCount > 0;
+};
+
 module.exports = {
   createEvent,
   findById,
   updatePhase,
   updateSessionState,
   findAll,
+  updateEvent,
+  deleteEvent
 };

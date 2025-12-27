@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
-import { Monitor, ExternalLink, Plus } from 'lucide-react';
+import { Monitor, ExternalLink, Plus, Edit, Trash2 } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
 
 export default function AdminEvents() {
@@ -9,8 +9,8 @@ export default function AdminEvents() {
     const [loading, setLoading] = useState(true);
     const [createModalOpen, setCreateModalOpen] = useState(false);
 
-
     // Form State
+    const [editingEventId, setEditingEventId] = useState(null); // ID if editing
     const [newEventName, setNewEventName] = useState('');
     const [venue, setVenue] = useState('');
     const [interval, setInterval] = useState(10);
@@ -35,7 +35,37 @@ export default function AdminEvents() {
         }
     };
 
-    const handleCreateEvent = async (e) => {
+    const openCreateModal = () => {
+        setEditingEventId(null);
+        setNewEventName('');
+        setVenue('');
+        setInterval(10);
+        setCreateModalOpen(true);
+    };
+
+    const handleEdit = (event) => {
+        setEditingEventId(event.id);
+        setNewEventName(event.name);
+        setVenue(event.venue || '');
+        setInterval(event.qr_refresh_interval || 10);
+        setCreateModalOpen(true);
+    };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this session? This action cannot be undone.')) return;
+
+        try {
+            await api.delete(`/events/${id}`);
+            setSuccessMsg('Session deleted successfully');
+            fetchEvents();
+            setTimeout(() => setSuccessMsg(''), 3000);
+        } catch (err) {
+            console.error(err);
+            alert('Failed to delete session');
+        }
+    };
+
+    const handleSaveEvent = async (e) => {
         e.preventDefault();
         setError('');
         setSuccessMsg('');
@@ -52,20 +82,26 @@ export default function AdminEvents() {
                 qr_refresh_interval: Number(interval) || 10
             };
 
-            await api.post('/events', payload);
+            if (editingEventId) {
+                // Update
+                await api.put(`/events/${editingEventId}`, payload);
+                setSuccessMsg('Event updated successfully');
+            } else {
+                // Create
+                await api.post('/events', payload);
+                setSuccessMsg('Event created successfully');
+            }
 
-            // Success
-            setSuccessMsg('Event created successfully');
             setCreateModalOpen(false);
             setNewEventName('');
             setVenue('');
             setInterval(10);
+            setEditingEventId(null);
             fetchEvents();
 
-            // Clear success msg after 3s
             setTimeout(() => setSuccessMsg(''), 3000);
         } catch (err) {
-            setError(err.response?.data?.error || 'Failed to create event');
+            setError(err.response?.data?.error || 'Failed to save event');
         }
     };
 
@@ -101,7 +137,7 @@ export default function AdminEvents() {
 
     const actionButtons = (
         <button
-            onClick={() => setCreateModalOpen(true)}
+            onClick={openCreateModal}
             style={{
                 background: '#4c1d95',
                 color: 'white',
@@ -150,38 +186,52 @@ export default function AdminEvents() {
                             <tr><td colSpan="6" style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8' }}>No sessions found. Create one to get started.</td></tr>
                         ) : (
                             events.map(event => (
-                                <tr key={event.id} style={{ transition: 'background 0.2s' }}>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', color: '#64748b', fontWeight: '500' }}>#{event.id}</td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', fontWeight: '600', color: '#0f172a' }}>{event.name}</td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', color: '#475569' }}>{event.venue || '-'}</td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', color: '#64748b' }}>{new Date(event.created_at).toLocaleDateString()}</td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9' }}>
+                                <tr key={event.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                                    <td style={{ padding: '1rem', borderBottom: '1px solid #f1f5f9', color: '#64748b', fontWeight: '500', fontSize: '0.85rem' }}>#{event.id}</td>
+                                    <td style={{ padding: '1rem', borderBottom: '1px solid #f1f5f9', fontWeight: '600', color: '#1e293b' }}>{event.name}</td>
+                                    <td style={{ padding: '1rem', borderBottom: '1px solid #f1f5f9', color: '#475569' }}>{event.venue || 'N/A'}</td>
+                                    <td style={{ padding: '1rem', borderBottom: '1px solid #f1f5f9', color: '#64748b', fontSize: '0.9rem' }}>
+                                        {new Date(event.created_at).toLocaleDateString()}
+                                    </td>
+                                    <td style={{ padding: '1rem', borderBottom: '1px solid #f1f5f9' }}>
                                         {getStatusBadge(event.session_state)}
                                     </td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9' }}>
-                                        <Link to={`/admin/events/${event.id}`} target="_blank" style={{ textDecoration: 'none' }}>
-                                            <button style={{
-                                                background: 'white',
-                                                border: '1px solid #e2e8f0',
-                                                borderRadius: '8px',
-                                                padding: '0.5rem 1rem',
-                                                cursor: 'pointer',
-                                                color: '#4c1d95',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '0.5rem',
-                                                fontSize: '0.85rem',
-                                                fontWeight: '600',
-                                                transition: 'all 0.2s'
-                                            }}
-                                                onMouseOver={(e) => { e.currentTarget.style.background = '#f5f3ff'; e.currentTarget.style.borderColor = '#ddd6fe'; }}
-                                                onMouseOut={(e) => { e.currentTarget.style.background = 'white'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                                    <td style={{ padding: '1rem', borderBottom: '1px solid #f1f5f9' }}>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <Link to={`/admin/events/${event.id}`} style={{ textDecoration: 'none' }}>
+                                                <button style={{
+                                                    background: 'white', border: '1px solid #cbd5e1', color: '#475569',
+                                                    padding: '6px 12px', borderRadius: '8px', cursor: 'pointer',
+                                                    fontSize: '0.8rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px'
+                                                }}>
+                                                    <Monitor size={14} /> Manage
+                                                </button>
+                                            </Link>
+
+                                            <button
+                                                onClick={() => handleEdit(event)}
+                                                style={{
+                                                    background: '#e0e7ff', border: 'none', color: '#4338ca',
+                                                    padding: '8px', borderRadius: '8px', cursor: 'pointer',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                                }}
+                                                title="Edit Session"
                                             >
-                                                <Monitor size={16} />
-                                                Launch
-                                                <ExternalLink size={12} style={{ opacity: 0.5 }} />
+                                                <Edit size={16} />
                                             </button>
-                                        </Link>
+
+                                            <button
+                                                onClick={() => handleDelete(event.id)}
+                                                style={{
+                                                    background: '#fee2e2', border: 'none', color: '#b91c1c',
+                                                    padding: '8px', borderRadius: '8px', cursor: 'pointer',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                                }}
+                                                title="Delete Session"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))
@@ -190,77 +240,96 @@ export default function AdminEvents() {
                 </table>
             </div>
 
-            {/* Create Event Modal */}
+            {/* Create/Edit Modal */}
             {createModalOpen && (
                 <div style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    backgroundColor: 'rgba(15, 23, 42, 0.6)', zIndex: 1100,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    backdropFilter: 'blur(4px)'
+                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+                    display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
                 }}>
                     <div style={{
-                        background: 'white',
-                        width: '90%', maxWidth: '500px',
-                        padding: '2rem', borderRadius: '24px',
-                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+                        background: 'white', padding: '2rem', borderRadius: '16px',
+                        width: '100%', maxWidth: '500px',
+                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
                     }}>
-                        <h2 style={{ marginTop: 0, marginBottom: '0.5rem', color: '#0f172a', fontSize: '1.5rem', fontWeight: '700' }}>Create New Session</h2>
-                        <p style={{ margin: '0 0 1.5rem 0', color: '#64748b', fontSize: '0.9rem' }}>Fill in the details to schedule a new attendance event.</p>
+                        <h2 style={{ marginTop: 0, color: '#1e293b', fontSize: '1.5rem' }}>
+                            {editingEventId ? 'Edit Session' : 'Create New Session'}
+                        </h2>
 
-                        {error && <div style={{ padding: '0.75rem', background: '#fee2e2', color: '#991b1b', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.9rem' }}>{error}</div>}
+                        {error && <div style={{ marginBottom: '1rem', color: '#b91c1c', background: '#fee2e2', padding: '0.75rem', borderRadius: '8px' }}>{error}</div>}
 
-                        <form onSubmit={handleCreateEvent}>
-                            <div style={{ marginBottom: '1.25rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Session Name <span style={{ color: '#ef4444' }}>*</span></label>
+                        <form onSubmit={handleSaveEvent}>
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#475569' }}>Event Name</label>
                                 <input
+                                    type="text"
+                                    required
+                                    placeholder="e.g. TCS Pre-placement Talk"
                                     value={newEventName}
                                     onChange={e => setNewEventName(e.target.value)}
-                                    placeholder="e.g. Google Cloud Workshop"
-                                    required
-                                    autoFocus
-                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', outline: 'none' }}
+                                    style={{
+                                        width: '100%', padding: '0.75rem', borderRadius: '8px',
+                                        border: '1px solid #cbd5e1', fontSize: '1rem'
+                                    }}
                                 />
                             </div>
 
-                            <div style={{ marginBottom: '1.25rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>Venue</label>
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#475569' }}>Venue</label>
                                 <input
+                                    type="text"
+                                    placeholder="e.g. Main Auditorium"
                                     value={venue}
                                     onChange={e => setVenue(e.target.value)}
-                                    placeholder="e.g. Auditorium A"
-                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', outline: 'none' }}
+                                    style={{
+                                        width: '100%', padding: '0.75rem', borderRadius: '8px',
+                                        border: '1px solid #cbd5e1', fontSize: '1rem'
+                                    }}
                                 />
                             </div>
 
-                            <div style={{ marginBottom: '2rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>QR Refresh Interval (seconds)</label>
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#475569' }}>
+                                    QR Refresh Interval (seconds)
+                                </label>
                                 <input
                                     type="number"
                                     min="5"
+                                    max="60"
                                     value={interval}
                                     onChange={e => setInterval(e.target.value)}
-                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', outline: 'none' }}
+                                    style={{
+                                        width: '100%', padding: '0.75rem', borderRadius: '8px',
+                                        border: '1px solid #cbd5e1', fontSize: '1rem'
+                                    }}
                                 />
-                                <small style={{ color: '#64748b', display: 'block', marginTop: '0.5rem' }}>Recommended: 10 seconds for security.</small>
+                                <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>Recommended: 10 seconds</p>
                             </div>
 
                             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
                                 <button
                                     type="button"
                                     onClick={() => setCreateModalOpen(false)}
-                                    style={{ background: 'white', border: '1px solid #cbd5e1', padding: '0.75rem 1.5rem', borderRadius: '10px', cursor: 'pointer', color: '#475569', fontWeight: '600' }}
+                                    style={{
+                                        background: 'white', border: '1px solid #cbd5e1', color: '#64748b',
+                                        padding: '0.75rem 1.5rem', borderRadius: '8px', cursor: 'pointer', fontWeight: '600'
+                                    }}
                                 >
                                     Cancel
                                 </button>
-                                <button type="submit" style={{ background: '#4c1d95', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '10px', cursor: 'pointer', color: 'white', fontWeight: '600', boxShadow: '0 4px 6px -1px rgba(76, 29, 149, 0.4)' }}>
-                                    Create Session
+                                <button
+                                    type="submit"
+                                    style={{
+                                        background: '#4c1d95', border: 'none', color: 'white',
+                                        padding: '0.75rem 1.5rem', borderRadius: '8px', cursor: 'pointer', fontWeight: '600'
+                                    }}
+                                >
+                                    {editingEventId ? 'Save Changes' : 'Create Session'}
                                 </button>
                             </div>
                         </form>
                     </div>
                 </div>
             )}
-
         </AdminLayout>
     );
 }

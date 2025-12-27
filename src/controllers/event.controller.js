@@ -271,8 +271,40 @@ const openEntry = async (req, res) => { res.status(410).json({ error: 'Deprecate
 const openExit = async (req, res) => { res.status(410).json({ error: 'Deprecated' }); };
 const closeAttendance = async (req, res) => { res.status(410).json({ error: 'Deprecated' }); };
 
+const update = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, venue, qr_refresh_interval } = req.body;
+
+        const updated = await eventModel.updateEvent(id, { name, venue, qr_refresh_interval });
+        if (!updated) return res.status(404).json({ error: 'Event not found' });
+
+        res.json(updated);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
+const remove = async (req, res) => {
+    try {
+        const { id } = req.params;
+        // Check for dependencies or let DB Cascade handle it 
+        // (DB schema uses ON DELETE CASCADE for sessions/logs usually)
+        const deleted = await eventModel.deleteEvent(id);
+        if (!deleted) return res.status(404).json({ error: 'Event not found' });
+
+        res.json({ message: 'Event deleted successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
 module.exports = {
     create,
+    update,
+    remove,
     listEvents,
     startQr,
     stopQr,
