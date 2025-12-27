@@ -28,16 +28,32 @@ const generateToken = async (eventId, intervalSeconds) => {
 const startRotation = async (eventId, intervalSeconds) => {
     stopRotation(eventId); // Clear existing if any
 
-    console.log(`[QR Service] Starting rotation for event ${eventId} every ${intervalSeconds}s`);
+    // Verify event actually exists before starting rotation
+    try {
+        const { rowCount } = await require('../config/db').query(
+            'SELECT 1 FROM events WHERE id = $1',
+            [eventId]
+        );
 
-    // Generate first token immediately
-    await generateToken(eventId, intervalSeconds);
+        if (rowCount === 0) {
+            console.warn(`[QR Service] ⚠️ Cannot start rotation: Event ${eventId} not found in DB`);
+            return;
+        }
 
-    const intervalId = setInterval(() => {
-        generateToken(eventId, intervalSeconds);
-    }, intervalSeconds * 1000);
+        console.log(`[QR Service] Starting rotation for event ${eventId} every ${intervalSeconds}s`);
 
-    activeIntervals.set(Number(eventId), intervalId);
+        // Generate first token immediately
+        await generateToken(eventId, intervalSeconds);
+
+        const intervalId = setInterval(() => {
+            generateToken(eventId, intervalSeconds);
+        }, intervalSeconds * 1000);
+
+        activeIntervals.set(Number(eventId), intervalId);
+
+    } catch (checkErr) {
+        console.error(`[QR Service] Failed to verify event ${eventId}:`, checkErr.message);
+    }
 };
 
 const stopRotation = (eventId) => {
