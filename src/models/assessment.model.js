@@ -128,6 +128,7 @@ const updateAllocation = async (allocationId, labId, seatNumber) => {
 const findActiveAssessmentForUser = async (userId) => {
     // Find an assessment that is EITHER active manually (status='LIVE') OR scheduled for now
     // AND the user is eligible for it.
+    // FIX: Use LOCALTIMESTAMP to compare with timestamp columns (start_time/end_time)
     const query = `
         SELECT a.* 
         FROM assessments a
@@ -136,9 +137,8 @@ const findActiveAssessmentForUser = async (userId) => {
         AND (
             a.status IN ('LIVE', 'ALLOCATED') 
             OR (
-                a.date = CURRENT_DATE 
-                AND a.start_time <= CURRENT_TIME 
-                AND a.end_time >= CURRENT_TIME
+                a.start_time <= LOCALTIMESTAMP 
+                AND a.end_time >= LOCALTIMESTAMP
             )
         )
         LIMIT 1;

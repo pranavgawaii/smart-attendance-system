@@ -69,8 +69,9 @@ const logAttendance = async (req, res) => {
         }
 
         // 6. DEVICE LOCK CHECK
-        const deviceLock = await attendanceModel.findByDeviceAndEvent(device_hash, event_id);
-        if (deviceLock && deviceLock.user_id !== user_id) {
+        // FIX: Use checkDeviceUsed from model (args: event_id, device_hash) which returns user_id or null
+        const lockedUserId = await attendanceModel.checkDeviceUsed(event_id, device_hash);
+        if (lockedUserId && lockedUserId !== user_id) {
             console.log('[Attendance] Device already used by another user');
             return res.status(403).json({
                 error: 'This device has already been used to mark attendance for this event by another student.'
@@ -79,8 +80,16 @@ const logAttendance = async (req, res) => {
 
         // 7. LOG ATTENDANCE
         console.log('[Attendance] Logging attendance...');
-        const qr_session_id = token ? (await qrModel.getSessionByToken(event_id, token))?.id : null;
-        await attendanceModel.logAttendance(user_id, event_id, qr_session_id, device_hash);
+        // FIX: qrModel functions are now safe
+        const qrSession = token ? await qrModel.getSessionByToken(event_id, token) : null;
+
+        // FIX: logAttendance expects an OBJECT as argument
+        await attendanceModel.logAttendance({
+            user_id,
+            event_id,
+            qr_session_id: qrSession ? qrSession.id : null,
+            device_hash
+        });
 
         // 8. AUDIT LOG
         auditStore.log({
@@ -95,8 +104,8 @@ const logAttendance = async (req, res) => {
         res.status(200).json({ message: 'Attendance marked successfully' });
 
     } catch (error) {
-        console.error('[Attendance] ERROR:', error);
-        console.error('[Attendance] Error stack:', error.stack);
+        // FIX: Production safe error logging (no stack trace leak)
+        console.error('[Attendance] ERROR:', error.message);
         res.status(500).json({ error: 'Internal server error', details: error.message });
     }
 };
