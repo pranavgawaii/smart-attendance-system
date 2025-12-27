@@ -81,9 +81,12 @@ const logAttendance = async (req, res) => {
             console.warn(`   Locked By User: ${lockedUserId}`);
             console.warn(`   Current User: ${user_id}`);
 
-            return res.status(403).json({
-                error: 'This device has already been used to mark attendance for this event by another student.'
-            });
+            // WARN instead of BLOCK (Soft Lock for testing/lab usage)
+            console.warn(`[Attendance] ⚠️ Device Lock bypass allowed. Proceeding...`);
+
+            // return res.status(403).json({
+            //     error: 'This device has already been used to mark attendance for this event by another student.'
+            // });
         }
 
         // 7. LOG ATTENDANCE
