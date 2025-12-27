@@ -21,7 +21,6 @@ async function fixSchema() {
                     WHERE table_name='assessments' AND column_name='date'
                 ) THEN
                     ALTER TABLE assessments ADD COLUMN date DATE;
-                    console.log('Added date column');
                 END IF;
             END $$;
         `);

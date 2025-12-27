@@ -59,11 +59,20 @@ async function createMissingTables() {
         await pool.query(`
             DO $$ 
             BEGIN
+                -- Add academic_year if missing
                 IF NOT EXISTS (
                     SELECT 1 FROM information_schema.columns 
                     WHERE table_name='users' AND column_name='academic_year'
                 ) THEN
                     ALTER TABLE users ADD COLUMN academic_year INTEGER;
+                END IF;
+
+                -- Add user_status if missing
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns 
+                    WHERE table_name='users' AND column_name='user_status'
+                ) THEN
+                    ALTER TABLE users ADD COLUMN user_status VARCHAR(20) DEFAULT 'active';
                 END IF;
             END $$;
         `);
