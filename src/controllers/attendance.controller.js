@@ -91,14 +91,19 @@ const logAttendance = async (req, res) => {
             device_hash
         });
 
-        // 8. AUDIT LOG
-        auditStore.log({
-            action: 'ATTENDANCE_MARKED',
-            user_id,
-            event_id,
-            method: token ? 'QR_SCAN' : 'MANUAL',
-            device_hash
-        });
+        // 8. AUDIT LOG (Non-blocking)
+        try {
+            auditStore.log({
+                action: 'ATTENDANCE_MARKED',
+                user_id,
+                event_id,
+                method: token ? 'QR_SCAN' : 'MANUAL',
+                device_hash
+            });
+        } catch (auditErr) {
+            console.error('[Audit] Failed to log audit:', auditErr);
+            // Do not fail the request
+        }
 
         console.log('[Attendance] Success!');
         res.status(200).json({ message: 'Attendance marked successfully' });

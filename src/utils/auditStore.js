@@ -1,18 +1,31 @@
 const auditAlerts = new Map(); // event_id -> [alerts]
 const MAX_ALERTS = 5;
 
-const addAlert = (eventId, deviceHash) => {
+const addAlert = (eventIdOrObj, deviceHash) => {
+    // Overload support: Handle ({ action, event_id, ... }) or (eventId, deviceHash)
+    let eventId = eventIdOrObj;
+    let type = 'BLOCKED_PROXY';
+    let details = {};
+
+    if (typeof eventIdOrObj === 'object') {
+        eventId = eventIdOrObj.event_id;
+        type = eventIdOrObj.action || 'GENERAL_ALERT';
+        details = eventIdOrObj;
+    }
+
     if (!auditAlerts.has(eventId)) {
         auditAlerts.set(eventId, []);
     }
 
     const alerts = auditAlerts.get(eventId);
-    const partialHash = deviceHash.slice(-4).toUpperCase();
+    const safeHash = (deviceHash || details.device_hash || 'UNKNOWN');
+    const partialHash = safeHash.length > 4 ? safeHash.slice(-4).toUpperCase() : safeHash;
 
     const newAlert = {
-        scan_time: new Date(), // using scan_time to match frontend expectations if any, or just timestamp
+        scan_time: new Date(),
         device_id: partialHash,
-        type: 'BLOCKED_PROXY'
+        type: type,
+        details: details
     };
 
     alerts.unshift(newAlert);
@@ -24,10 +37,11 @@ const addAlert = (eventId, deviceHash) => {
 };
 
 const getAlerts = (eventId) => {
-    return auditAlerts.get(eventId) || [];
+    return auditAlerts.get(Number(eventId)) || []; // Ensure ID type match
 };
 
 module.exports = {
     addAlert,
+    log: addAlert, // Alias for backward compatibility
     getAlerts
 };
