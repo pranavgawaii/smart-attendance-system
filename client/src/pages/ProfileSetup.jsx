@@ -39,7 +39,7 @@ export default function ProfileSetup() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <img src="/mitadtlogo.png" alt="MIT ADT Logo" className="mit-logo" />
                     <div>
-                        <h1 style={{ fontSize: '1.25rem', marginBottom: 0 }}>AttendEase</h1>
+                        <h1 style={{ fontSize: '1.25rem', marginBottom: 0 }}>Placement & Attendance Portal</h1>
                     </div>
                 </div>
             </div>
