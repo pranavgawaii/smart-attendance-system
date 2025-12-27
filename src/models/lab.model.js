@@ -1,13 +1,26 @@
 const db = require('../config/db');
 
 const createLab = async ({ name, total_seats }) => {
+    if (!name || !total_seats) {
+        throw new Error("Missing required fields: name, total_seats");
+    }
+
     const query = `
     INSERT INTO labs (name, total_seats, status)
     VALUES ($1, $2, 'active')
     RETURNING *;
   `;
-    const { rows } = await db.query(query, [name, total_seats]);
-    return rows[0];
+
+    try {
+        const { rows } = await db.query(query, [name, total_seats]);
+        return rows[0];
+    } catch (error) {
+        console.error("[LabModel] Create Error:", error.message);
+        if (error.code === '42703') { // Undefined column
+            throw new Error("Database schema mismatch: 'total_seats' column missing. Please run migration.");
+        }
+        throw error;
+    }
 };
 
 const findAll = async () => {
