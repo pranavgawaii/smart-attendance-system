@@ -3,7 +3,10 @@ const db = require('../config/db');
 const logAttendance = async ({ user_id, event_id, qr_session_id, device_hash, status = 'ENTRY' }) => {
   const query = `
     INSERT INTO attendance_logs (user_id, event_id, qr_session_id, device_hash, status)
-    VALUES ($1, $2, $3, $4, $5)
+    SELECT $1, $2, $3, $4, $5
+    WHERE NOT EXISTS (
+      SELECT 1 FROM attendance_logs WHERE user_id = $1 AND event_id = $2
+    )
     RETURNING *;
   `;
   const values = [user_id, event_id, qr_session_id, device_hash, status];

@@ -92,12 +92,18 @@ const logAttendance = async (req, res) => {
         const qrSession = token ? await qrModel.getSessionByToken(event_id, token) : null;
 
         // FIX: logAttendance expects an OBJECT as argument
-        await attendanceModel.logAttendance({
+        // FIX: logAttendance expects an OBJECT as argument
+        const newLog = await attendanceModel.logAttendance({
             user_id,
             event_id,
             qr_session_id: qrSession ? qrSession.id : null,
             device_hash
         });
+
+        if (!newLog) {
+            console.warn('[Attendance] Race condition detected: duplicate entry blocked.');
+            return res.status(409).json({ error: 'Attendance already marked for this event.' });
+        }
 
         // 8. AUDIT LOG (Non-blocking)
         try {
