@@ -264,6 +264,8 @@ const exportAllocationsPdf = async (req, res) => {
     try {
         const { id } = req.params;
         const { labId } = req.query; // Support filtering
+        console.log(`Export PDF: id=${id}, labId=${labId} (Type: ${typeof labId})`);
+
         const allocations = await assessmentModel.getAllocations(id);
         const assessment = await assessmentModel.findById(id);
 

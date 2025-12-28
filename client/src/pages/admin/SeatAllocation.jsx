@@ -212,7 +212,12 @@ export default function SeatAllocation() {
                                     onClick={() => {
                                         // Find valid labId from one of the allocations in this group
                                         const labId = groupedAllocations[labName][0]?.lab_id;
-                                        if (labId) handleExport('pdf', labId);
+                                        if (labId) {
+                                            handleExport('pdf', labId);
+                                        } else {
+                                            console.error('Lab ID missing for group:', labName, groupedAllocations[labName]);
+                                            alert('Error: Could not identify Lab ID for printing.');
+                                        }
                                     }}
                                     title="Print this lab"
                                     style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '6px', cursor: 'pointer', color: '#475569' }}

@@ -23,16 +23,13 @@ export default function StudentDashboard() {
     const [isScanning, setIsScanning] = useState(false);
     const [scanResult, setScanResult] = useState(null);
     const [isDetected, setIsDetected] = useState(false); // Visual feedback for detection
-    const [showManualFallback, setShowManualFallback] = useState(false); // Manual fallback UI
     const [isSubmitting, setIsSubmitting] = useState(false); // Lock for API calls
     const videoRef = useRef(null);
-    const magnifierRef = useRef(null);
     const requestRef = useRef(null);
     const lastCodeRef = useRef(null);
     const lastTimeRef = useRef(0);
     const stabilityTimerRef = useRef(null);
     const cleanupRef = useRef(null);
-    const fallbackTimerRef = useRef(null);
     const isSubmittingRef = useRef(false); // Sync lock
 
 
@@ -99,17 +96,12 @@ export default function StudentDashboard() {
         setScanResult(null);
         setIsScanning(true);
         setIsDetected(false);
-        setShowManualFallback(false);
+        setIsScanning(true);
+        setIsDetected(false);
         setActiveTab('HOME');
 
         // Cleanup any existing streams
         if (cleanupRef.current) cleanupRef.current();
-
-        // Start Fallback Timer (10s)
-        if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
-        fallbackTimerRef.current = setTimeout(() => {
-            setShowManualFallback(true);
-        }, 10000);
 
         const constraints = {
             video: {
@@ -195,40 +187,75 @@ export default function StudentDashboard() {
                     0, 0, canvas.width, canvas.height // Dest scaled
                 );
 
-                // 1.5 Update Magnifier
-                if (magnifierRef.current) {
-                    const magCtx = magnifierRef.current.getContext('2d');
-                    if (magCtx) {
-                        // Set magnifier resolution to match crop or fixed high res
-                        if (magnifierRef.current.width !== canvas.width) {
-                            magnifierRef.current.width = canvas.width;
-                            magnifierRef.current.height = canvas.height;
-                        }
-                        magCtx.drawImage(canvas, 0, 0);
-                    }
-                }
-
-                // 2. Detect
+                // 2. Detect & Validate
                 let detectedCode = null;
+                let validationStatus = 'NONE'; // NONE, VALID, INVALID
 
                 try {
                     if ("BarcodeDetector" in window) {
                         const barcodeDetector = new window.BarcodeDetector({ formats: ['qr_code'] });
                         const barcodes = await barcodeDetector.detect(canvas);
+
                         if (barcodes.length > 0) {
-                            detectedCode = barcodes[0].rawValue;
+                            const code = barcodes[0];
+                            const corners = code.cornerPoints;
+
+                            // Draw Dynamic Bounding Box
+                            if (corners && corners.length === 4) {
+                                ctx.beginPath();
+                                ctx.moveTo(corners[0].x, corners[0].y);
+                                ctx.lineTo(corners[1].x, corners[1].y);
+                                ctx.lineTo(corners[2].x, corners[2].y);
+                                ctx.lineTo(corners[3].x, corners[3].y);
+                                ctx.closePath();
+
+                                // Validation Logic
+                                const dx = corners[1].x - corners[0].x; // Approx width
+                                const dy = corners[2].y - corners[1].y; // Approx height
+                                const area = Math.abs(dx * dy);
+                                const frameArea = canvas.width * canvas.height;
+                                const sizePercent = (area / frameArea) * 100;
+                                const aspect = Math.abs(dx / dy);
+
+                                const isGoodSize = sizePercent > 10; // >10% coverage
+                                const isGoodAspect = aspect > 0.7 && aspect < 1.4; // Tolerant square
+
+                                if (isGoodSize && isGoodAspect) {
+                                    ctx.strokeStyle = '#4ade80'; // Green = Good
+                                    ctx.lineWidth = 4;
+                                    ctx.stroke();
+
+                                    // Pulse effect for valid code
+                                    ctx.fillStyle = 'rgba(74, 222, 128, 0.2)';
+                                    ctx.fill();
+
+                                    detectedCode = code.rawValue;
+                                    validationStatus = 'VALID';
+                                } else {
+                                    ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)'; // Red = Bad
+                                    ctx.lineWidth = 3;
+                                    ctx.stroke();
+                                    validationStatus = 'INVALID';
+                                    console.log(`[Scan] Ignored: Size=${sizePercent.toFixed(1)}%, Aspect=${aspect.toFixed(2)}`);
+                                }
+                            } else {
+                                // Fallback if no corners (rare)
+                                detectedCode = code.rawValue;
+                                validationStatus = 'VALID';
+                            }
                         }
                     } else if (html5QrCodeFallback && frameCount % 10 === 0) {
-                        // Fallback: Scan every 10th frame to avoid performance overflow
+                        // Fallback logic remains simple (no sophisticated gfx)
                         try {
                             const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
                             if (blob) {
                                 const result = await html5QrCodeFallback.scanFileV2(blob, false);
-                                if (result) detectedCode = result;
+                                if (result) {
+                                    detectedCode = result;
+                                    validationStatus = 'VALID';
+                                }
                             }
-                        } catch (err) {
-                            // Ignored: code not found or scan error
-                        }
+                        } catch (err) { }
                     }
                 } catch (e) {
                     console.error("Detection error:", e);
@@ -236,13 +263,8 @@ export default function StudentDashboard() {
 
 
                 // 3. Stability Check (Debounce)
-                if (detectedCode) {
+                if (validationStatus === 'VALID' && detectedCode) {
                     setIsDetected(true); // Visual feedback
-
-                    // Hide fallback if it was shown
-                    if (showManualFallback) setShowManualFallback(false);
-                    // Clear timer if detecting
-                    if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
 
                     const now = Date.now();
 
@@ -261,7 +283,7 @@ export default function StudentDashboard() {
                         lastTimeRef.current = now;
                     }
                 } else {
-                    // Lost code
+                    // Lost code or Invalid
                     setIsDetected(false);
                     if (Date.now() - lastTimeRef.current > 200) {
                         lastCodeRef.current = null;
@@ -290,8 +312,6 @@ export default function StudentDashboard() {
 
     const stopScanner = () => {
         setIsScanning(false);
-        setShowManualFallback(false);
-        if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current);
 
         if (cleanupRef.current) {
             cleanupRef.current();
@@ -386,7 +406,7 @@ export default function StudentDashboard() {
             setScanResult({ status: 'success', title: 'Marked Present!', message: 'Manual entry successful.' });
             setManualCode('');
             fetchData();
-            setShowManualFallback(false); // Hide manual fallback on success
+            // setShowManualFallback(false); // Hide manual fallback on success (removed)
         } catch (error) {
             const msg = error.response?.data?.error || error.message || 'Entry failed';
             alert(msg);
@@ -454,116 +474,112 @@ export default function StudentDashboard() {
                                 alignItems: 'center',
                                 justifyContent: 'center'
                             }}>
-                                {/* Top Magnifier */}
-                                <canvas
-                                    ref={magnifierRef}
-                                    style={{
-                                        position: 'absolute',
-                                        top: '24px',
-                                        width: '120px',
-                                        height: '120px',
-                                        borderRadius: '24px',
-                                        border: '3px solid rgba(255, 255, 255, 0.9)',
-                                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-                                        background: '#000',
-                                        opacity: isDetected ? 0.3 : 1, // Fade out when detected
-                                        transition: 'opacity 0.3s'
-                                    }}
-                                />
+                                {/* Magnifier Removed */}
 
-                                {/* Scan Box */}
+                                {/* Scan Box Area */}
                                 <div style={{
-                                    width: '65%',
-                                    aspectRatio: '1',
-                                    borderRadius: '24px',
-                                    boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.65)', // The Dark Overlay
-                                    border: `3px solid ${isDetected ? '#4ade80' : 'rgba(255,255,255,0.8)'}`,
-                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    position: 'relative',
-                                    backgroundColor: 'transparent'
+                                    position: 'absolute',
+                                    top: '50%',
+                                    left: '50%',
+                                    transform: 'translate(-50%, -50%)',
+                                    width: '70%',
+                                    maxWidth: '300px',
+                                    aspectRatio: '1/1',
+                                    zIndex: 10
                                 }}>
-                                    {/* Corner Accents (Optional, kept minimal per request) */}
-                                </div>
-
-                                {/* Instructions */}
-                                <div style={{
-                                    marginTop: '2rem',
-                                    textAlign: 'center',
-                                    color: 'white',
-                                    opacity: isDetected ? 0.4 : 1,
-                                    transition: 'opacity 0.3s',
-                                    textShadow: '0 2px 4px rgba(0,0,0,0.8)'
-                                }}>
-                                    <p style={{ margin: 0, fontSize: '1rem', fontWeight: '700', letterSpacing: '0.05em' }}>
-                                        {isDetected ? "HOLD STEADY..." : "ALIGN QR INSIDE BOX"}
-                                    </p>
-                                </div>
-
-                                {/* Manual Fallback UI */}
-                                {showManualFallback && (
+                                    {/* Dark Overlay (Outside Box) */}
                                     <div style={{
                                         position: 'absolute',
-                                        bottom: '20px',
-                                        left: '50%',
-                                        transform: 'translateX(-50%)',
-                                        width: '90%',
-                                        background: 'rgba(255, 255, 255, 0.95)',
-                                        backdropFilter: 'blur(8px)',
-                                        padding: '1rem',
-                                        borderRadius: '16px',
-                                        boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                                        zIndex: 20,
-                                        animation: 'fadeIn 0.5s ease-out'
+                                        inset: -1000,
+                                        background: 'rgba(0, 0, 0, 0.6)',
+                                        mask: 'linear-gradient(black, black) content-box, linear-gradient(black, black)',
+                                        maskComposite: 'exclude',
+                                        WebkitMask: 'linear-gradient(black, black) content-box, linear-gradient(black, black)',
+                                        WebkitMaskComposite: 'xor',
+                                        padding: '1px', // Border width hack for mask
+                                        borderRadius: '24px',
+                                        pointerEvents: 'none'
+                                    }}></div>
+
+                                    {/* Active Border & Laser */}
+                                    <div style={{
+                                        position: 'absolute',
+                                        inset: 0,
+                                        border: isDetected ? '4px solid #4ade80' : '2px solid rgba(255, 255, 255, 0.5)',
+                                        borderRadius: '24px',
+                                        boxShadow: isDetected ? '0 0 20px rgba(74, 222, 128, 0.6)' : 'none',
+                                        transition: 'all 0.3s ease',
+                                        overflow: 'hidden' // Clip laser
                                     }}>
-                                        <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
-                                            <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', fontWeight: '600', color: '#1e293b' }}>
-                                                Having trouble scanning?
-                                            </p>
-                                        </div>
-                                        <form onSubmit={handleManualSubmit} style={{ display: 'flex', gap: '0.5rem' }}>
-                                            <input
-                                                type="text"
-                                                inputMode="numeric"
-                                                pattern="[0-9]*"
-                                                placeholder="Enter 6-digit Code"
-                                                maxLength="6"
-                                                value={manualCode}
-                                                onChange={(e) => setManualCode(e.target.value)}
-                                                style={{
-                                                    flex: 1,
-                                                    padding: '0.6rem',
-                                                    borderRadius: '8px',
-                                                    border: '1px solid #cbd5e1',
-                                                    fontSize: '1rem',
-                                                    outline: 'none',
-                                                    textAlign: 'center',
-                                                    letterSpacing: '0.1em'
-                                                }}
-                                                autoFocus
-                                            />
-                                            <button
-                                                type="submit"
-                                                style={{
-                                                    background: '#4c1d95',
-                                                    color: 'white',
-                                                    border: 'none',
-                                                    padding: '0 1rem',
-                                                    borderRadius: '8px',
-                                                    fontWeight: '700',
-                                                    cursor: 'pointer'
-                                                }}
-                                            >
-                                                GO
-                                            </button>
-                                        </form>
-                                        <style>{`
-                                            @keyframes fadeIn {
-                                                from { opacity: 0; transform: translate(-50%, 10px); }
-                                                to { opacity: 1; transform: translate(-50%, 0); }
-                                            }
-                                        `}</style>
+                                        {/* Corner Markers (Visual flair) */}
+                                        {!isDetected && (
+                                            <>
+                                                <div style={{ position: 'absolute', top: -2, left: -2, width: 20, height: 20, borderTop: '4px solid white', borderLeft: '4px solid white', borderRadius: '6px 0 0 0' }} />
+                                                <div style={{ position: 'absolute', top: -2, right: -2, width: 20, height: 20, borderTop: '4px solid white', borderRight: '4px solid white', borderRadius: '0 6px 0 0' }} />
+                                                <div style={{ position: 'absolute', bottom: -2, left: -2, width: 20, height: 20, borderBottom: '4px solid white', borderLeft: '4px solid white', borderRadius: '0 0 0 6px' }} />
+                                                <div style={{ position: 'absolute', bottom: -2, right: -2, width: 20, height: 20, borderBottom: '4px solid white', borderRight: '4px solid white', borderRadius: '0 0 6px 0' }} />
+                                            </>
+                                        )}
+
+                                        {/* Scanner Laser Animation */}
+                                        {!isDetected && (
+                                            <div style={{
+                                                position: 'absolute',
+                                                top: 0,
+                                                left: 0,
+                                                right: 0,
+                                                height: '2px',
+                                                background: 'linear-gradient(to right, transparent, #3b82f6, transparent)',
+                                                boxShadow: '0 0 10px #3b82f6',
+                                                animation: 'scanLaser 2s linear infinite',
+                                                opacity: 0.8
+                                            }} />
+                                        )}
                                     </div>
-                                )}
+                                </div>
+
+                                {/* Instructions Pill */}
+                                <div style={{
+                                    position: 'absolute',
+                                    bottom: '15%',
+                                    left: '50%',
+                                    transform: 'translateX(-50%)',
+                                    zIndex: 20,
+                                    width: '100%',
+                                    textAlign: 'center',
+                                    pointerEvents: 'none'
+                                }}>
+                                    <div style={{
+                                        display: 'inline-block',
+                                        background: isDetected ? 'rgba(74, 222, 128, 0.2)' : 'rgba(0, 0, 0, 0.6)',
+                                        backdropFilter: 'blur(8px)',
+                                        padding: '0.6rem 1.25rem',
+                                        borderRadius: '30px',
+                                        border: isDetected ? '1px solid rgba(74, 222, 128, 0.4)' : '1px solid rgba(255, 255, 255, 0.1)',
+                                        transition: 'all 0.3s ease'
+                                    }}>
+                                        <p style={{
+                                            margin: 0,
+                                            fontSize: '0.9rem',
+                                            fontWeight: '600',
+                                            letterSpacing: '0.05em',
+                                            color: isDetected ? '#4ade80' : 'white',
+                                            textShadow: '0 1px 2px rgba(0,0,0,0.5)'
+                                        }}>
+                                            {isDetected ? "HOLD STEADY..." : "ALIGN QR INSIDE BOX"}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* CSS for Animations */}
+                                <style>{`
+                                    @keyframes scanLaser {
+                                        0% { top: 0%; opacity: 0; }
+                                        10% { opacity: 1; }
+                                        90% { opacity: 1; }
+                                        100% { top: 100%; opacity: 0; }
+                                    }
+                                `}</style>
                             </div>
                         </div>
                     </div>
