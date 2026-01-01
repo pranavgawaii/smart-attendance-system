@@ -9,6 +9,7 @@ const authRoutes = require('./routes/auth.routes');
 const labRoutes = require('./routes/lab.routes');
 const assessmentRoutes = require('./routes/assessment.routes');
 const studentRoutes = require('./routes/student.routes');
+const placementRoutes = require('./routes/placement.routes');
 const { authenticateToken } = require('./middlewares/auth.middleware');
 
 const app = express();
@@ -27,6 +28,7 @@ app.use('/attendance', authenticateToken, attendanceRoutes);
 app.use('/labs', authenticateToken, labRoutes);
 app.use('/assessments', authenticateToken, assessmentRoutes);
 app.use('/student', authenticateToken, studentRoutes);
+app.use('/placement', authenticateToken, placementRoutes);
 
 // Compatibility: Also mount under /api for robust frontend connecting
 const apiRouter = express.Router();
@@ -38,6 +40,7 @@ apiRouter.use('/attendance', authenticateToken, attendanceRoutes);
 apiRouter.use('/labs', authenticateToken, labRoutes);
 apiRouter.use('/assessments', authenticateToken, assessmentRoutes);
 apiRouter.use('/student', authenticateToken, studentRoutes);
+apiRouter.use('/placement', authenticateToken, placementRoutes);
 app.use('/api', apiRouter);
 
 // Global Error Handler (Ensure JSON response)
