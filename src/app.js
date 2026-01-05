@@ -14,6 +14,8 @@ const { authenticateToken } = require('./middlewares/auth.middleware');
 
 const app = express();
 
+// Force restart for new routes
+
 // Middleware
 app.use(cors());
 app.use(express.json());
