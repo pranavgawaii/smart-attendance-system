@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import AdminLayout from '../../components/admin/AdminLayout';
-import { Calendar, Users, ArrowRight, Award, User, Shield } from 'lucide-react';
+import { Calendar, Users, ArrowRight, Award, User, Shield, Building2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export default function AdminHome() {
@@ -42,6 +42,38 @@ export default function AdminHome() {
                 <div style={{ marginBottom: '1.5rem', fontSize: '1.2rem', fontWeight: '700', color: '#334155' }}>Quick Actions</div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+
+                    {/* Placements Card */}
+                    <Link to="/admin/placements" style={{ textDecoration: 'none' }}>
+                        <div style={{
+                            background: '#f8fafc', padding: '2rem', borderRadius: '20px',
+                            border: '1px solid #e2e8f0', transition: 'all 0.3s ease',
+                            display: 'flex', flexDirection: 'column', gap: '1.5rem',
+                            height: '100%',
+                            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)'
+                        }}
+                            onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-5px)'; e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0,0,0,0.1)'; e.currentTarget.style.borderColor = '#ddd6fe'; }}
+                            onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.02)'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                        >
+                            <div style={{
+                                width: '56px', height: '56px', borderRadius: '14px',
+                                background: '#f5f3ff', color: '#7c3aed',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: '1.5rem'
+                            }}>
+                                <Building2 size={28} />
+                            </div>
+                            <div>
+                                <h3 style={{ margin: '0 0 0.5rem 0', color: '#0f172a', fontSize: '1.25rem', fontWeight: '700' }}>Manage Placements</h3>
+                                <p style={{ margin: 0, fontSize: '0.95rem', color: '#64748b', lineHeight: 1.5 }}>
+                                    Post new job openings, manage applications, and track placement records.
+                                </p>
+                            </div>
+                            <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#7c3aed', fontWeight: '600', fontSize: '0.9rem' }}>
+                                View Placements <ArrowRight size={16} />
+                            </div>
+                        </div>
+                    </Link>
 
                     {/* Sessions Card */}
                     <Link to="/admin/events" style={{ textDecoration: 'none' }}>
