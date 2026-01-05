@@ -57,6 +57,11 @@ app.use((err, req, res, next) => {
     res.status(500).json({ error: 'Internal Server Error', details: err.message });
 });
 
+// Explicitly handle API 404s to avoid returning index.html
+app.use('/api/*', (req, res) => {
+    res.status(404).json({ error: 'API Endpoint Not Found' });
+});
+
 // Serve Frontend in Production
 const path = require('path');
 app.use(express.static(path.join(__dirname, '../client/dist')));
