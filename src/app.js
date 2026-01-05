@@ -26,6 +26,11 @@ app.use((req, res, next) => {
     next();
 });
 
+// Debug Route
+app.get('/api/test', (req, res) => {
+    res.json({ status: 'ok', message: 'API is reachable', time: new Date().toISOString() });
+});
+
 // Routes
 app.use('/health', healthRoutes);
 app.use('/auth', authRoutes);

@@ -23,6 +23,15 @@ export default function AdminPlacements() {
             });
             if (!response.ok) {
                 const errText = await response.text();
+                console.error('Fetch Error:', {
+                    url: response.url,
+                    status: response.status,
+                    text: errText
+                });
+                // Check if HTML
+                if (errText.trim().startsWith('<')) {
+                    throw new Error(`API Error: Endpoint returned HTML instead of JSON. (Status: ${response.status})`);
+                }
                 throw new Error(`Failed: ${response.status} ${response.statusText} - ${errText}`);
             }
             const data = await response.json();
