@@ -204,6 +204,7 @@
 .hero-content {
     max-width: 600px;
     padding-top: 2rem;
+    margin-bottom: 15vh;
 }
 
 .hero-badge-text {

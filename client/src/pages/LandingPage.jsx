@@ -34,7 +34,8 @@ const LandingPage = () => {
                     <img src={mitLogo} alt="MIT ADT University" className="nav-logo" onError={(e) => e.target.style.display = 'none'} />
                     <div className="nav-divider"></div>
                     <div className="nav-text-group">
-                        <span className="nav-uni-name">MIT Art, Design & Technology University</span>
+                        <span className="nav-uni-name desktop-text">MIT Art, Design & Technology University</span>
+
                         <span className="nav-dept-name">Training & Placement Cell</span>
                     </div>
                 </div>
@@ -58,6 +59,7 @@ const LandingPage = () => {
                     loop
                     muted
                     playsInline
+                    preload="auto"
                 >
                     <source src={heroVideo} type="video/mp4" />
                 </video>
