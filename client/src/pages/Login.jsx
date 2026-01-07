@@ -6,6 +6,8 @@ import { jwtDecode } from "jwt-decode";
 
 export default function Login() {
     const [email, setEmail] = useState('');
+    const [username, setUsername] = useState('');
+    const [domain, setDomain] = useState('@gmail.com');
     const [otp, setOtp] = useState('');
     const [step, setStep] = useState(1);
     const [error, setError] = useState('');
@@ -17,8 +19,10 @@ export default function Login() {
         e.preventDefault();
         setIsLoading(true);
         setError('');
+        const fullEmail = `${username}${domain}`;
+        setEmail(fullEmail); // Store for step 2 verification
         try {
-            const res = await api.post('/auth/request-otp', { email });
+            const res = await api.post('/auth/request-otp', { email: fullEmail });
             console.log('OTP Response:', res.data);
 
             // For Dev: pre-fill OTP if returned
@@ -83,16 +87,49 @@ export default function Login() {
                     {step === 1 ? (
                         <form onSubmit={handleRequestOtp}>
                             <div style={{ textAlign: 'left', marginBottom: '1.5rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', color: '#111827', fontWeight: '600', fontSize: '0.95rem' }}>University Email</label>
-                                <input
-                                    className="mit-input"
-                                    type="email"
-                                    required
-                                    placeholder="your.name@mitadt.edu.in"
-                                    value={email}
-                                    onChange={e => setEmail(e.target.value)}
-                                    style={{ height: '52px', fontSize: '1rem', borderColor: '#d1d5db', color: '#1f2937', background: '#ffffff' }}
-                                />
+                                <label style={{ display: 'block', marginBottom: '0.5rem', color: '#111827', fontWeight: '600', fontSize: '0.95rem' }}>University Email / Personal Email</label>
+                                <div style={{ display: 'flex', gap: '0px' }}>
+                                    <input
+                                        className="mit-input"
+                                        type="text"
+                                        required
+                                        placeholder="Username / Enrollment"
+                                        value={username}
+                                        onChange={e => setUsername(e.target.value)}
+                                        style={{
+                                            flex: 1,
+                                            height: '52px',
+                                            fontSize: '1rem',
+                                            borderColor: '#d1d5db',
+                                            color: '#1f2937',
+                                            background: '#ffffff',
+                                            borderTopRightRadius: 0,
+                                            borderBottomRightRadius: 0,
+                                            borderRight: 'none'
+                                        }}
+                                    />
+                                    <select
+                                        value={domain}
+                                        onChange={e => setDomain(e.target.value)}
+                                        style={{
+                                            height: '52px',
+                                            fontSize: '0.95rem',
+                                            borderColor: '#d1d5db',
+                                            color: '#4b5563',
+                                            background: '#f9fafb',
+                                            borderTopLeftRadius: 0,
+                                            borderBottomLeftRadius: 0,
+                                            padding: '0 1rem',
+                                            fontWeight: '500',
+                                            cursor: 'pointer',
+                                            maxWidth: '160px'
+                                        }}
+                                        className="mit-input"
+                                    >
+                                        <option value="@gmail.com">@gmail.com</option>
+                                        <option value="@students.mituniversity.edu.in">@students.mituniversity.edu.in</option>
+                                    </select>
+                                </div>
                             </div>
                             <button type="submit" className="mit-btn" style={{ width: '100%', height: '52px', fontSize: '1.05rem', justifyContent: 'center', fontWeight: 'bold' }} disabled={isLoading}>
                                 {isLoading ? 'Sending Code...' : 'Send Verification Code'}

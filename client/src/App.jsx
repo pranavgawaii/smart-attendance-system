@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Login from './pages/Login';
+import LandingPage from './pages/LandingPage';
 import StudentDashboard from './pages/StudentDashboard';
 import StudentPlacements from './pages/student/StudentPlacements';
 
@@ -38,7 +39,8 @@ function App() {
       <ThemeProvider>
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Login />} />
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<Login />} />
             <Route path="/profile-setup" element={<ProfileSetup />} />
 
             <Route path="/profile" element={
