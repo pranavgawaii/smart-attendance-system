@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
 import AdminLayout from '../../components/admin/AdminLayout';
-import { Search, Filter, Edit2, Ban, CheckCircle, Plus } from 'lucide-react';
+import { Search, Filter, Edit2, Ban, CheckCircle, Plus, Eye } from 'lucide-react';
 import AddStudentModal from '../../components/admin/AddStudentModal';
-
+import { Link } from 'react-router-dom';
 export default function AdminUsers() {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -199,6 +199,13 @@ export default function AdminUsers() {
                                     </td>
                                     <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', textAlign: 'right' }}>
                                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                                            <Link
+                                                to={`/admin/students/${user.id}`}
+                                                style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', color: '#4f46e5', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                title="View Profile"
+                                            >
+                                                <Eye size={16} />
+                                            </Link>
                                             <button
                                                 onClick={() => setEditUser(user)}
                                                 style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}

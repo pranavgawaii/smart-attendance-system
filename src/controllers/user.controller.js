@@ -13,12 +13,15 @@ const createUser = async (req, res) => {
             return res.status(400).json({ error: 'Name, Email, and Enrollment Number are required' });
         }
 
+        // Normalize email
+        const normalizedEmail = email.toLowerCase();
+
         // Check for existing user by email or enrollment
         // We can let the DB unique constraint handle it, but a check is nicer.
         // For now, try insert and catch error.
 
         const newUser = await userModel.createUser({
-            name, email, enrollment_no, branch, role: 'student', academic_year
+            name, email: normalizedEmail, enrollment_no, branch, role: 'student', academic_year
         });
 
         res.json(newUser);
@@ -57,7 +60,7 @@ const createBulkUsers = async (req, res) => {
 
                 await userModel.createUser({
                     name: user.name,
-                    email: user.email,
+                    email: user.email.toLowerCase(),
                     enrollment_no: user.enrollment_no,
                     branch: user.branch || '',
                     role: 'student',
@@ -170,11 +173,25 @@ const adminUpdateUser = async (req, res) => {
     }
 };
 
+
+const getUserById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = await userModel.findById(id);
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        res.json(user);
+    } catch (error) {
+        console.error('Error fetching user by ID:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
 module.exports = {
     updateProfile,
     getProfile,
     getAllUsers,
     adminUpdateUser,
     createUser,
-    createBulkUsers
+    createBulkUsers,
+    getUserById
 };

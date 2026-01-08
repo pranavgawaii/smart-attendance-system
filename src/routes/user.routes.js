@@ -20,6 +20,7 @@ router.put('/profile', authenticateToken, userController.updateProfile);
 // So filtering must happen here.
 
 router.get('/', authenticateToken, userController.getAllUsers);
+router.get('/:id', authenticateToken, userController.getUserById);
 router.put('/:id', authenticateToken, userController.adminUpdateUser);
 
 module.exports = router;
