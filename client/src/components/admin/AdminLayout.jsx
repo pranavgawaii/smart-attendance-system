@@ -28,7 +28,7 @@ export default function AdminLayout({ children, title, actions }) {
         navigate('/login');
     };
 
-    const isSuperAdmin = user?.email === 'pranavvgawai@gmail.com';
+    const isSuperAdmin = user?.role === 'super_admin';
 
     const menuSections = [
         {

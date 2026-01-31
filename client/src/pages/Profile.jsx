@@ -58,7 +58,7 @@ export default function Profile() {
     );
 
     const goBack = () => {
-        if (user.role === 'admin') navigate('/admin');
+        if (user.role === 'admin' || user.role === 'super_admin') navigate('/admin');
         else navigate('/student');
     };
 
@@ -127,7 +127,7 @@ export default function Profile() {
                             />
                         </div>
 
-                        {user.role !== 'admin' && (
+                        {(user.role !== 'admin' && user.role !== 'super_admin') && (
                             <div style={{ marginBottom: '1.5rem' }}>
                                 <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-light)', textTransform: 'uppercase' }}>Enrollment Number</label>
                                 <input

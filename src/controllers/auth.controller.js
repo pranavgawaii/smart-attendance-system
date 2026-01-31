@@ -12,11 +12,13 @@ const requestOtp = async (req, res) => {
         return res.status(400).json({ error: 'Email is required' });
     }
 
+    const isTestUser = email.endsWith('@test.com') || email.endsWith('@test');
+
     try {
         console.log(`[Auth] OTP Request for: ${email}`);
 
         // 1. Bypass for Test Accounts
-        if (email.endsWith('@test.com') || email.endsWith('@test')) {
+        if (isTestUser) {
             console.log(`[Auth] Test account detected. Skipping Supabase request-otp.`);
             return res.status(200).json({
                 message: 'Test mode: Use OTP 123456',
@@ -57,12 +59,14 @@ const verifyOtp = async (req, res) => {
         return res.status(400).json({ error: 'Email and OTP are required' });
     }
 
+    const isTestUser = email.endsWith('@test.com') || email.endsWith('@test');
+
     try {
         let userData = null;
         let sessionToken = null;
 
         // 1. Bypass for Test Accounts
-        if ((email.endsWith('@test.com') || email.endsWith('@test')) && otp === '123456') {
+        if (isTestUser && otp === '123456') {
             console.log(`[Auth] Verifying test account: ${email}`);
 
             // Lookup user directly in user_profiles

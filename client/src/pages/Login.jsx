@@ -12,7 +12,7 @@ export default function Login() {
     const [step, setStep] = useState(1);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const { login } = useAuth();
+    const { login, requestOTP, verifyOTP } = useAuth();
     const navigate = useNavigate();
 
     const handleRequestOtp = async (e) => {
@@ -20,15 +20,14 @@ export default function Login() {
         setIsLoading(true);
         setError('');
         const fullEmail = `${username}${domain}`;
-        setEmail(fullEmail); // Store for step 2 verification
+        setEmail(fullEmail);
         try {
-            const res = await api.post('/auth/request-otp', { email: fullEmail });
+            const res = await requestOTP(fullEmail);
             console.log('OTP Response:', res.data);
 
-            // For Dev: pre-fill OTP if returned
-            if (res.data.dev_otp) {
-                alert(`✅ OTP Generated!\n\nCode: ${res.data.dev_otp}\n\n(In production, this will be emailed to you)`);
-                setOtp(res.data.dev_otp);
+            if (res.data.is_test) {
+                alert(`✅ Test Mode!\n\nEmail: ${fullEmail}\nOTP: 123456`);
+                setOtp('123456');
             }
             setStep(2);
         } catch (err) {
@@ -43,22 +42,20 @@ export default function Login() {
         e.preventDefault();
         setIsLoading(true);
         try {
-            const res = await api.post('/auth/verify-otp', { email, otp });
-            const token = res.data.token;
-            login(token);
+            const data = await verifyOTP(email, otp);
+            const { user: userData } = data;
 
             // Redirect based on role or profile completeness
-            const decoded = jwtDecode(token);
-            if (decoded.role === 'admin') {
+            if (userData.role === 'admin' || userData.role === 'super_admin') {
                 navigate('/admin');
-            } else if (!decoded.enrollment_no) {
+            } else if (!userData.enrollment_no) {
                 navigate('/profile-setup');
             } else {
                 navigate('/student');
             }
         } catch (err) {
             setError(err.response?.data?.error || 'Invalid OTP');
-            setIsLoading(false); // Only stop loading on error, success unmounts
+            setIsLoading(false);
         }
     };
 

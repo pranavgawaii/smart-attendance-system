@@ -1,15 +1,15 @@
-node_modules
+node_modules/
 .env
-.env.local
-.env*.local
-.DS_Store
-
-# Supabase
-.env
-.env.local
-
-# Logs
+.env.*
+dist/
+build/
 *.log
+.DS_Store
+coverage/
+
+# Supabase secrets (redundant but safe)
+.env
+.env.local
 
 # Railway (deprecated)
 railway.json

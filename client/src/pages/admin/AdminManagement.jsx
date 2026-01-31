@@ -10,15 +10,21 @@ export default function AdminManagement() {
     const [newAdmin, setNewAdmin] = useState({ name: '', email: '' });
     const [error, setError] = useState('');
 
+    const { user } = useAuth();
+
     useEffect(() => {
+        if (user?.role !== 'super_admin') {
+            navigate('/admin');
+            return;
+        }
         fetchAdmins();
-    }, []);
+    }, [user, navigate]);
 
     const fetchAdmins = async () => {
         try {
             const res = await api.get('/admin-management');
-            // Filter out Super Admin logic (hide own account from management list)
-            const filteredAdmins = res.data.filter(admin => admin.email !== 'pranavvgawai@gmail.com');
+            // Hide Super Admins (including self) from management list
+            const filteredAdmins = res.data.filter(admin => admin.role !== 'super_admin');
             setAdmins(filteredAdmins);
             setLoading(false);
         } catch (err) {

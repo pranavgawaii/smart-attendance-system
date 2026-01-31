@@ -1,62 +1,95 @@
-const db = require('../config/db');
+const { supabase } = require('../config/db');
 
 const create = async ({ title, description, date, start_time, end_time }) => {
-    const query = `
-    INSERT INTO assessments (title, description, date, start_time, end_time, status)
-    VALUES ($1, $2, $3, $4, $5, 'DRAFT')
-    RETURNING *;
-  `;
-    const { rows } = await db.query(query, [title, description, date, start_time, end_time]);
-    return rows[0];
+    const { data, error } = await supabase
+        .from('assessments')
+        .insert([{
+            title,
+            description,
+            date,
+            start_time,
+            end_time,
+            status: 'DRAFT'
+        }])
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
 };
 
 const findById = async (id) => {
-    const query = 'SELECT * FROM assessments WHERE id = $1';
-    const { rows } = await db.query(query, [id]);
-    return rows[0];
+    const { data, error } = await supabase
+        .from('assessments')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+
+    if (error) throw error;
+    return data;
 };
 
 const findAll = async () => {
-    const query = 'SELECT * FROM assessments ORDER BY date DESC, start_time DESC';
-    const { rows } = await db.query(query);
-    return rows;
+    const { data, error } = await supabase
+        .from('assessments')
+        .select('*')
+        .order('date', { ascending: false })
+        .order('start_time', { ascending: false });
+
+    if (error) throw error;
+    return data;
 };
 
 // --- Eligibility Methods ---
 
 const addEligible = async (assessmentId, userIds) => {
-    // Bulk Insert ignoring duplicates
     if (!userIds || userIds.length === 0) return 0;
 
-    // Use a transaction or simpler, just loop insert or UNNEST if performant enough.
-    // For simplicity with pg library:
-    // Generate VALUES ($1, $2), ($1, $3)...
-    const placeholders = userIds.map((_, i) => `($1, $${i + 2})`).join(', ');
-    const query = `
-        INSERT INTO assessment_eligibility (assessment_id, user_id)
-        VALUES ${placeholders}
-        ON CONFLICT (assessment_id, user_id) DO NOTHING
-        RETURNING user_id;
-    `;
-    const { rowCount } = await db.query(query, [assessmentId, ...userIds]);
-    return rowCount;
+    const inserts = userIds.map(userId => ({
+        assessment_id: assessmentId,
+        user_id: userId
+    }));
+
+    const { data, error } = await supabase
+        .from('assessment_eligibility')
+        .upsert(inserts, { onConflict: 'assessment_id,user_id' })
+        .select('user_id');
+
+    if (error) throw error;
+    return data?.length || 0;
 };
 
 const removeEligible = async (assessmentId, userId) => {
-    const query = 'DELETE FROM assessment_eligibility WHERE assessment_id = $1 AND user_id = $2';
-    await db.query(query, [assessmentId, userId]);
+    const { error } = await supabase
+        .from('assessment_eligibility')
+        .delete()
+        .eq('assessment_id', assessmentId)
+        .eq('user_id', userId);
+
+    if (error) throw error;
 };
 
 const getEligibleCandidates = async (assessmentId) => {
-    const query = `
-        SELECT u.id, u.name, u.email, u.enrollment_no, u.branch, u.academic_year
-        FROM users u
-        JOIN assessment_eligibility ae ON u.id = ae.user_id
-        WHERE ae.assessment_id = $1
-        ORDER BY u.name ASC;
-    `;
-    const { rows } = await db.query(query, [assessmentId]);
-    return rows;
+    const { data, error } = await supabase
+        .from('assessment_eligibility')
+        .select(`
+      user_id,
+      user_profiles (
+        id,
+        name,
+        email,
+        enrollment_no,
+        branch,
+        academic_year
+      )
+    `)
+        .eq('assessment_id', assessmentId);
+
+    if (error) throw error;
+
+    return data.map(item => ({
+        ...item.user_profiles
+    })).sort((a, b) => a.name.localeCompare(b.name));
 };
 
 // --- Allocation Methods ---
@@ -64,117 +97,165 @@ const getEligibleCandidates = async (assessmentId) => {
 const createAllocations = async (allocations) => {
     if (!allocations || allocations.length === 0) return 0;
 
-    // allocations = [{ assessment_id, user_id, lab_id, seat_number }]
-    // Construct bulk insert
-    const values = allocations.map((_, i) => {
-        const offset = i * 4;
-        return `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4})`;
-    }).join(', ');
+    const { data, error } = await supabase
+        .from('assessment_allocations')
+        .upsert(allocations, { onConflict: 'assessment_id,user_id' })
+        .select('id');
 
-    const params = [];
-    allocations.forEach(a => {
-        params.push(a.assessment_id, a.user_id, a.lab_id, a.seat_number);
-    });
+    if (error) throw error;
 
-    const query = `
-        INSERT INTO assessment_allocations (assessment_id, user_id, lab_id, seat_number)
-        VALUES ${values}
-        ON CONFLICT (assessment_id, user_id) DO UPDATE SET
-            lab_id = EXCLUDED.lab_id,
-            seat_number = EXCLUDED.seat_number
-        RETURNING id;
-    `;
+    // Update assessment status to ALLOCATED
+    const { error: updateError } = await supabase
+        .from('assessments')
+        .update({ status: 'ALLOCATED' })
+        .eq('id', allocations[0].assessment_id);
 
-    const { rowCount } = await db.query(query, params);
+    if (updateError) throw updateError;
 
-    // Update status to ALLOCATED
-    if (allocations.length > 0) {
-        await db.query('UPDATE assessments SET status = $1 WHERE id = $2', ['ALLOCATED', allocations[0].assessment_id]);
-    }
-
-    return rowCount;
+    return data?.length || 0;
 };
 
 const getAllocations = async (assessmentId) => {
-    const query = `
-        SELECT aa.id, aa.seat_number, 
-               u.id as user_id, u.name as user_name, u.enrollment_no, 
-               l.id as lab_id, l.name as lab_name
-        FROM assessment_allocations aa
-        JOIN users u ON aa.user_id = u.id
-        JOIN labs l ON aa.lab_id = l.id
-        WHERE aa.assessment_id = $1
-        ORDER BY l.name ASC, aa.seat_number ASC;
-    `;
-    const { rows } = await db.query(query, [assessmentId]);
-    return rows;
+    const { data, error } = await supabase
+        .from('assessment_allocations')
+        .select(`
+      id,
+      seat_number,
+      user_id,
+      lab_id,
+      user_profiles (
+        name,
+        enrollment_no
+      ),
+      labs (
+        name
+      )
+    `)
+        .eq('assessment_id', assessmentId);
+
+    if (error) throw error;
+
+    return data.map(item => ({
+        id: item.id,
+        seat_number: item.seat_number,
+        user_id: item.user_id,
+        user_name: item.user_profiles?.name,
+        enrollment_no: item.user_profiles?.enrollment_no,
+        lab_id: item.lab_id,
+        lab_name: item.labs?.name
+    })).sort((a, b) => {
+        if (a.lab_name !== b.lab_name) return a.lab_name.localeCompare(b.lab_name);
+        return a.seat_number - b.seat_number;
+    });
 };
 
 const deleteAllAllocations = async (assessmentId) => {
-    await db.query('DELETE FROM assessment_allocations WHERE assessment_id = $1', [assessmentId]);
+    const { error } = await supabase
+        .from('assessment_allocations')
+        .delete()
+        .eq('assessment_id', assessmentId);
+
+    if (error) throw error;
 };
 
 const getAllocationById = async (allocationId) => {
-    const query = 'SELECT * FROM assessment_allocations WHERE id = $1';
-    const { rows } = await db.query(query, [allocationId]);
-    return rows[0];
+    const { data, error } = await supabase
+        .from('assessment_allocations')
+        .select('*')
+        .eq('id', allocationId)
+        .maybeSingle();
+
+    if (error) throw error;
+    return data;
 };
 
 const closeAllocationGap = async (assessmentId, labId, removedSeatNumber, excludedAllocationId) => {
-    // Decrement seat numbers for all students in this lab who had a seat > removedSeatNumber
-    const query = `
-        UPDATE assessment_allocations
-        SET seat_number = seat_number - 1
-        WHERE assessment_id = $1
-          AND lab_id = $2
-          AND seat_number > $3
-          AND id != $4
-    `;
-    await db.query(query, [assessmentId, labId, removedSeatNumber, excludedAllocationId]);
+    // Supabase doesn't support complex reactive updates directly in one call like "seat_number = seat_number - 1"
+    // unless we use a RPC. For small groups, we can fetch and update, but RPC is better.
+    // However, I'll try to use the raw query feature if possible, but Supabase JS doesn't have it.
+    // We'll use the 'rpc' method if the user has defined a function, otherwise we'll have to fetch and bulk update.
+    // Sticking to standard client capabilities:
+
+    const { data, error } = await supabase
+        .from('assessment_allocations')
+        .select('id, seat_number')
+        .eq('assessment_id', assessmentId)
+        .eq('lab_id', labId)
+        .gt('seat_number', removedSeatNumber)
+        .neq('id', excludedAllocationId);
+
+    if (error) throw error;
+
+    if (data?.length > 0) {
+        const updates = data.map(item => ({
+            id: item.id,
+            seat_number: item.seat_number - 1,
+            // We must include all required fields for upsert to work as an update if using onConflict
+            // or just loop. Since it's infrequent, loop is safer for a model.
+        }));
+
+        for (const update of updates) {
+            await supabase
+                .from('assessment_allocations')
+                .update({ seat_number: update.seat_number })
+                .eq('id', update.id);
+        }
+    }
 };
 
 const updateAllocation = async (allocationId, labId, seatNumber) => {
-    const query = `
-        UPDATE assessment_allocations
-        SET lab_id = $1, seat_number = $2
-        WHERE id = $3
-        RETURNING *;
-    `;
-    const { rows } = await db.query(query, [labId, seatNumber, allocationId]);
-    return rows[0];
+    const { data, error } = await supabase
+        .from('assessment_allocations')
+        .update({ lab_id: labId, seat_number: seatNumber })
+        .eq('id', allocationId)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data;
 };
 
 const findActiveAssessmentForUser = async (userId) => {
-    // Find an assessment that is EITHER active manually (status='LIVE') OR scheduled for now
-    // AND the user is eligible for it.
-    // FIX: Use LOCALTIMESTAMP to compare with timestamp columns (start_time/end_time)
-    const query = `
-        SELECT a.* 
-        FROM assessments a
-        JOIN assessment_eligibility ae ON a.id = ae.assessment_id
-        WHERE ae.user_id = $1
-        AND (
-            a.status IN ('LIVE', 'ALLOCATED') 
-            OR (
-                a.start_time <= LOCALTIMESTAMP 
-                AND a.end_time >= LOCALTIMESTAMP
-            )
-        )
-        LIMIT 1;
-    `;
-    const { rows } = await db.query(query, [userId]);
-    return rows[0];
+    const now = new Date().toISOString();
+
+    const { data, error } = await supabase
+        .from('assessments')
+        .select(`
+      *,
+      assessment_eligibility!inner(user_id)
+    `)
+        .eq('assessment_eligibility.user_id', userId)
+        .or(`status.in.(LIVE,ALLOCATED),and(start_time.lte.${now},end_time.gte.${now})`)
+        .limit(1)
+        .maybeSingle();
+
+    if (error) throw error;
+
+    // Clean up the inner join artifact from the object
+    if (data) delete data.assessment_eligibility;
+
+    return data;
 };
 
 const findAllocationForUser = async (assessmentId, userId) => {
-    const query = `
-        SELECT aa.seat_number, l.name as lab_name
-        FROM assessment_allocations aa
-        JOIN labs l ON aa.lab_id = l.id
-        WHERE aa.assessment_id = $1 AND aa.user_id = $2;
-    `;
-    const { rows } = await db.query(query, [assessmentId, userId]);
-    return rows[0];
+    const { data, error } = await supabase
+        .from('assessment_allocations')
+        .select(`
+      seat_number,
+      labs (
+        name
+      )
+    `)
+        .eq('assessment_id', assessmentId)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    if (error) throw error;
+
+    return data ? {
+        seat_number: data.seat_number,
+        lab_name: data.labs?.name
+    } : null;
 };
 
 module.exports = {

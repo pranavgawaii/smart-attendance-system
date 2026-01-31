@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const qrModel = require('../models/qr.model');
+const eventModel = require('../models/event.model');
 
 // Map to store active rotation intervals: eventId -> intervalId
 const activeIntervals = new Map();
@@ -28,20 +29,17 @@ const generateToken = async (eventId, intervalSeconds) => {
 const startRotation = async (eventId, intervalSeconds) => {
     stopRotation(eventId); // Clear existing if any
 
-    // Verify event actually exists before starting rotation
+    // Verify event actually exists before starting rotation using model (Supabase)
     try {
-        const { rows } = await require('../config/db').query(
-            'SELECT session_state FROM events WHERE id = $1',
-            [eventId]
-        );
+        const event = await eventModel.findById(eventId);
 
-        if (rows.length === 0) {
+        if (!event) {
             console.warn(`[QR Service] ⚠️ Cannot start rotation: Event ${eventId} not found`);
             return;
         }
 
-        if (rows[0].session_state !== 'ACTIVE') {
-            console.warn(`[QR Service] ⚠️ Cannot start rotation: Event ${eventId} is ${rows[0].session_state}`);
+        if (event.session_state !== 'ACTIVE') {
+            console.warn(`[QR Service] ⚠️ Cannot start rotation: Event ${eventId} is ${event.session_state}`);
             return;
         }
 

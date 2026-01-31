@@ -1,24 +1,15 @@
 const userModel = require('../models/user.model');
-const db = require('../config/db');
-
 const jwt = require('jsonwebtoken');
-
 
 const createUser = async (req, res) => {
     try {
         const { name, email, enrollment_no, branch, academic_year } = req.body;
 
-        // Basic Validation
         if (!name || !email || !enrollment_no) {
             return res.status(400).json({ error: 'Name, Email, and Enrollment Number are required' });
         }
 
-        // Normalize email
         const normalizedEmail = email.toLowerCase();
-
-        // Check for existing user by email or enrollment
-        // We can let the DB unique constraint handle it, but a check is nicer.
-        // For now, try insert and catch error.
 
         const newUser = await userModel.createUser({
             name, email: normalizedEmail, enrollment_no, branch, role: 'student', academic_year
@@ -28,7 +19,8 @@ const createUser = async (req, res) => {
 
     } catch (error) {
         console.error('Create User Error:', error);
-        if (error.code === '23505') { // Postgres Unique Violation
+        // Supabase unique violation usually shows up as an error code or message
+        if (error.code === '23505' || (error.message && error.message.includes('unique'))) {
             return res.status(409).json({ error: 'User with this Email or Enrollment already exists' });
         }
         res.status(500).json({ error: 'Failed to create user' });
@@ -37,7 +29,7 @@ const createUser = async (req, res) => {
 
 const createBulkUsers = async (req, res) => {
     try {
-        const { users } = req.body; // Expect array of user objects
+        const { users } = req.body;
         if (!Array.isArray(users) || users.length === 0) {
             return res.status(400).json({ error: 'Invalid user list provided' });
         }
@@ -48,10 +40,8 @@ const createBulkUsers = async (req, res) => {
             errors: []
         };
 
-        // TODO: Use a bulk insert query for performance, but loop is safer for individual errors for now.
         for (const user of users) {
             try {
-                // Ensure required fields
                 if (!user.name || !user.email || !user.enrollment_no) {
                     results.failed++;
                     results.errors.push({ enrollment: user.enrollment_no, error: 'Missing Required Fields' });
@@ -70,7 +60,7 @@ const createBulkUsers = async (req, res) => {
             } catch (err) {
                 console.error('Bulk Insert Error for', user.email, err.message);
                 results.failed++;
-                results.errors.push({ enrollment: user.enrollment_no, error: err.code === '23505' ? 'Duplicate' : err.message });
+                results.errors.push({ enrollment: user.enrollment_no, error: (err.code === '23505' || err.message?.includes('unique')) ? 'Duplicate' : err.message });
             }
         }
 
@@ -87,48 +77,43 @@ const updateProfile = async (req, res) => {
         const userId = req.user.id;
         const { name, enrollment_no } = req.body;
 
-        // Validation: Enrollment is required only for students
         if (!name) {
             return res.status(400).json({ error: 'Name is required' });
         }
-        if (req.user.role !== 'admin' && !enrollment_no) {
+        if (req.user.role !== 'admin' && req.user.role !== 'super_admin' && !enrollment_no) {
             return res.status(400).json({ error: 'Enrollment Number is required' });
         }
 
-        // Check enrollment conflict (if changed)
-        // Simple check: is enr used by another user?
-        const conflictQuery = 'SELECT id FROM users WHERE enrollment_no = $1 AND id != $2';
-        const conflict = await db.query(conflictQuery, [enrollment_no, userId]);
-        if (conflict.rows.length > 0) {
-            return res.status(409).json({ error: 'Enrollment number already in use' });
+        // Check enrollment conflict
+        if (enrollment_no) {
+            const conflict = await userModel.findByEnrollment(enrollment_no);
+            if (conflict && conflict.id !== userId) {
+                return res.status(409).json({ error: 'Enrollment number already in use' });
+            }
         }
 
-        const updateQuery = `
-            UPDATE users 
-            SET name = $1, enrollment_no = $2
-            WHERE id = $3
-            RETURNING id, name, email, enrollment_no, role
-        `;
-        const { rows } = await db.query(updateQuery, [name, enrollment_no, userId]);
-        const updatedUser = rows[0];
+        const updatedUser = await userModel.updateUser(userId, { name, enrollment_no });
 
-        // Generate NEW Token with updated info
-        const token = jwt.sign(
-            {
-                id: updatedUser.id,
-                email: updatedUser.email,
-                role: updatedUser.role,
-                name: updatedUser.name,
-                enrollment_no: updatedUser.enrollment_no
-            },
-            process.env.JWT_SECRET,
-            { expiresIn: '24h' }
-        );
+        // Generate NEW Token with updated info (only if legacy test user)
+        let token = null;
+        if (!req.user.supabase_id) { // Simple check if it's not a native Supabase user
+            token = jwt.sign(
+                {
+                    id: updatedUser.id,
+                    email: updatedUser.email,
+                    role: updatedUser.role,
+                    name: updatedUser.name,
+                    enrollment_no: updatedUser.enrollment_no
+                },
+                process.env.JWT_SECRET || 'super-secret-jwt-key',
+                { expiresIn: '24h' }
+            );
+        }
 
         res.json({ message: 'Profile updated successfully', user: updatedUser, token });
 
     } catch (error) {
-        console.error(error);
+        console.error('Update Profile Error:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
@@ -139,7 +124,6 @@ const getProfile = async (req, res) => {
         const user = await userModel.findById(userId);
         if (!user) return res.status(404).json({ error: 'User not found' });
 
-        // Don't return sensitive info if any
         res.json(user);
     } catch (error) {
         res.status(500).json({ error: 'Internal Server Error' });
@@ -148,23 +132,11 @@ const getProfile = async (req, res) => {
 
 const getAllUsers = async (req, res) => {
     try {
-        // Try DB first (in case it comes back)
-        // const users = await userModel.findAll();
-        // res.json(users);
-        throw new Error("DB_OFFLINE");
+        const users = await userModel.findAll();
+        res.json(users);
     } catch (error) {
-        console.log('Error fetching users (Serving Mock Data):', error.message);
-
-        // Mock Data as requested "keep that similar"
-        const mockUsers = [
-            { id: 101, name: 'Aarav Patel', email: 'aarav.patel@student.com', enrollment_no: 'STU001', branch: 'CSE', role: 'student', user_status: 'active', academic_year: '2025-2026' },
-            { id: 102, name: 'Ishita Sharma', email: 'ishita.sharma@student.com', enrollment_no: 'STU002', branch: 'IT', role: 'student', user_status: 'active', academic_year: '2024-2025' },
-            { id: 103, name: 'Rohan Gupta', email: 'rohan.gupta@student.com', enrollment_no: 'STU003', branch: 'ECE', role: 'student', user_status: 'active', academic_year: '2025-2026' },
-            { id: 104, name: 'Sneha Reddy', email: 'sneha.reddy@student.com', enrollment_no: 'STU004', branch: 'CSE', role: 'student', user_status: 'disabled', academic_year: '2023-2024' },
-            { id: 105, name: 'Vikram Singh', email: 'vikram.singh@student.com', enrollment_no: 'STU005', branch: 'MECH', role: 'student', user_status: 'active', academic_year: '2025-2026' },
-            { id: 1, name: 'Pranav Gawai', email: 'pranavgawai1518@gmail.com', enrollment_no: 'ADM001', branch: 'ADMIN', role: 'admin', user_status: 'active', academic_year: 'N/A' },
-        ];
-        res.json(mockUsers);
+        console.error('Error fetching users:', error);
+        res.status(500).json({ error: 'Failed to fetch users' });
     }
 };
 
@@ -172,8 +144,6 @@ const adminUpdateUser = async (req, res) => {
     try {
         const { id } = req.params;
         const { name, enrollment_no, branch, academic_year, user_status } = req.body;
-
-        // Validation if needed
 
         const updatedUser = await userModel.adminUpdate(id, { name, enrollment_no, branch, academic_year, user_status });
         if (!updatedUser) return res.status(404).json({ error: 'User not found' });
@@ -184,7 +154,6 @@ const adminUpdateUser = async (req, res) => {
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
-
 
 const getUserById = async (req, res) => {
     try {

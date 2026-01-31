@@ -11,6 +11,10 @@ export default function ProtectedRoute({ children, role }) {
     }
 
     if (role && user.role !== role) {
+        // Allow super_admin to access anything an admin can
+        if (role === 'admin' && user.role === 'super_admin') {
+            return children;
+        }
         return <div>Unauthorized. Required role: {role}</div>;
     }
 
