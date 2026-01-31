@@ -1,161 +1,149 @@
-const bcrypt = require('bcrypt');
+const { supabase } = require('../config/db');
 const jwt = require('jsonwebtoken');
-const otpModel = require('../models/otp.model');
-const db = require('../config/db'); // Direct db access for user lookup, or better create userModel.findByEmail
-require('dotenv').config();
 
-const nodemailer = require('nodemailer');
-
-const REQUEST_OTP_EXPIRY_MINUTES = 5;
-const RATE_LIMIT_MINUTES = 1;
-
-// Email Transporter (Use Environment Variables in real app)
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER, // e.g. 'your-email@gmail.com'
-        pass: process.env.EMAIL_PASS  // e.g. 'your-app-password'
-    }
-});
-
+/**
+ * requestOtp (POST /api/auth/request-otp)
+ * Sends an OTP to the user's email via Supabase Auth
+ */
 const requestOtp = async (req, res) => {
-    const email = req.body.email?.toLowerCase(); // Change 1: Normalize Email
-    console.log("Received OTP Request for:", email); // Debug Log
-    if (!email) return res.status(400).json({ error: 'Email is required' });
+    const email = req.body.email?.toLowerCase();
+
+    if (!email) {
+        return res.status(400).json({ error: 'Email is required' });
+    }
 
     try {
-        // 1. Rate Limiting Check
-        const lastOtp = await otpModel.getLatestOtp(email);
-        if (lastOtp) {
-            const timeDiff = (Date.now() - new Date(lastOtp.created_at).getTime()) / 60000;
-            if (timeDiff < RATE_LIMIT_MINUTES) {
-                return res.status(429).json({ error: `Please wait ${RATE_LIMIT_MINUTES} minute(s) before requesting again.` });
-            }
-        }
+        console.log(`[Auth] OTP Request for: ${email}`);
 
-        // 2. Generate OTP
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const otpHash = await bcrypt.hash(otp, 10);
-        const expiresAt = new Date(Date.now() + REQUEST_OTP_EXPIRY_MINUTES * 60000);
-
-        // Store both hash AND plain OTP for dev mode
-        await otpModel.saveOtp(email, otpHash, expiresAt, otp);
-
-        // 3. Send Email
-        const mailOptions = {
-            from: process.env.EMAIL_USER || '"Smart Attendance" <no-reply@example.com>',
-            to: email,
-            subject: 'Your Attendance Login OTP',
-            text: `Your OTP is: ${otp}. It expires in ${REQUEST_OTP_EXPIRY_MINUTES} minutes.`,
-            html: `<div style="font-family: Arial, sans-serif; padding: 20px;">
-                    <h2>Smart Attendance Login</h2>
-                    <p>Your OTP is:</p>
-                    <h1 style="color: #4CAF50; letter-spacing: 5px;">${otp}</h1>
-                    <p>This code expires in <b>${REQUEST_OTP_EXPIRY_MINUTES} minutes</b>.</p>
-                   </div>`
-        };
-
-        console.log(`[DEBUG] Generated OTP for ${email}: ${otp}`); // ALWAYS LOG FOR DEBUGGING
-
-        // NON-BLOCKING: Send response immediately so UI doesn't hang
-        res.status(200).json({ message: 'OTP generated. Check email or debug log.', dev_otp: otp });
-
-        // Attempt to send email in background (Fire & Forget)
-        if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-            transporter.sendMail(mailOptions).catch(err => {
-                console.error("[Background] Failed to send email:", err.message);
+        // 1. Bypass for Test Accounts
+        if (email.endsWith('@test.com') || email.endsWith('@test')) {
+            console.log(`[Auth] Test account detected. Skipping Supabase request-otp.`);
+            return res.status(200).json({
+                message: 'Test mode: Use OTP 123456',
+                is_test: true
             });
-        } else {
-            console.log(`[DEV MODE] OTP generated for ${email}`);
         }
 
-    } catch (error) {
-        console.error("OTP Error:", error);
-        // FIX: Return actual error details to help debug DB issues (e.g., missing table)
-        res.status(500).json({ error: error.message || 'Failed to generate OTP.' });
+        // 2. Real Account: Use Supabase Magic Link / OTP
+        const { error } = await supabase.auth.signInWithOtp({
+            email: email,
+            options: {
+                shouldCreateUser: false // Don't auto-create users on login
+            }
+        });
+
+        if (error) {
+            console.error('[Auth] Supabase signInWithOtp error:', error.message);
+            return res.status(error.status || 500).json({ error: error.message });
+        }
+
+        res.status(200).json({ message: 'OTP sent to your email.' });
+
+    } catch (err) {
+        console.error('[Auth] Unexpected error in requestOtp:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 };
 
+/**
+ * verifyOtp (POST /api/auth/verify-otp)
+ * Verifies the OTP and returns a session/token
+ */
 const verifyOtp = async (req, res) => {
-    const email = req.body.email?.toLowerCase(); // Change 1: Normalize Email
+    const email = req.body.email?.toLowerCase();
     const { otp } = req.body;
 
-    console.log('[OTP Verify] Request:', { email, otp: otp ? '***' + otp.slice(-2) : 'missing' });
-
-    if (!email || !otp) return res.status(400).json({ error: 'Email and OTP are required' });
+    if (!email || !otp) {
+        return res.status(400).json({ error: 'Email and OTP are required' });
+    }
 
     try {
-        // MAGIC OTP for Test Accounts
-        let isValid = false;
-        if (email.endsWith('@test.com') && otp === '123456') {
-            console.log('[OTP Verify] Using magic OTP for test account');
-            isValid = true;
+        let userData = null;
+        let sessionToken = null;
+
+        // 1. Bypass for Test Accounts
+        if ((email.endsWith('@test.com') || email.endsWith('@test')) && otp === '123456') {
+            console.log(`[Auth] Verifying test account: ${email}`);
+
+            // Lookup user directly in user_profiles
+            const { data: profile, error: profileError } = await supabase
+                .from('user_profiles')
+                .select('*')
+                .eq('email', email)
+                .single();
+
+            if (profileError || !profile) {
+                console.error('[Auth] Test user profile not found:', profileError?.message);
+                return res.status(403).json({ error: 'Test account not found in system.' });
+            }
+
+            userData = profile;
+            // Generate a manual JWT since we don't have a Supabase session
+            sessionToken = jwt.sign(
+                { id: profile.id, email: profile.email, role: profile.role },
+                process.env.JWT_SECRET || 'super-secret-jwt-key',
+                { expiresIn: '24h' }
+            );
         } else {
-            const record = await otpModel.getLatestOtp(email);
-            console.log('[OTP Verify] DB Record:', record ? { email: record.email, has_dev_otp: !!record.dev_otp, expires_at: record.expires_at } : 'NOT FOUND');
+            // 2. Real Account: Verify with Supabase
+            const { data, error } = await supabase.auth.verifyOtp({
+                email,
+                token: otp,
+                type: 'email'
+            });
 
-            if (!record) return res.status(400).json({ error: 'Invalid or expired OTP' });
-
-            // Try plain OTP first (dev mode), then hash comparison
-            if (record.dev_otp && record.dev_otp === otp) {
-                console.log('[OTP Verify] Matched using dev_otp (plain text)');
-                isValid = true;
-            } else {
-                isValid = await bcrypt.compare(otp, record.otp_hash);
-                console.log('[OTP Verify] Hash comparison result:', isValid);
+            if (error) {
+                console.error('[Auth] Supabase verifyOtp error:', error.message);
+                return res.status(error.status || 400).json({ error: error.message });
             }
 
-            // Clean up used OTPs
-            if (isValid) {
-                await otpModel.deleteOtps(email);
+            const supabaseUser = data.user;
+            sessionToken = data.session?.access_token;
+
+            // 3. Fetch role and bio from user_profiles
+            const { data: profile, error: profileError } = await supabase
+                .from('user_profiles')
+                .select('*')
+                .eq('id', supabaseUser.id)
+                .single();
+
+            if (profileError || !profile) {
+                console.error('[Auth] User profile lookup failed:', profileError?.message);
+                return res.status(403).json({ error: 'User valid, but no profile found. Contact admin.' });
             }
+
+            userData = profile;
         }
 
-        if (!isValid) return res.status(400).json({ error: 'Invalid OTP' });
+        console.log(`[Auth] Login successful for: ${email} (${userData.role})`);
+        res.status(200).json({
+            message: 'Login successful',
+            token: sessionToken,
+            user: userData
+        });
 
-        // Find User - NO AUTO-CREATION
-        console.log('[OTP Verify] Finding user for email:', email);
-        let userQuery = 'SELECT * FROM users WHERE email = $1';
-        let { rows } = await db.query(userQuery, [email]);
-        let user = rows[0];
-        console.log('[OTP Verify] User found:', !!user);
+    } catch (err) {
+        console.error('[Auth] Unexpected error in verifyOtp:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
 
-        if (!user) {
-            // User doesn't exist - reject login
-            console.log('[OTP Verify] User not found in database');
-            return res.status(403).json({ error: 'Access denied. Please contact admin to create your account.' });
-        }
-
-        // CHECK STATUS FOR EXISTING USERS
-        if (user.user_status === 'disabled') {
-            console.log('[OTP Verify] User is disabled');
-            return res.status(403).json({ error: 'Account disabled. Contact Admin.' });
-        }
-
-        // Issue JWT with user profile data
-        console.log('[OTP Verify] Issuing JWT for user:', user.id);
-        const token = jwt.sign(
-            {
-                id: user.id,
-                email: user.email,
-                role: user.role,
-                name: user.name,
-                enrollment_no: user.enrollment_no
-            },
-            process.env.JWT_SECRET,
-            { expiresIn: '24h' }
-        );
-
-        console.log('[OTP Verify] Login successful');
-        res.status(200).json({ message: 'Login successful', token, user });
-    } catch (error) {
-        console.error('[OTP Verify] Error:', error);
-        console.error('[OTP Verify] Error stack:', error.stack);
-        res.status(500).json({ error: 'Internal Server Error' });
+/**
+ * logout (POST /api/auth/logout)
+ */
+const logout = async (req, res) => {
+    try {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+        res.status(200).json({ message: 'Logged out successfully' });
+    } catch (err) {
+        console.error('[Auth] Logout error:', err.message);
+        res.status(500).json({ error: 'Failed to logout' });
     }
 };
 
 module.exports = {
     requestOtp,
     verifyOtp,
+    logout
 };

@@ -64,12 +64,13 @@ app.get('/api/migrate/emergency', async (req, res) => {
 
 const server = app.listen(PORT, async () => {
     console.log(`Server running on port ${PORT}`);
+    console.log("⚠️  SERVER RUNNING IN OFFLINE / MOCK MODE (Database Disconnected) ⚠️");
 
     // Clean up any orphaned sessions from before (e.g. if DB constraint failed)
-    await qrModel.cleanupOrphanedSessions();
+    // await qrModel.cleanupOrphanedSessions();
 
     // Resume active QR sessions
-    await resumeActiveSessions();
+    // await resumeActiveSessions();
 });
 
 // Graceful shutdown for Railway deployments
