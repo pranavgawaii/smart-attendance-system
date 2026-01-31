@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Smartphone, ShieldCheck, BarChart3, MapPin, Menu, X, ChevronDown, Mail } from 'lucide-react';
+import { ArrowRight, Smartphone, ShieldCheck, BarChart3, MapPin, Menu, X, ChevronDown, Mail, Linkedin, Twitter, Globe, Instagram, Facebook } from 'lucide-react';
 import './LandingPage.css';
 import mitLogo from '../assets/mitadtlogo.png';
 import heroVideo from '../assets/itbuilding.mp4';
@@ -306,46 +306,69 @@ const LandingPage = () => {
                 </div>
             </section>
 
-            {/* Footer */}
-            <footer className="landing-footer">
-                <div className="footer-content">
-                    <div className="footer-col">
-                        <h4>Platform</h4>
-                        <Link to="/login">Student Portal</Link>
-                        <Link to="/login">Faculty Login</Link>
-                        <Link to="/login">Admin Dashboard</Link>
-                        <a href="#">Check Status</a>
-                    </div>
-                    <div className="footer-col">
-                        <h4>Resources</h4>
-                        <a href="#">Academic Calendar</a>
-                        <a href="#">Library Access</a>
-                        <a href="#">Placement Cell</a>
-                        <a href="#">Research Papers</a>
-                    </div>
-                    <div className="footer-col">
-                        <h4>Contact</h4>
-                        <a href="#">comp.eng@mituniversity.edu.in</a>
-                        <a href="#">+91 123 456 7890</a>
-                        <a href="#">Pune, Maharashtra</a>
-                        <div className="social-links-row">
-                            <a href="#">Twitter</a>
-                            <a href="#">LinkedIn</a>
-                            <a href="#">Instagram</a>
+            {/* Premium Footer Redesign */}
+            <footer className="landing-footer-premium">
+                <div className="footer-container-premium">
+                    <div className="footer-brand-col">
+                        <div className="footer-logo-lockup">
+                            <img src={mitLogo} alt="MIT ADT Logo" className="footer-logo-img" onError={(e) => e.target.style.display = 'none'} />
+                            <div>
+                                <h4 className="footer-brand-name">MIT ADT University</h4>
+                                <p className="footer-brand-sub">Training & Placement Cell</p>
+                            </div>
+                        </div>
+                        <p className="footer-mission">
+                            Empowering the next generation of engineers and innovators through world-class placement opportunities.
+                        </p>
+                        <div className="footer-socials">
+                            <a href="https://www.linkedin.com/school/mit-adtuniversity/" target="_blank" rel="noopener noreferrer" className="social-icon-box" aria-label="LinkedIn"><Linkedin size={18} /></a>
+                            <a href="https://x.com/mitadtpune" target="_blank" rel="noopener noreferrer" className="social-icon-box" aria-label="Twitter"><Twitter size={18} /></a>
+                            <a href="https://www.instagram.com/mitadtuniversity/" target="_blank" rel="noopener noreferrer" className="social-icon-box" aria-label="Instagram"><Instagram size={18} /></a>
+                            <a href="https://mituniversity.ac.in/" target="_blank" rel="noopener noreferrer" className="social-icon-box" aria-label="Website"><Globe size={18} /></a>
                         </div>
                     </div>
-                    <div className="footer-col newsletter-col">
-                        <h4>Stay Updated</h4>
-                        <p>Get the latest placement news and campus updates.</p>
-                        <div className="footer-input-group">
-                            <input type="email" placeholder="Enter your email" />
-                            <button>→</button>
+
+                    <div className="footer-links-grid">
+                        <div className="footer-link-col">
+                            <h5>Platform</h5>
+                            <Link to="/login">Student Portal</Link>
+                            <Link to="/login">Faculty Login</Link>
+                            <Link to="/login">Admin Dashboard</Link>
+                            <a href="#features">Features</a>
+                        </div>
+                        <div className="footer-link-col">
+                            <h5>Resources</h5>
+                            <a href="#">Placement Stats</a>
+                            <a href="#">Recruiters</a>
+                            <a href="#">Success Stories</a>
+                            <a href="#">Support Center</a>
+                        </div>
+                        <div className="footer-link-col">
+                            <h5>Contact</h5>
+                            <a href="mailto:placements@mituniversity.edu.in">placements@mituniversity.edu.in</a>
+                            <a href="tel:+919595124234">+91-9595124234</a>
+                            <span className="address-span">Pune, Maharashtra, India</span>
                         </div>
                     </div>
                 </div>
-                <div className="footer-bottom">
-                    <p style={{ marginBottom: '0.5rem' }}>Design & Developed by pranavgawai</p>
-                    <p>&copy; 2026 MIT Art, Design & Technology University. All rights reserved.</p>
+
+                <div className="footer-bottom-premium">
+                    <div className="footer-bottom-content">
+                        <p className="copyright-text">
+                            &copy; 2026 MIT Art, Design & Technology University. All rights reserved.
+                        </p>
+                        <div className="developer-credit-wrapper">
+                            <span className="dev-label">Designed & Developed by</span>
+                            <a
+                                href="https://www.pranavx.in/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="developer-link-premium"
+                            >
+                                pranavgawai
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </footer>
         </div>
