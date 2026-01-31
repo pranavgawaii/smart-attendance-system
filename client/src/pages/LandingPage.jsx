@@ -344,7 +344,8 @@ const LandingPage = () => {
                     </div>
                 </div>
                 <div className="footer-bottom">
-                    &copy; 2026 MIT Art, Design & Technology University. All rights reserved.
+                    <p style={{ marginBottom: '0.5rem' }}>Design & Developed by pranavgawai</p>
+                    <p>&copy; 2026 MIT Art, Design & Technology University. All rights reserved.</p>
                 </div>
             </footer>
         </div>
