@@ -2,7 +2,11 @@ import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
 import AdminLayout from '../../components/admin/AdminLayout';
-import { Plus, Beaker, Edit } from 'lucide-react';
+import PageHeader from '../../components/PageHeader';
+import StatusBadge from '../../components/StatusBadge';
+import EmptyState from '../../components/EmptyState';
+import { Plus, Beaker, Edit, Calendar, Clock, CheckCircle } from 'lucide-react';
+import StatsCard from '../../components/StatsCard';
 
 export default function AdminAssessments() {
     const [assessments, setAssessments] = useState([]);
@@ -22,87 +26,97 @@ export default function AdminAssessments() {
         fetchAssessments();
     }, []);
 
-    const actionButtons = (
-        <Link to="/admin/assessments/create" style={{ textDecoration: 'none' }}>
-            <button style={{
-                background: '#4c1d95', color: 'white', border: 'none',
-                padding: '0.75rem 1.5rem', borderRadius: '12px',
-                fontWeight: '600', fontSize: '0.9rem', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '8px',
-                boxShadow: '0 4px 6px -1px rgba(76, 29, 149, 0.3)'
-            }}>
-                <Plus size={18} /> Create Assessment
-            </button>
-        </Link>
-    );
+    const publishedCount = assessments.filter(a => a.status === 'PUBLISHED').length;
 
     return (
-        <AdminLayout title="Assessments" actions={actionButtons}>
-            {loading ? (
-                <div style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8' }}>Loading assessments...</div>
-            ) : assessments.length === 0 ? (
-                <div style={{ padding: '6rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#f5f3ff', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
-                        <Beaker size={32} />
-                    </div>
-                    <h3 style={{ margin: '0 0 0.5rem 0', color: '#1e293b', fontSize: '1.25rem', fontWeight: '700' }}>No Assessments Yet</h3>
-                    <p style={{ color: '#64748b', maxWidth: '400px', margin: '0 0 2rem 0' }}>
-                        Create your first assessment to start evaluating student performance and allocating labs.
-                    </p>
-                    <Link to="/admin/assessments/create" style={{ textDecoration: 'none' }}>
-                        <button style={{
-                            background: 'white', border: '1px solid #cbd5e1', color: '#475569',
-                            padding: '0.75rem 1.5rem', borderRadius: '10px', fontWeight: '600', cursor: 'pointer'
-                        }}>
-                            Create Now
+        <AdminLayout title="Assessments">
+            <PageHeader
+                title="Assessment Management"
+                description="Create and schedule technical assessments and track student performance."
+                actions={
+                    <Link to="/admin/assessments/create">
+                        <button className="bg-zinc-900 hover:bg-black text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors shadow-sm flex items-center gap-2">
+                            <Plus size={16} strokeWidth={1.5} /> Create Assessment
                         </button>
                     </Link>
-                </div>
+                }
+            />
+
+            {/* Metrics */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <StatsCard
+                    title="Total Assessments"
+                    value={assessments.length}
+                    icon={Beaker}
+                    iconColor="text-zinc-600"
+                    iconBg="bg-zinc-100"
+                />
+                <StatsCard
+                    title="Published"
+                    value={publishedCount}
+                    icon={CheckCircle}
+                    iconColor="text-zinc-900"
+                    iconBg="bg-zinc-100"
+                    trend={publishedCount > 0 ? "Active" : null}
+                />
+            </div>
+
+            {loading ? (
+                <div className="p-12 text-center text-slate-400">Loading assessments...</div>
+            ) : assessments.length === 0 ? (
+                <EmptyState
+                    title="No Assessments Yet"
+                    description="Create your first assessment to start evaluating student performance and allocating labs."
+                    actionLabel="Create Assessment"
+                    actionLink="/admin/assessments/create"
+                    icon={Beaker}
+                />
             ) : (
-                <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0' }}>
-                        <thead>
-                            <tr style={{ background: '#f8fafc' }}>
-                                <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', borderRadius: '12px 0 0 12px' }}>Title</th>
-                                <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>Date</th>
-                                <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>Time</th>
-                                <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>Status</th>
-                                <th style={{ padding: '1rem', textAlign: 'right', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', borderRadius: '0 12px 12px 0' }}>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {assessments.map(a => (
-                                <tr key={a.id} style={{ transition: 'background 0.2s' }}>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', fontWeight: '600', color: '#0f172a' }}>{a.title}</td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', color: '#475569' }}>{new Date(a.date).toLocaleDateString()}</td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', color: '#64748b', fontSize: '0.9rem', fontFamily: 'monospace' }}>
-                                        {a.start_time.slice(0, 5)} - {a.end_time.slice(0, 5)}
-                                    </td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9' }}>
-                                        <span style={{
-                                            padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '700',
-                                            background: a.status === 'PUBLISHED' ? '#dcfce7' : '#f1f5f9',
-                                            color: a.status === 'PUBLISHED' ? '#15803d' : '#64748b',
-                                            letterSpacing: '0.02em'
-                                        }}>
-                                            {a.status || 'DRAFT'}
-                                        </span>
-                                    </td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', textAlign: 'right' }}>
-                                        <Link to={`/admin/assessments/${a.id}`} style={{ textDecoration: 'none' }}>
-                                            <button style={{
-                                                fontSize: '0.85rem', padding: '0.5rem 1rem', background: 'white',
-                                                color: '#4c1d95', border: '1px solid #e2e8f0', borderRadius: '8px',
-                                                fontWeight: '600', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px'
-                                            }}>
-                                                <Edit size={14} /> Manage
-                                            </button>
-                                        </Link>
-                                    </td>
+                <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                    <th className="px-6 py-4">Title</th>
+                                    <th className="px-6 py-4">Date</th>
+                                    <th className="px-6 py-4">Time</th>
+                                    <th className="px-6 py-4">Status</th>
+                                    <th className="px-6 py-4 text-right">Actions</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {assessments.map(a => (
+                                    <tr key={a.id} className="hover:bg-slate-50 transition-colors group">
+                                        <td className="px-6 py-4">
+                                            <div className="font-semibold text-slate-900">{a.title}</div>
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-600 text-sm">
+                                            <div className="flex items-center gap-2">
+                                                <Calendar size={14} className="text-slate-400" strokeWidth={1.5} />
+                                                {new Date(a.date).toLocaleDateString()}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-600 font-mono text-xs">
+                                            <div className="flex items-center gap-2">
+                                                <Clock size={14} className="text-slate-400" strokeWidth={1.5} />
+                                                {a.start_time.slice(0, 5)} - {a.end_time.slice(0, 5)}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <StatusBadge status={a.status || 'DRAFT'} />
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <Link to={`/admin/assessments/${a.id}`}>
+                                                <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-zinc-600 text-xs font-semibold hover:bg-zinc-50 hover:text-zinc-900 transition-colors">
+                                                    <Edit size={14} strokeWidth={1.5} /> Manage
+                                                </button>
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
         </AdminLayout>

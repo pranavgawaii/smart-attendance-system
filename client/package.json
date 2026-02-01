@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@phosphor-icons/react": "^2.1.10",
     "axios": "^1.13.2",
     "html5-qrcode": "^2.3.8",
     "jspdf": "^3.0.4",

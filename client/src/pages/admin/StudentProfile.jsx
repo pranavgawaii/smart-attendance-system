@@ -137,7 +137,7 @@ export default function StudentProfile() {
             </div>
 
             <div style={{
-                width: '80px', height: '80px', borderRadius: '50%', background: '#4f46e5', color: 'white',
+                width: '80px', height: '80px', borderRadius: '50%', background: '#18181b', color: 'white',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 'bold'
             }}>
                 {user.name.charAt(0)}
@@ -147,8 +147,8 @@ export default function StudentProfile() {
                     <h1 style={{ fontSize: '1.75rem', fontWeight: '700', color: '#0f172a', margin: 0 }}>{user.name}</h1>
                     <span style={{
                         padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '700', letterSpacing: '0.05em',
-                        background: user.user_status === 'active' ? '#dcfce7' : '#fee2e2',
-                        color: user.user_status === 'active' ? '#15803d' : '#b91c1c'
+                        background: user.user_status === 'active' ? '#f4f4f5' : '#f4f4f5',
+                        color: user.user_status === 'active' ? '#18181b' : '#71717a'
                     }}>
                         {(user.user_status || 'ACTIVE').toUpperCase()}
                     </span>
@@ -175,8 +175,8 @@ export default function StudentProfile() {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-                <StatBox label="Present" value={mockStats.sessionsAttended} color="#15803d" bg="#dcfce7" />
-                <StatBox label="Absent" value={mockStats.sessionsMissed} color="#b91c1c" bg="#fee2e2" />
+                <StatBox label="Present" value={mockStats.sessionsAttended} color="#18181b" bg="#f4f4f5" />
+                <StatBox label="Absent" value={mockStats.sessionsMissed} color="#71717a" bg="#fafafa" />
             </div>
 
             <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
@@ -191,7 +191,7 @@ export default function StudentProfile() {
                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                                 <span style={{
                                     fontSize: '0.75rem', fontWeight: '700',
-                                    color: record.status === 'Present' ? '#15803d' : '#b91c1c'
+                                    color: record.status === 'Present' ? '#18181b' : '#71717a'
                                 }}>
                                     {record.status.toUpperCase()}
                                 </span>
@@ -211,7 +211,7 @@ export default function StudentProfile() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
                 <div>
                     <div style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', fontWeight: '600' }}>Active Session</div>
-                    <div style={{ fontSize: '0.95rem', fontWeight: '600', color: mockSecurity.activeSession ? '#15803d' : '#64748b' }}>
+                    <div style={{ fontSize: '0.95rem', fontWeight: '600', color: mockSecurity.activeSession ? '#18181b' : '#64748b' }}>
                         {mockSecurity.activeSession ? 'Online Now' : 'Offline'}
                     </div>
                 </div>
@@ -233,13 +233,13 @@ export default function StudentProfile() {
                     icon={<LogOut size={14} />}
                     label="Force Logout"
                     onClick={() => setActiveModal('logout')}
-                    color="#d97706" bg="#fef3c7"
+                    color="#18181b" bg="#f4f4f5"
                 />
                 <ActionButton
                     icon={<Smartphone size={14} />}
                     label="Reset Binding"
                     onClick={() => setActiveModal('unbind')}
-                    color="#2563eb" bg="#eff6ff"
+                    color="#52525b" bg="#fafafa"
                 />
                 <ActionButton
                     className="col-span-2"
@@ -247,8 +247,8 @@ export default function StudentProfile() {
                     icon={user.user_status === 'active' ? <Lock size={14} /> : <Unlock size={14} />}
                     label={user.user_status === 'active' ? "Block Account" : "Unblock Account"}
                     onClick={() => setActiveModal('block')}
-                    color={user.user_status === 'active' ? "#dc2626" : "#16a34a"}
-                    bg={user.user_status === 'active' ? "#fee2e2" : "#dcfce7"}
+                    color={user.user_status === 'active' ? "#71717a" : "#18181b"}
+                    bg={user.user_status === 'active' ? "#f4f4f5" : "#f4f4f5"}
                 />
             </div>
         </div>
@@ -264,7 +264,7 @@ export default function StudentProfile() {
                 </div>
                 <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', fontWeight: '600', marginBottom: '4px' }}>Status</div>
-                    <span style={{ fontSize: '0.8rem', fontWeight: '700', padding: '4px 8px', borderRadius: '4px', background: '#dcfce7', color: '#15803d' }}>ELIGIBLE</span>
+                    <span style={{ fontSize: '0.8rem', fontWeight: '700', padding: '4px 8px', borderRadius: '4px', background: '#f4f4f5', color: '#18181b' }}>ELIGIBLE</span>
                 </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
@@ -374,7 +374,7 @@ export default function StudentProfile() {
                     title="Force Logout"
                     description="Are you sure you want to force sign-out this user from all active devices? They will need to log in again immediately."
                     confirmText="Force Logout"
-                    confirmColor="#d97706"
+                    confirmColor="#18181b"
                     onConfirm={() => handleAction('FORCE_LOGOUT')}
                     onCancel={() => setActiveModal(null)}
                 />
@@ -384,7 +384,7 @@ export default function StudentProfile() {
                     title="Reset Device Binding"
                     description="This will clear the stored device ID for this student. They will be able to bind a new device upon their next login. This action is logged."
                     confirmText="Reset Binding"
-                    confirmColor="#2563eb"
+                    confirmColor="#18181b"
                     onConfirm={() => handleAction('RESET_BINDING')}
                     onCancel={() => setActiveModal(null)}
                 />
@@ -396,7 +396,7 @@ export default function StudentProfile() {
                         ? "Blocking this account will prevent the student from logging in, scanning attendance, or accessing placement drives. Are you sure?"
                         : "Unblocking will restore full access to this account."}
                     confirmText={user.user_status === 'active' ? "Block Account" : "Unblock Account"}
-                    confirmColor={user.user_status === 'active' ? "#dc2626" : "#16a34a"}
+                    confirmColor={user.user_status === 'active' ? "#18181b" : "#18181b"}
                     onConfirm={() => handleAction('TOGGLE_BLOCK')}
                     onCancel={() => setActiveModal(null)}
                 />
@@ -425,7 +425,7 @@ const InfoItem = ({ label, value, monospace, highlight }) => (
         <div style={{ fontSize: '0.7rem', color: '#64748b', textTransform: 'uppercase', fontWeight: '600' }}>{label}</div>
         <div style={{
             fontSize: '0.85rem',
-            color: highlight ? '#15803d' : '#334155',
+            color: highlight ? '#18181b' : '#334155',
             fontFamily: monospace ? 'monospace' : 'inherit',
             fontWeight: highlight ? '700' : '500',
             wordBreak: 'break-all'

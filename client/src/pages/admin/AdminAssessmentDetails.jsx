@@ -86,8 +86,8 @@ export default function AdminAssessmentDetails() {
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: '#f8fafc', padding: '0.75rem 1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                         <span style={{
-                            background: assessment.status === 'PUBLISHED' ? '#dcfce7' : '#e2e8f0',
-                            color: assessment.status === 'PUBLISHED' ? '#15803d' : '#475569',
+                            background: assessment.status === 'PUBLISHED' ? '#f4f4f5' : '#f4f4f5',
+                            color: assessment.status === 'PUBLISHED' ? '#18181b' : '#71717a',
                             padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '800', letterSpacing: '0.05em'
                         }}>
                             {assessment.status || 'DRAFT'}
@@ -109,18 +109,18 @@ export default function AdminAssessmentDetails() {
                     <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                             <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <Users size={20} color="#6366f1" /> Eligible Students
-                                <span style={{ background: '#e0e7ff', color: '#4338ca', padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem' }}>
+                                <Users size={20} color="#18181b" /> Eligible Students
+                                <span style={{ background: '#f4f4f5', color: '#18181b', padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem' }}>
                                     {candidates.length}
                                 </span>
                             </h3>
                             <button
                                 onClick={() => setShowModal(true)}
                                 style={{
-                                    background: '#4f46e5', color: 'white', border: 'none',
+                                    background: '#18181b', color: 'white', border: 'none',
                                     padding: '0.6rem 1.2rem', borderRadius: '10px', fontWeight: '600', fontSize: '0.85rem',
                                     display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer',
-                                    boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)'
+                                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                                 }}
                             >
                                 <Plus size={16} /> Add Students
@@ -183,10 +183,10 @@ export default function AdminAssessmentDetails() {
                         {/* Allocation Action Card */}
                         <div style={{
                             background: 'white', padding: '1.5rem', borderRadius: '16px',
-                            border: '2px solid #e0e7ff', boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.1)'
+                            border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'
                         }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.75rem' }}>
-                                <div style={{ background: '#e0e7ff', padding: '8px', borderRadius: '8px', color: '#4338ca' }}><Briefcase size={20} /></div>
+                                <div style={{ background: '#f4f4f5', padding: '8px', borderRadius: '8px', color: '#18181b' }}><Briefcase size={20} /></div>
                                 <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '700', color: '#1e293b' }}>Seat Allocation</h4>
                             </div>
 
@@ -199,9 +199,9 @@ export default function AdminAssessmentDetails() {
                             <Link to={`/admin/allocations/${id}`}>
                                 <button style={{
                                     width: '100%',
-                                    background: assessment.status === 'ALLOCATED' ? 'white' : '#4f46e5',
-                                    color: assessment.status === 'ALLOCATED' ? '#4f46e5' : 'white',
-                                    border: assessment.status === 'ALLOCATED' ? '1px solid #4f46e5' : 'none',
+                                    background: assessment.status === 'ALLOCATED' ? 'white' : '#18181b',
+                                    color: assessment.status === 'ALLOCATED' ? '#18181b' : 'white',
+                                    border: assessment.status === 'ALLOCATED' ? '1px solid #18181b' : 'none',
                                     padding: '0.75rem', borderRadius: '10px', fontWeight: '600',
                                     cursor: 'pointer', fontSize: '0.9rem',
                                     display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px',

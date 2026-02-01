@@ -3,20 +3,48 @@
 @tailwind utilities;
 
 :root {
-  /* Brand Colors */
-  --mit-purple: #4b2c83;
-  --mit-gold: #b38f54;
+  /* Brand Colors - Monochrome Override */
+  --mit-purple: #18181b;
+  /* Zinc-900 */
+  --mit-gold: #71717a;
+  /* Zinc-500 */
 
   /* Light Mode Defaults */
   --bg-primary: #f8f9fa;
-  /* Slightly cooler grey for enterprise feel */
   --bg-card: #ffffff;
-  --bg-nav: #ffffff;
-  --text-primary: #1f2937;
-  /* Darker grey, almost black */
-  --text-secondary: #6b7280;
-  --border-color: #e5e7eb;
+  --bg-nav: #fafafa;
+  /* Zinc-50 equivalent */
+  --text-primary: #18181b;
+  /* Zinc-900 */
+  --text-secondary: #71717a;
+  /* Zinc-500 */
+  --border-color: #e4e4e7;
+  /* Zinc-200 */
   --input-bg: #ffffff;
+
+  /* Sidebar Specific */
+  --sidebar-active-bg: #ffffff;
+  --sidebar-active-color: #18181b;
+  --sidebar-hover-bg: #f4f4f5;
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #e4e4e7;
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #d4d4d8;
+  }
 
   /* Sidebar Specific */
   --sidebar-active-bg: #f3f4f6;
@@ -24,12 +52,17 @@
   --sidebar-hover-bg: #f9fafb;
 
   /* Status Colors */
-  --success-green: #059669;
+  --success-green: #18181b;
+  /* Override success to black for strict mono, or keep distinct? User said "strictly colour theme" */
   --error-red: #dc2626;
 
-  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-family: 'Inter',
+  system-ui,
+  -apple-system,
+  sans-serif;
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+  0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --nav-height: 64px;
 }
 

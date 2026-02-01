@@ -23,7 +23,10 @@ import CreateAssessment from './pages/admin/CreateAssessment';
 import AdminAssessmentDetails from './pages/admin/AdminAssessmentDetails';
 import SeatAllocation from './pages/admin/SeatAllocation';
 import AdminAllocations from './pages/admin/AdminAllocations';
+import AllocationsHome from './pages/admin/AllocationsHome';
+import CreateAllocation from './pages/admin/CreateAllocation';
 import AdminLabs from './pages/admin/AdminLabs';
+import Labs from './pages/admin/Labs';
 import AdminReports from './pages/admin/AdminReports';
 import AdminProfile from './pages/admin/AdminProfile';
 import AdminPlacements from './pages/admin/AdminPlacements';
@@ -93,9 +96,13 @@ function App() {
               <Route path="placements/edit/:id" element={<CreatePlacement />} />
               <Route path="assessments/create" element={<CreateAssessment />} />
               <Route path="assessments/:id" element={<AdminAssessmentDetails />} />
-              <Route path="allocations" element={<AdminAllocations />} />
+              <Route path="allocations-old" element={<AdminAllocations />} />
+              <Route path="allocations" element={<AllocationsHome />} />
+              <Route path="allocations/create" element={<CreateAllocation />} />
+              <Route path="allocations/edit/:id" element={<CreateAllocation />} />
               <Route path="allocations/:id" element={<SeatAllocation />} />
-              <Route path="labs" element={<AdminLabs />} />
+              <Route path="labs-old" element={<AdminLabs />} />
+              <Route path="labs" element={<Labs />} />
               <Route path="reports" element={<AdminReports />} />
               <Route path="profile" element={<AdminProfile />} />
               <Route path="settings" element={<AdminSettings />} />

@@ -34,9 +34,9 @@ export default function AdminAttendance() {
         let bg = '#f1f5f9';
         let label = 'NOT STARTED';
 
-        if (state === 'ACTIVE') { color = '#15803d'; bg = '#dcfce7'; label = 'LIVE'; }
-        else if (state === 'PAUSED') { color = '#b45309'; bg = '#fef3c7'; label = 'PAUSED'; }
-        else if (state === 'STOPPED') { color = '#b91c1c'; bg = '#fee2e2'; label = 'CLOSED'; }
+        if (state === 'ACTIVE') { color = '#18181b'; bg = '#f4f4f5'; label = 'LIVE'; } // Zinc-900 / Zinc-100
+        else if (state === 'PAUSED') { color = '#52525b'; bg = '#f4f4f5'; label = 'PAUSED'; } // Zinc-600 / Zinc-100
+        else if (state === 'STOPPED') { color = '#71717a'; bg = '#f4f4f5'; label = 'CLOSED'; } // Zinc-500 / Zinc-100
 
         return (
             <span style={{
@@ -101,7 +101,7 @@ export default function AdminAttendance() {
                                     <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', textAlign: 'right' }}>
                                         <Link to={`/admin/events/${event.id}/attendance`} style={{ textDecoration: 'none' }}>
                                             <button style={{
-                                                background: 'white', color: '#4c1d95', border: '1px solid #e2e8f0',
+                                                background: 'white', color: '#18181b', border: '1px solid #e2e8f0',
                                                 padding: '0.5rem 1rem', borderRadius: '8px', fontWeight: '600',
                                                 fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
                                             }}>

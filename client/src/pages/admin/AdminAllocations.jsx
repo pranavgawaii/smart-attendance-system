@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import AdminLayout from '../../components/admin/AdminLayout';
-import { Settings, Calendar } from 'lucide-react';
+import PageHeader from '../../components/PageHeader';
+import StatusBadge from '../../components/StatusBadge';
+import EmptyState from '../../components/EmptyState';
+import { Settings, Calendar, Clock, Armchair } from 'lucide-react';
 
 export default function AdminAllocations() {
     const [assessments, setAssessments] = useState([]);
@@ -23,66 +26,67 @@ export default function AdminAllocations() {
     }, []);
 
     return (
-        <AdminLayout title="Seat Allocations">
-            <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0' }}>
-                    <thead>
-                        <tr style={{ background: '#f8fafc' }}>
-                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', borderRadius: '12px 0 0 12px' }}>Assessment</th>
-                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>Date & Time</th>
-                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>Status</th>
-                            <th style={{ padding: '1rem', textAlign: 'right', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', borderRadius: '0 12px 12px 0' }}>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {loading ? (
-                            <tr><td colSpan="4" style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8' }}>Loading assessments...</td></tr>
-                        ) : assessments.length === 0 ? (
-                            <tr><td colSpan="4" style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8' }}>No assessments found.</td></tr>
-                        ) : (
-                            assessments.map(a => (
-                                <tr key={a.id} style={{ transition: 'background 0.2s' }}>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', fontWeight: '600', color: '#0f172a' }}>{a.title}</td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#475569' }}>
-                                            <Calendar size={14} />
-                                            {new Date(a.date).toLocaleDateString()}
-                                        </div>
-                                        <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px' }}>
-                                            {a.start_time.slice(0, 5)} - {a.end_time.slice(0, 5)}
-                                        </div>
-                                    </td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9' }}>
-                                        <span style={{
-                                            padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '700',
-                                            color: a.status === 'ALLOCATED' ? '#15803d' : '#854d0e',
-                                            background: a.status === 'ALLOCATED' ? '#dcfce7' : '#fef9c3',
-                                            letterSpacing: '0.02em'
-                                        }}>
-                                            {a.status}
-                                        </span>
-                                    </td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', textAlign: 'right' }}>
-                                        <Link to={`/admin/allocations/${a.id}`} style={{ textDecoration: 'none' }}>
-                                            <button style={{
-                                                background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px',
-                                                padding: '0.5rem 1rem', fontSize: '0.85rem', fontWeight: '600',
-                                                color: '#4c1d95', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px',
-                                                transition: 'all 0.2s'
-                                            }}
-                                                onMouseOver={(e) => { e.currentTarget.style.background = '#f5f3ff'; e.currentTarget.style.borderColor = '#ddd6fe'; }}
-                                                onMouseOut={(e) => { e.currentTarget.style.background = 'white'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
-                                            >
-                                                <Settings size={14} /> Manage Seats
-                                            </button>
-                                        </Link>
-                                    </td>
+        <AdminLayout title="Allocations">
+            <PageHeader
+                title="Seat Allocations"
+                description="Manage seating arrangements for upcoming assessments across available labs."
+            />
+
+            {loading ? (
+                <div className="p-12 text-center text-slate-400">Loading allocation data...</div>
+            ) : assessments.length === 0 ? (
+                <EmptyState
+                    title="No Allocations Available"
+                    description="There are no assessments to allocate seats for at the moment."
+                    icon={Armchair}
+                />
+            ) : (
+                <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                    <th className="px-6 py-4">Assessment</th>
+                                    <th className="px-6 py-4">Date & Time</th>
+                                    <th className="px-6 py-4">Status</th>
+                                    <th className="px-6 py-4 text-right">Action</th>
                                 </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {assessments.map(a => (
+                                    <tr key={a.id} className="hover:bg-slate-50 transition-colors group">
+                                        <td className="px-6 py-4">
+                                            <div className="font-semibold text-slate-900">{a.title}</div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex flex-col gap-1">
+                                                <div className="flex items-center gap-1.5 text-slate-600 text-sm">
+                                                    <Calendar size={14} className="text-slate-400" strokeWidth={1.5} />
+                                                    {new Date(a.date).toLocaleDateString()}
+                                                </div>
+                                                <div className="flex items-center gap-1.5 text-slate-500 text-xs font-mono ml-0.5">
+                                                    <Clock size={12} className="text-slate-400" strokeWidth={1.5} />
+                                                    {a.start_time.slice(0, 5)} - {a.end_time.slice(0, 5)}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <StatusBadge status={a.status || 'PENDING'} />
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <Link to={`/admin/allocations/${a.id}`}>
+                                                <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 text-xs font-semibold hover:bg-slate-50 hover:text-indigo-600 transition-colors shadow-sm">
+                                                    <Settings size={14} strokeWidth={1.5} /> Manage Seats
+                                                </button>
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
         </AdminLayout>
     );
 }

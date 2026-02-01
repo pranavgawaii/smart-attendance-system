@@ -25,7 +25,7 @@ export default function CreateAssessment() {
     return (
         <AdminLayout title="Create New Assessment">
             <Link to="/admin/assessments" style={{ textDecoration: 'none', color: '#64748b', display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '1.5rem' }}>
-                <ArrowLeft size={18} /> Back to Assessments
+                <ArrowLeft size={18} strokeWidth={1.5} /> Back to Assessments
             </Link>
 
             <div style={{ maxWidth: '800px', margin: '0 auto', background: 'white', padding: '2.5rem', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
@@ -98,11 +98,11 @@ export default function CreateAssessment() {
                             </button>
                         </Link>
                         <button type="submit" disabled={loading} style={{
-                            background: '#4c1d95', color: 'white', border: 'none', padding: '0.75rem 2rem', borderRadius: '10px',
-                            fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(76, 29, 149, 0.4)',
+                            background: '#18181b', color: 'white', border: 'none', padding: '0.75rem 2rem', borderRadius: '10px',
+                            fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                             display: 'flex', alignItems: 'center', gap: '8px'
                         }}>
-                            <Save size={18} /> {loading ? 'Creating...' : 'Create & Continue'}
+                            <Save size={18} strokeWidth={1.5} /> {loading ? 'Creating...' : 'Create & Continue'}
                         </button>
                     </div>
                 </form>

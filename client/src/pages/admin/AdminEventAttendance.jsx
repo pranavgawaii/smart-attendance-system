@@ -105,9 +105,9 @@ export default function AdminEventAttendance() {
         let color = '#475569';
         let bg = '#f1f5f9';
 
-        if (status === 'PRESENT') { color = '#15803d'; bg = '#dcfce7'; }
-        else if (status === 'ABSENT') { color = '#b91c1c'; bg = '#fee2e2'; }
-        else if (status === 'REVOKED') { color = '#b45309'; bg = '#fef3c7'; }
+        if (status === 'PRESENT') { color = '#18181b'; bg = '#f4f4f5'; } // Zinc-900 / Zinc-100
+        else if (status === 'ABSENT') { color = '#71717a'; bg = '#f4f4f5'; } // Zinc-500 / Zinc-100
+        else if (status === 'REVOKED') { color = '#a1a1aa'; bg = '#f4f4f5'; } // Zinc-400 / Zinc-100
 
         return (
             <span style={{
@@ -123,25 +123,25 @@ export default function AdminEventAttendance() {
     const actionButtons = (
         <div style={{ display: 'flex', gap: '0.75rem' }}>
             <button onClick={downloadCsv} style={{
-                background: 'white', color: '#15803d', border: '1px solid #dcfce7',
+                background: 'white', color: '#18181b', border: '1px solid #e4e4e7',
                 padding: '0.5rem 1rem', borderRadius: '8px', fontWeight: '600',
                 fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
             }}>
-                <Download size={16} /> CSV
+                <Download size={16} strokeWidth={1.5} /> CSV
             </button>
             <button onClick={downloadPdf} style={{
-                background: 'white', color: '#b91c1c', border: '1px solid #fee2e2',
+                background: 'white', color: '#18181b', border: '1px solid #e4e4e7',
                 padding: '0.5rem 1rem', borderRadius: '8px', fontWeight: '600',
                 fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
             }}>
-                <Download size={16} /> PDF
+                <Download size={16} strokeWidth={1.5} /> PDF
             </button>
             <button onClick={() => fetchAttendance()} style={{
-                background: 'white', color: '#4c1d95', border: '1px solid #e2e8f0',
+                background: 'white', color: '#18181b', border: '1px solid #e2e8f0',
                 padding: '0.5rem 1rem', borderRadius: '8px', fontWeight: '600',
                 fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
             }}>
-                <RefreshCw size={16} /> Refresh
+                <RefreshCw size={16} strokeWidth={1.5} /> Refresh
             </button>
         </div>
     );
@@ -152,11 +152,11 @@ export default function AdminEventAttendance() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <Link to="/admin/events" style={{ textDecoration: 'none', color: '#64748b', display: 'flex', alignItems: 'center' }}>
-                            <ArrowLeft size={20} />
+                            <ArrowLeft size={20} strokeWidth={1.5} />
                         </Link>
                         <span>{eventName || 'Attendance List'}</span>
                         {(sessionState === 'ACTIVE' || sessionState === 'LIVE') && (
-                            <span style={{ background: '#22c55e', color: 'white', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>LIVE</span>
+                            <span style={{ background: '#18181b', color: 'white', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>LIVE</span>
                         )}
                     </div>
                 </div>
@@ -166,7 +166,7 @@ export default function AdminEventAttendance() {
             {/* Controls */}
             <div style={{ marginBottom: '2rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
                 <div style={{ flex: 1, minWidth: '300px', position: 'relative' }}>
-                    <Search size={20} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                    <Search size={20} strokeWidth={1.5} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                     <input
                         type="text"
                         placeholder="Search by Name or Enrollment..."
@@ -185,8 +185,8 @@ export default function AdminEventAttendance() {
                             key={f}
                             onClick={() => setFilter(f)}
                             style={{
-                                background: filter === f ? 'white' : 'transparent',
-                                color: filter === f ? '#4c1d95' : '#64748b',
+                                background: filter === f ? '#18181b' : 'transparent',
+                                color: filter === f ? 'white' : '#64748b',
                                 border: 'none', padding: '0.6rem 1.25rem', borderRadius: '10px',
                                 fontWeight: '600', cursor: 'pointer', fontSize: '0.9rem',
                                 boxShadow: filter === f ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
@@ -231,7 +231,7 @@ export default function AdminEventAttendance() {
                                         {record.status === 'PRESENT' && (
                                             <button
                                                 onClick={() => handleUpdateStatus(record.log_id, 'REVOKED')}
-                                                style={{ fontSize: '0.8rem', color: '#dc3545', background: 'white', border: '1px solid #fee2e2', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
+                                                style={{ fontSize: '0.8rem', color: '#52525b', background: 'white', border: '1px solid #e4e4e7', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
                                             >
                                                 Revoke
                                             </button>
@@ -239,7 +239,7 @@ export default function AdminEventAttendance() {
                                         {record.status === 'REVOKED' && (
                                             <button
                                                 onClick={() => handleUpdateStatus(record.log_id, 'PRESENT')}
-                                                style={{ fontSize: '0.8rem', color: '#15803d', background: 'white', border: '1px solid #dcfce7', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
+                                                style={{ fontSize: '0.8rem', color: '#18181b', background: 'white', border: '1px solid #e4e4e7', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
                                             >
                                                 Restore
                                             </button>

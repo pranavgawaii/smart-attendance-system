@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
-import { Monitor, ExternalLink, Plus, Edit, Trash2 } from 'lucide-react';
+import { Monitor, Plus, Edit, Trash2, Calendar, Activity, X } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
+import PageHeader from '../../components/PageHeader';
+import StatusBadge from '../../components/StatusBadge';
+import StatsCard from '../../components/StatsCard';
 
 export default function AdminEvents() {
     const [events, setEvents] = useState([]);
@@ -10,7 +13,7 @@ export default function AdminEvents() {
     const [createModalOpen, setCreateModalOpen] = useState(false);
 
     // Form State
-    const [editingEventId, setEditingEventId] = useState(null); // ID if editing
+    const [editingEventId, setEditingEventId] = useState(null);
     const [newEventName, setNewEventName] = useState('');
     const [venue, setVenue] = useState('');
     const [interval, setInterval] = useState(10);
@@ -83,11 +86,9 @@ export default function AdminEvents() {
             };
 
             if (editingEventId) {
-                // Update
                 await api.put(`/events/${editingEventId}`, payload);
                 setSuccessMsg('Event updated successfully');
             } else {
-                // Create
                 await api.post('/events', payload);
                 setSuccessMsg('Event created successfully');
             }
@@ -105,228 +106,190 @@ export default function AdminEvents() {
         }
     };
 
-
-
-    const getStatusBadge = (state) => {
-        const s = state || 'NOT_STARTED';
-        let color = '#64748b'; // Slate
-        let bg = '#f1f5f9';
-
-        if (s === 'ACTIVE' || s === 'LIVE') {
-            color = '#15803d'; bg = '#dcfce7'; // Green
-        } else if (s === 'PAUSED') {
-            color = '#b45309'; bg = '#fef3c7'; // Amber
-        } else if (s === 'STOPPED' || s === 'CLOSED') {
-            color = '#b91c1c'; bg = '#fee2e2'; // Red
-        }
-
-        return (
-            <span style={{
-                color: color,
-                backgroundColor: bg,
-                padding: '4px 10px',
-                borderRadius: '20px',
-                fontSize: '0.75rem',
-                fontWeight: '700',
-                letterSpacing: '0.02em'
-            }}>
-                {s.replace('_', ' ')}
-            </span>
-        );
-    };
-
-    const actionButtons = (
-        <button
-            onClick={openCreateModal}
-            style={{
-                background: '#4c1d95',
-                color: 'white',
-                border: 'none',
-                padding: '0.75rem 1.5rem',
-                borderRadius: '12px',
-                fontWeight: '600',
-                fontSize: '0.9rem',
-                cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '8px',
-                boxShadow: '0 4px 6px -1px rgba(76, 29, 149, 0.3)',
-                transition: 'all 0.2s'
-            }}
-        >
-            <Plus size={18} /> Create Session
-        </button>
-    );
+    const activeSessions = events.filter(e => e.session_state === 'ACTIVE' || e.session_state === 'LIVE').length;
 
     return (
-        <AdminLayout title="Sessions Management" actions={actionButtons}>
+        <AdminLayout title="Sessions">
+            <PageHeader
+                title="Sessions Management"
+                description="Create and manage attendance sessions, venues, and configurations."
+                actions={
+                    <button
+                        onClick={openCreateModal}
+                        className="bg-zinc-900 hover:bg-black text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors shadow-sm flex items-center gap-2"
+                    >
+                        <Plus size={16} strokeWidth={1.5} /> Create Session
+                    </button>
+                }
+            />
+
+            {/* Metrics */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <StatsCard
+                    title="Total Sessions"
+                    value={events.length}
+                    icon={Calendar}
+                    iconColor="text-zinc-600"
+                    iconBg="bg-zinc-100"
+                />
+                <StatsCard
+                    title="Active Now"
+                    value={activeSessions}
+                    icon={Activity}
+                    iconColor="text-zinc-900"
+                    iconBg="bg-zinc-100"
+                    trend={activeSessions > 0 ? "LIVE" : null}
+                />
+            </div>
 
             {/* Success Toast */}
             {successMsg && (
-                <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#dcfce7', color: '#166534', borderRadius: '12px', border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center' }}>
-                    ✅ <span style={{ marginLeft: '10px', fontWeight: '500' }}>{successMsg}</span>
+                <div className="mb-6 p-4 bg-zinc-50 text-zinc-900 rounded-xl border border-zinc-200 flex items-center shadow-sm animate-fade-in-down">
+                    ✅ <span className="ml-2 font-medium">{successMsg}</span>
                 </div>
             )}
 
             {/* Events Table */}
-            <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0' }}>
-                    <thead>
-                        <tr style={{ background: '#f8fafc' }}>
-                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', borderRadius: '12px 0 0 12px' }}>ID</th>
-                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>Event Name</th>
-                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>Venue</th>
-                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>Date</th>
-                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>Status</th>
-                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', borderRadius: '0 12px 12px 0' }}>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {loading ? (
-                            <tr><td colSpan="6" style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8' }}>Loading sessions...</td></tr>
-                        ) : events.length === 0 ? (
-                            <tr><td colSpan="6" style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8' }}>No sessions found. Create one to get started.</td></tr>
-                        ) : (
-                            events.map(event => (
-                                <tr key={event.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                                    <td style={{ padding: '1rem', borderBottom: '1px solid #f1f5f9', color: '#64748b', fontWeight: '500', fontSize: '0.85rem' }}>#{event.id}</td>
-                                    <td style={{ padding: '1rem', borderBottom: '1px solid #f1f5f9', fontWeight: '600', color: '#1e293b' }}>{event.name}</td>
-                                    <td style={{ padding: '1rem', borderBottom: '1px solid #f1f5f9', color: '#475569' }}>{event.venue || 'N/A'}</td>
-                                    <td style={{ padding: '1rem', borderBottom: '1px solid #f1f5f9', color: '#64748b', fontSize: '0.9rem' }}>
-                                        {new Date(event.created_at).toLocaleDateString()}
-                                    </td>
-                                    <td style={{ padding: '1rem', borderBottom: '1px solid #f1f5f9' }}>
-                                        {getStatusBadge(event.session_state)}
-                                    </td>
-                                    <td style={{ padding: '1rem', borderBottom: '1px solid #f1f5f9' }}>
-                                        <div style={{ display: 'flex', gap: '8px' }}>
-                                            <Link to={`/admin/events/${event.id}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
-                                                <button style={{
-                                                    background: 'white', border: '1px solid #cbd5e1', color: '#4c1d95',
-                                                    padding: '6px 12px', borderRadius: '8px', cursor: 'pointer',
-                                                    fontSize: '0.8rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px'
-                                                }}>
-                                                    <Monitor size={14} /> Projector View
+            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                <th className="px-6 py-4">ID</th>
+                                <th className="px-6 py-4">Event Name</th>
+                                <th className="px-6 py-4">Venue</th>
+                                <th className="px-6 py-4">Date</th>
+                                <th className="px-6 py-4">Status</th>
+                                <th className="px-6 py-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {loading ? (
+                                <tr><td colSpan="6" className="p-8 text-center text-slate-400">Loading sessions...</td></tr>
+                            ) : events.length === 0 ? (
+                                <tr><td colSpan="6" className="p-8 text-center text-slate-400">No sessions found. Create one to get started.</td></tr>
+                            ) : (
+                                events.map(event => (
+                                    <tr key={event.id} className="hover:bg-slate-50 transition-colors group">
+                                        <td className="px-6 py-4 text-slate-400 font-mono text-xs">#{event.id}</td>
+                                        <td className="px-6 py-4">
+                                            <div className="font-semibold text-slate-900">{event.name}</div>
+                                            <div className="text-xs text-slate-500 mt-0.5">{event.qr_refresh_interval}s interval</div>
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-600 font-medium">{event.venue || 'N/A'}</td>
+                                        <td className="px-6 py-4 text-slate-500 text-sm">
+                                            {new Date(event.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <StatusBadge status={event.session_state} />
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Link to={`/admin/events/${event.id}`} target="_blank" rel="noopener noreferrer">
+                                                    <button className="p-2 rounded-lg bg-white border border-slate-200 text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 transition-colors" title="Projector View">
+                                                        <Monitor size={16} strokeWidth={1.5} />
+                                                    </button>
+                                                </Link>
+                                                <button
+                                                    onClick={() => handleEdit(event)}
+                                                    className="p-2 rounded-lg bg-white border border-slate-200 text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 transition-colors"
+                                                    title="Edit"
+                                                >
+                                                    <Edit size={16} strokeWidth={1.5} />
                                                 </button>
-                                            </Link>
-
-                                            <button
-                                                onClick={() => handleEdit(event)}
-                                                style={{
-                                                    background: '#e0e7ff', border: 'none', color: '#4338ca',
-                                                    padding: '8px', borderRadius: '8px', cursor: 'pointer',
-                                                    display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                                }}
-                                                title="Edit Session"
-                                            >
-                                                <Edit size={16} />
-                                            </button>
-
-                                            <button
-                                                onClick={() => handleDelete(event.id)}
-                                                style={{
-                                                    background: '#fee2e2', border: 'none', color: '#b91c1c',
-                                                    padding: '8px', borderRadius: '8px', cursor: 'pointer',
-                                                    display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                                }}
-                                                title="Delete Session"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+                                                <button
+                                                    onClick={() => handleDelete(event.id)}
+                                                    className="p-2 rounded-lg bg-white border border-slate-200 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-600 transition-colors"
+                                                    title="Delete"
+                                                >
+                                                    <Trash2 size={16} strokeWidth={1.5} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             {/* Create/Edit Modal */}
             {createModalOpen && (
-                <div style={{
-                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-                    display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
-                }}>
-                    <div style={{
-                        background: 'white', padding: '2rem', borderRadius: '16px',
-                        width: '100%', maxWidth: '500px',
-                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
-                    }}>
-                        <h2 style={{ marginTop: 0, color: '#1e293b', fontSize: '1.5rem' }}>
-                            {editingEventId ? 'Edit Session' : 'Create New Session'}
-                        </h2>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm transition-all">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden transform transition-all">
+                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                            <h3 className="text-lg font-bold text-slate-900">
+                                {editingEventId ? 'Edit Session' : 'Create New Session'}
+                            </h3>
+                            <button onClick={() => setCreateModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                                <X size={20} strokeWidth={1.5} />
+                            </button>
+                        </div>
 
-                        {error && <div style={{ marginBottom: '1rem', color: '#b91c1c', background: '#fee2e2', padding: '0.75rem', borderRadius: '8px' }}>{error}</div>}
+                        <div className="p-6">
+                            {error && (
+                                <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">
+                                    {error}
+                                </div>
+                            )}
 
-                        <form onSubmit={handleSaveEvent}>
-                            <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#475569' }}>Event Name</label>
-                                <input
-                                    type="text"
-                                    required
-                                    placeholder="e.g. TCS Pre-placement Talk"
-                                    value={newEventName}
-                                    onChange={e => setNewEventName(e.target.value)}
-                                    style={{
-                                        width: '100%', padding: '0.75rem', borderRadius: '8px',
-                                        border: '1px solid #cbd5e1', fontSize: '1rem'
-                                    }}
-                                />
-                            </div>
+                            <form onSubmit={handleSaveEvent} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1">Event Name</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        placeholder="e.g. TCS Pre-placement Talk"
+                                        value={newEventName}
+                                        onChange={e => setNewEventName(e.target.value)}
+                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all placeholder:text-slate-400"
+                                    />
+                                </div>
 
-                            <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#475569' }}>Venue</label>
-                                <input
-                                    type="text"
-                                    placeholder="e.g. Main Auditorium"
-                                    value={venue}
-                                    onChange={e => setVenue(e.target.value)}
-                                    style={{
-                                        width: '100%', padding: '0.75rem', borderRadius: '8px',
-                                        border: '1px solid #cbd5e1', fontSize: '1rem'
-                                    }}
-                                />
-                            </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1">Venue</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Main Auditorium"
+                                        value={venue}
+                                        onChange={e => setVenue(e.target.value)}
+                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all placeholder:text-slate-400"
+                                    />
+                                </div>
 
-                            <div style={{ marginBottom: '1.5rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', color: '#475569' }}>
-                                    QR Refresh Interval (seconds)
-                                </label>
-                                <input
-                                    type="number"
-                                    min="5"
-                                    max="60"
-                                    value={interval}
-                                    onChange={e => setInterval(e.target.value)}
-                                    style={{
-                                        width: '100%', padding: '0.75rem', borderRadius: '8px',
-                                        border: '1px solid #cbd5e1', fontSize: '1rem'
-                                    }}
-                                />
-                                <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>Recommended: 10 seconds</p>
-                            </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1">
+                                        QR Refresh Interval (seconds)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        min="5"
+                                        max="60"
+                                        value={interval}
+                                        onChange={e => setInterval(e.target.value)}
+                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all placeholder:text-slate-400"
+                                    />
+                                    <p className="mt-1 text-xs text-slate-500">Recommended: 10 seconds for optimal security.</p>
+                                </div>
 
-                            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                                <button
-                                    type="button"
-                                    onClick={() => setCreateModalOpen(false)}
-                                    style={{
-                                        background: 'white', border: '1px solid #cbd5e1', color: '#64748b',
-                                        padding: '0.75rem 1.5rem', borderRadius: '8px', cursor: 'pointer', fontWeight: '600'
-                                    }}
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    style={{
-                                        background: '#4c1d95', border: 'none', color: 'white',
-                                        padding: '0.75rem 1.5rem', borderRadius: '8px', cursor: 'pointer', fontWeight: '600'
-                                    }}
-                                >
-                                    {editingEventId ? 'Save Changes' : 'Create Session'}
-                                </button>
-                            </div>
-                        </form>
+                                <div className="flex gap-3 justify-end mt-8">
+                                    <button
+                                        type="button"
+                                        onClick={() => setCreateModalOpen(false)}
+                                        className="px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="px-4 py-2 text-sm font-semibold text-white bg-zinc-900 rounded-lg hover:bg-black shadow-sm transition-colors"
+                                    >
+                                        {editingEventId ? 'Save Changes' : 'Create Session'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             )}

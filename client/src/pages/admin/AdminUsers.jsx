@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
-import api from '../../services/api';
-import AdminLayout from '../../components/admin/AdminLayout';
-import { Search, Filter, Edit2, Ban, CheckCircle, Plus, Eye } from 'lucide-react';
-import AddStudentModal from '../../components/admin/AddStudentModal';
 import { Link } from 'react-router-dom';
+import api from '../../services/api';
+import { Search, Filter, Edit2, Ban, CheckCircle, Plus, Eye, MoreHorizontal, UserCheck } from 'lucide-react';
+import AdminLayout from '../../components/admin/AdminLayout';
+import PageHeader from '../../components/PageHeader';
+import StatusBadge from '../../components/StatusBadge';
+import AddStudentModal from '../../components/admin/AddStudentModal';
+import StatsCard from '../../components/StatsCard';
+
 export default function AdminUsers() {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -77,72 +81,73 @@ export default function AdminUsers() {
         return matchesSearch && matchesYear;
     });
 
-    const headerActions = (
-        <button
-            onClick={() => setShowAddModal(true)}
-            style={{
-                background: '#4f46e5',
-                color: 'white',
-                border: 'none',
-                padding: '0.6rem 1.2rem',
-                borderRadius: '10px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                boxShadow: '0 4px 6px -1px rgba(79, 70, 229, 0.2)',
-                fontSize: '0.9rem',
-                transition: 'all 0.2s'
-            }}
-            onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
-            onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-        >
-            <Plus size={18} /> Add Student
-        </button>
-    );
+    const activeStudents = users.filter(u => !u.user_status || u.user_status === 'active').length;
 
     return (
-        <AdminLayout title="User Management" actions={headerActions}>
+        <AdminLayout title="Students">
+            <PageHeader
+                title="Student Directory"
+                description="Manage student records, enrollment details, and account access."
+                actions={
+                    <button
+                        onClick={() => setShowAddModal(true)}
+                        className="bg-zinc-900 hover:bg-black text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors shadow-sm flex items-center gap-2"
+                    >
+                        <Plus size={16} strokeWidth={1.5} /> Add Student
+                    </button>
+                }
+            />
 
-            {/* Controls */}
-            <div style={{ marginBottom: '2rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                <div style={{ flex: 1, minWidth: '300px', position: 'relative' }}>
-                    <Search size={20} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+            {/* Metrics */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+                <StatsCard
+                    title="Total Students"
+                    value={users.length}
+                    icon={UserCheck}
+                    iconColor="text-zinc-600"
+                    iconBg="bg-zinc-100"
+                />
+                <StatsCard
+                    title="Active Accounts"
+                    value={activeStudents}
+                    icon={CheckCircle}
+                    iconColor="text-zinc-900"
+                    iconBg="bg-zinc-100"
+                />
+                <StatsCard
+                    title="Disabled"
+                    value={users.length - activeStudents}
+                    icon={Ban}
+                    iconColor="text-zinc-400"
+                    iconBg="bg-zinc-100"
+                />
+            </div>
+
+            {/* Filters & Search */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-6 justify-between items-center">
+                <div className="relative w-full sm:w-96 group">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-zinc-600 transition-colors" size={18} strokeWidth={1.5} />
                     <input
                         type="text"
                         placeholder="Search by Name, Email, or Enrollment..."
-                        style={{
-                            width: '100%',
-                            padding: '0.85rem 1rem 0.85rem 3rem',
-                            borderRadius: '12px',
-                            border: '1px solid #cbd5e1',
-                            fontSize: '1rem',
-                            outline: 'none',
-                            background: '#f8fafc',
-                            color: '#334155'
-                        }}
+                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100 outline-none transition-all shadow-sm"
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem', background: '#f1f5f9', padding: '4px', borderRadius: '12px' }}>
+
+                <div className="flex bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
                     {['ALL', '3', '4'].map((yr) => (
                         <button
                             key={yr}
                             onClick={() => setYearFilter(yr)}
-                            style={{
-                                background: yearFilter === yr ? 'white' : 'transparent',
-                                color: yearFilter === yr ? '#4c1d95' : '#64748b',
-                                border: 'none',
-                                padding: '0.6rem 1.25rem',
-                                borderRadius: '10px',
-                                fontWeight: '600',
-                                cursor: 'pointer',
-                                boxShadow: yearFilter === yr ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                                transition: 'all 0.2s',
-                                fontSize: '0.9rem'
-                            }}
+                            className={`
+                                px-4 py-1.5 rounded-lg text-xs font-semibold transition-all
+                                ${yearFilter === yr
+                                    ? 'bg-zinc-900 text-white shadow-sm'
+                                    : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50'
+                                }
+                            `}
                         >
                             {yr === 'ALL' ? 'All Years' : yr === '3' ? '3rd Year' : 'Final Year'}
                         </button>
@@ -150,134 +155,130 @@ export default function AdminUsers() {
                 </div>
             </div>
 
-
-
             {/* Table */}
-            <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0' }}>
-                    <thead>
-                        <tr style={{ background: '#f8fafc' }}>
-                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', borderRadius: '12px 0 0 12px' }}>Enrollment</th>
-                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>Name</th>
-                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>Branch</th>
-                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>Year</th>
-                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>Status</th>
-                            <th style={{ padding: '1rem', textAlign: 'right', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', borderRadius: '0 12px 12px 0' }}>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {loading ? (
-                            <tr><td colSpan="6" style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8' }}>Loading users...</td></tr>
-                        ) : filteredUsers.length === 0 ? (
-                            <tr><td colSpan="6" style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8' }}>No users found matching filters.</td></tr>
-                        ) : (
-                            filteredUsers.map(user => (
-                                <tr key={user.id} style={{ opacity: user.user_status === 'disabled' ? 0.6 : 1, transition: 'background 0.2s' }}>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', fontFamily: 'monospace', color: '#475569', fontWeight: '500' }}>
-                                        {user.enrollment_no || '-'}
-                                    </td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9' }}>
-                                        <div style={{ fontWeight: '600', color: '#0f172a' }}>{user.name}</div>
-                                        <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '2px' }}>{user.email}</div>
-                                    </td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', color: '#475569' }}>{user.branch || '-'}</td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', color: '#475569' }}>
-                                        {user.academic_year ? (user.academic_year === 3 ? '3rd Year' : user.academic_year === 4 ? 'Final Year' : user.academic_year) : '-'}
-                                    </td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9' }}>
-                                        <span style={{
-                                            padding: '4px 10px',
-                                            borderRadius: '20px',
-                                            fontSize: '0.75rem',
-                                            fontWeight: '700',
-                                            letterSpacing: '0.02em',
-                                            color: user.user_status === 'active' || !user.user_status ? '#15803d' : '#b91c1c',
-                                            backgroundColor: user.user_status === 'active' || !user.user_status ? '#dcfce7' : '#fee2e2'
-                                        }}>
-                                            {(user.user_status || 'ACTIVE').toUpperCase()}
-                                        </span>
-                                    </td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', textAlign: 'right' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                                            <Link
-                                                to={`/admin/students/${user.id}`}
-                                                style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', color: '#4f46e5', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                                title="View Profile"
-                                            >
-                                                <Eye size={16} />
-                                            </Link>
-                                            <button
-                                                onClick={() => setEditUser(user)}
-                                                style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                                title="Edit User"
-                                            >
-                                                <Edit2 size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => toggleStatus(user)}
-                                                style={{
-                                                    padding: '0.5rem', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                                                    background: user.user_status === 'disabled' ? '#22c55e' : '#ef4444',
-                                                    color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                                                }}
-                                                title={user.user_status === 'disabled' ? 'Enable Account' : 'Disable Account'}
-                                            >
-                                                {user.user_status === 'disabled' ? <CheckCircle size={16} /> : <Ban size={16} />}
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                <th className="px-6 py-4">Enrollment</th>
+                                <th className="px-6 py-4">Student Name</th>
+                                <th className="px-6 py-4">Branch</th>
+                                <th className="px-6 py-4">Year</th>
+                                <th className="px-6 py-4">Status</th>
+                                <th className="px-6 py-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {loading ? (
+                                <tr><td colSpan="6" className="p-8 text-center text-slate-400">Loading directory...</td></tr>
+                            ) : filteredUsers.length === 0 ? (
+                                <tr><td colSpan="6" className="p-8 text-center text-slate-400">No students found matching your search.</td></tr>
+                            ) : (
+                                filteredUsers.map(user => (
+                                    <tr key={user.id} className={`hover:bg-slate-50 transition-colors group ${user.user_status === 'disabled' ? 'opacity-60 bg-slate-50/50' : ''}`}>
+                                        <td className="px-6 py-4 font-mono text-xs text-slate-500">
+                                            {user.enrollment_no || '-'}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="font-semibold text-slate-900">{user.name}</div>
+                                            <div className="text-xs text-slate-500 mt-0.5">{user.email}</div>
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-600 text-sm whitespace-nowrap">{user.branch || '-'}</td>
+                                        <td className="px-6 py-4 text-slate-600 text-sm">
+                                            {user.academic_year ? (user.academic_year === 3 ? '3rd Year' : user.academic_year === 4 ? 'Final Year' : user.academic_year) : '-'}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <StatusBadge status={user.user_status || 'active'} />
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Link
+                                                    to={`/admin/students/${user.id}`}
+                                                    className="p-2 rounded-lg bg-white border border-slate-200 text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 transition-colors"
+                                                    title="View Profile"
+                                                >
+                                                    <Eye size={16} strokeWidth={1.5} />
+                                                </Link>
+                                                <button
+                                                    onClick={() => setEditUser(user)}
+                                                    className="p-2 rounded-lg bg-white border border-slate-200 text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 transition-colors"
+                                                    title="Edit Details"
+                                                >
+                                                    <Edit2 size={16} strokeWidth={1.5} />
+                                                </button>
+                                                <button
+                                                    onClick={() => toggleStatus(user)}
+                                                    className={`
+                                                        p-2 rounded-lg border transition-colors
+                                                        ${user.user_status === 'disabled'
+                                                            ? 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:bg-zinc-100'
+                                                            : 'bg-zinc-50 border-zinc-200 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600'
+                                                        }
+                                                    `}
+                                                    title={user.user_status === 'disabled' ? 'Enable Account' : 'Disable Account'}
+                                                >
+                                                    {user.user_status === 'disabled' ? <CheckCircle size={16} strokeWidth={1.5} /> : <Ban size={16} strokeWidth={1.5} />}
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             {/* Edit Modal */}
-            {
-                editUser && (
-                    <div style={{
-                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                        background: 'rgba(15, 23, 42, 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-                        backdropFilter: 'blur(4px)'
-                    }}>
-                        <div style={{ background: 'white', width: '90%', maxWidth: '500px', padding: '2rem', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
-                            <h2 style={{ marginTop: 0, marginBottom: '1.5rem', color: '#0f172a', fontSize: '1.5rem' }}>Edit User</h2>
-                            <form onSubmit={handleSaveUser}>
-                                <div style={{ marginBottom: '1rem' }}>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600', color: '#334155' }}>Name</label>
+            {editUser && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm transition-all">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden transform transition-all">
+                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                            <h2 className="text-lg font-bold text-slate-900">Edit Student</h2>
+                            <button onClick={() => setEditUser(null)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                                <X className="hidden" /> {/* Using hidden to import X logic if needed, but custom close usually preferred */}
+                                <span className="text-2xl leading-none">&times;</span>
+                            </button>
+                        </div>
+
+                        <div className="p-6">
+                            <form onSubmit={handleSaveUser} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1">Full Name</label>
                                     <input
                                         value={editUser.name}
                                         onChange={e => setEditUser({ ...editUser, name: e.target.value })}
                                         required
-                                        style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }}
+                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
                                     />
                                 </div>
-                                <div style={{ marginBottom: '1rem' }}>
-                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600', color: '#334155' }}>Enrollment Number</label>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1">Enrollment Number</label>
                                     <input
                                         value={editUser.enrollment_no || ''}
                                         onChange={e => setEditUser({ ...editUser, enrollment_no: e.target.value })}
-                                        style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }}
+                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
                                     />
                                 </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+
+                                <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600', color: '#334155' }}>Branch</label>
+                                        <label className="block text-sm font-semibold text-slate-700 mb-1">Branch</label>
                                         <input
                                             value={editUser.branch || ''}
                                             onChange={e => setEditUser({ ...editUser, branch: e.target.value })}
                                             placeholder="e.g. CSE"
-                                            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }}
+                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
                                         />
                                     </div>
                                     <div>
-                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600', color: '#334155' }}>Academic Year</label>
+                                        <label className="block text-sm font-semibold text-slate-700 mb-1">Academic Year</label>
                                         <select
                                             value={editUser.academic_year || ''}
                                             onChange={e => setEditUser({ ...editUser, academic_year: e.target.value })}
-                                            style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', background: 'white' }}
+                                            className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all bg-white"
                                         >
                                             <option value="">Select Year</option>
                                             <option value="3">3rd Year</option>
@@ -286,28 +287,36 @@ export default function AdminUsers() {
                                     </div>
                                 </div>
 
-                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                                    <button type="button" onClick={() => setEditUser(null)} style={{ background: 'white', color: '#475569', border: '1px solid #cbd5e1', padding: '0.75rem 1.5rem', borderRadius: '10px', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
-                                    <button type="submit" style={{ background: '#4c1d95', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '10px', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(76, 29, 149, 0.4)' }}>Save Changes</button>
+                                <div className="flex gap-3 justify-end mt-8">
+                                    <button
+                                        type="button"
+                                        onClick={() => setEditUser(null)}
+                                        className="px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="px-4 py-2 text-sm font-semibold text-white bg-zinc-900 rounded-lg hover:bg-black shadow-sm transition-colors"
+                                    >
+                                        Save Changes
+                                    </button>
                                 </div>
                             </form>
                         </div>
                     </div>
-                )
-            }
+                </div>
+            )}
 
-            {/* Add Student Modal */}
-            {
-                showAddModal && (
-                    <AddStudentModal
-                        onClose={() => setShowAddModal(false)}
-                        onSuccess={() => {
-                            setShowAddModal(false);
-                            fetchUsers();
-                        }}
-                    />
-                )
-            }
-        </AdminLayout >
+            {showAddModal && (
+                <AddStudentModal
+                    onClose={() => setShowAddModal(false)}
+                    onSuccess={() => {
+                        setShowAddModal(false);
+                        fetchUsers();
+                    }}
+                />
+            )}
+        </AdminLayout>
     );
 }

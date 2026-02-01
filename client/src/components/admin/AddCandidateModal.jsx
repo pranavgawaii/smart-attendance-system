@@ -179,9 +179,9 @@ export default function AddCandidateModal({ assessmentId, onClose, onSuccess }) 
                         onClick={() => setActiveTab('UPLOAD')}
                         style={{
                             padding: '1rem', background: 'none', border: 'none',
-                            borderBottom: activeTab === 'UPLOAD' ? '3px solid #4c1d95' : '3px solid transparent',
+                            borderBottom: activeTab === 'UPLOAD' ? '3px solid #18181b' : '3px solid transparent',
                             fontWeight: activeTab === 'UPLOAD' ? '700' : '500',
-                            color: activeTab === 'UPLOAD' ? '#4c1d95' : '#64748b',
+                            color: activeTab === 'UPLOAD' ? '#18181b' : '#64748b',
                             cursor: 'pointer', marginRight: '1rem',
                             display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.95rem'
                         }}
@@ -192,9 +192,9 @@ export default function AddCandidateModal({ assessmentId, onClose, onSuccess }) 
                         onClick={() => setActiveTab('MANUAL')}
                         style={{
                             padding: '1rem', background: 'none', border: 'none',
-                            borderBottom: activeTab === 'MANUAL' ? '3px solid #4c1d95' : '3px solid transparent',
+                            borderBottom: activeTab === 'MANUAL' ? '3px solid #18181b' : '3px solid transparent',
                             fontWeight: activeTab === 'MANUAL' ? '700' : '500',
-                            color: activeTab === 'MANUAL' ? '#4c1d95' : '#64748b',
+                            color: activeTab === 'MANUAL' ? '#18181b' : '#64748b',
                             cursor: 'pointer',
                             display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.95rem'
                         }}
@@ -224,7 +224,7 @@ export default function AddCandidateModal({ assessmentId, onClose, onSuccess }) 
                                     </p>
                                 </div>
                                 <label style={{
-                                    background: '#4c1d95', color: 'white', padding: '0.75rem 1.5rem',
+                                    background: '#18181b', color: 'white', padding: '0.75rem 1.5rem',
                                     borderRadius: '10px', fontWeight: '600', cursor: 'pointer', marginTop: '1rem',
                                     display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.95rem'
                                 }}>
@@ -334,28 +334,27 @@ export default function AddCandidateModal({ assessmentId, onClose, onSuccess }) 
                                         {paginatedUsers.length === 0 ? (
                                             <tr><td colSpan="4" style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8' }}>No students found matching filters.</td></tr>
                                         ) : (
-                                            paginatedUsers.map(u => (
-                                                <tr key={u.id}
-                                                    onClick={() => toggleSelection(u.id)}
-                                                    style={{
-                                                        borderBottom: '1px solid #f1f5f9', cursor: 'pointer',
-                                                        background: selectedIds.has(u.id) ? '#f5f3ff' : 'white',
-                                                        transition: 'background 0.1s'
-                                                    }}
-                                                >
-                                                    <td style={{ padding: '1rem 2rem' }}>
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedIds.has(u.id)}
-                                                            onChange={() => toggleSelection(u.id)}
-                                                            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                                                        />
-                                                    </td>
-                                                    <td style={{ padding: '1rem', fontFamily: 'monospace', color: '#334155', fontWeight: '500' }}>{u.enrollment_no || '-'}</td>
-                                                    <td style={{ padding: '1rem', fontWeight: '600', color: '#0f172a' }}>{u.name}</td>
-                                                    <td style={{ padding: '1rem', color: '#64748b' }}>{u.branch} <span style={{ fontSize: '0.85rem', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', marginLeft: '6px' }}>Year {u.academic_year}</span></td>
-                                                </tr>
-                                            ))
+                                            paginatedUsers.map(u => <tr key={u.id}
+                                                onClick={() => toggleSelection(u.id)}
+                                                style={{
+                                                    borderBottom: '1px solid #f1f5f9', cursor: 'pointer',
+                                                    background: selectedIds.has(u.id) ? '#f4f4f5' : 'white',
+                                                    transition: 'background 0.1s'
+                                                }}
+                                            >
+                                                <td style={{ padding: '1rem 2rem' }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedIds.has(u.id)}
+                                                        onChange={() => toggleSelection(u.id)}
+                                                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                                    />
+                                                </td>
+                                                <td style={{ padding: '1rem', fontFamily: 'monospace', color: '#334155', fontWeight: '500' }}>{u.enrollment_no || '-'}</td>
+                                                <td style={{ padding: '1rem', fontWeight: '600', color: '#0f172a' }}>{u.name}</td>
+                                                <td style={{ padding: '1rem', color: '#64748b' }}>{u.branch} <span style={{ fontSize: '0.85rem', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', marginLeft: '6px' }}>Year {u.academic_year}</span></td>
+                                            </tr>
+                                            )
                                         )}
                                     </tbody>
                                 </table>
@@ -405,7 +404,7 @@ export default function AddCandidateModal({ assessmentId, onClose, onSuccess }) 
                     {activeTab === 'UPLOAD' ? (
                         <button onClick={handleUploadSubmit} disabled={parsedCandidates.filter(c => c.status === 'FOUND').length === 0}
                             style={{
-                                background: '#4c1d95', color: 'white', border: 'none',
+                                background: '#18181b', color: 'white', border: 'none',
                                 padding: '0.75rem 1.5rem', borderRadius: '10px', fontWeight: '600', cursor: 'pointer',
                                 opacity: parsedCandidates.filter(c => c.status === 'FOUND').length === 0 ? 0.5 : 1
                             }}
@@ -415,7 +414,7 @@ export default function AddCandidateModal({ assessmentId, onClose, onSuccess }) 
                     ) : (
                         <button onClick={handleManualSubmit} disabled={selectedIds.size === 0}
                             style={{
-                                background: '#4c1d95', color: 'white', border: 'none',
+                                background: '#18181b', color: 'white', border: 'none',
                                 padding: '0.75rem 1.5rem', borderRadius: '10px', fontWeight: '600', cursor: 'pointer',
                                 opacity: selectedIds.size === 0 ? 0.5 : 1
                             }}

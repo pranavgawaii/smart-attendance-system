@@ -7,9 +7,12 @@ const qrRoutes = require('./routes/qr.routes');
 const attendanceRoutes = require('./routes/attendance.routes');
 const authRoutes = require('./routes/auth.routes');
 const labRoutes = require('./routes/lab.routes');
+const labsRoutes = require('./routes/labs.routes');
 const assessmentRoutes = require('./routes/assessment.routes');
 const studentRoutes = require('./routes/student.routes');
 const placementRoutes = require('./routes/placement.routes');
+const placementAssessmentsRoutes = require('./routes/placement-assessments.routes');
+const allocationsRoutes = require('./routes/allocations.routes');
 const adminManagementRoutes = require('./routes/admin-management.routes');
 const { authenticateToken, verifySuperAdmin } = require('./middlewares/auth.middleware');
 
@@ -39,10 +42,13 @@ app.use('/users', userRoutes);
 app.use('/events', authenticateToken, eventRoutes);
 app.use('/qr-sessions', authenticateToken, qrRoutes);
 app.use('/attendance', authenticateToken, attendanceRoutes);
-app.use('/labs', authenticateToken, labRoutes);
+app.use('/labs-old', authenticateToken, labRoutes);
+app.use('/labs', authenticateToken, labsRoutes);
 app.use('/assessments', authenticateToken, assessmentRoutes);
 app.use('/student', authenticateToken, studentRoutes);
 app.use('/placement', authenticateToken, placementRoutes);
+app.use('/placement-assessments', authenticateToken, placementAssessmentsRoutes);
+app.use('/allocations', authenticateToken, allocationsRoutes);
 app.use('/admin-management', authenticateToken, verifySuperAdmin, adminManagementRoutes);
 
 // Compatibility: Also mount under /api for robust frontend connecting
@@ -52,10 +58,13 @@ apiRouter.use('/users', userRoutes);
 apiRouter.use('/events', authenticateToken, eventRoutes);
 apiRouter.use('/qr-sessions', authenticateToken, qrRoutes);
 apiRouter.use('/attendance', authenticateToken, attendanceRoutes);
-apiRouter.use('/labs', authenticateToken, labRoutes);
+apiRouter.use('/labs-old', authenticateToken, labRoutes);
+apiRouter.use('/labs', authenticateToken, labsRoutes);
 apiRouter.use('/assessments', authenticateToken, assessmentRoutes);
 apiRouter.use('/student', authenticateToken, studentRoutes);
 apiRouter.use('/placement', authenticateToken, placementRoutes);
+apiRouter.use('/placement-assessments', authenticateToken, placementAssessmentsRoutes);
+apiRouter.use('/allocations', authenticateToken, allocationsRoutes);
 apiRouter.use('/admin-management', authenticateToken, verifySuperAdmin, adminManagementRoutes);
 app.use('/api', apiRouter);
 

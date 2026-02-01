@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../../services/api';
 import AdminLayout from '../../components/admin/AdminLayout';
-import { ArrowLeft, Edit2, CheckCircle, RefreshCcw, Save, FileText, Download, Printer } from 'lucide-react';
+import PageHeader from '../../components/PageHeader';
+import EmptyState from '../../components/EmptyState';
+import { ArrowLeft, Edit2, RefreshCcw, Save, FileText, Printer, Armchair, AlertCircle, X } from 'lucide-react';
 
 export default function SeatAllocation() {
     const { id } = useParams();
@@ -98,10 +100,8 @@ export default function SeatAllocation() {
             const blobUrl = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
 
             if (type === 'pdf') {
-                // Open in new tab for preview/printing
                 window.open(blobUrl, '_blank');
             } else {
-                // Force download for CSV
                 const link = document.createElement('a');
                 link.href = blobUrl;
                 link.setAttribute('download', `allocations-${id}${labId ? `-${labId}` : ''}.${type}`);
@@ -110,7 +110,6 @@ export default function SeatAllocation() {
                 link.remove();
             }
 
-            // Clean up blob URL after a delay to allow new tab to load
             setTimeout(() => window.URL.revokeObjectURL(blobUrl), 100);
 
         } catch (error) {
@@ -127,73 +126,95 @@ export default function SeatAllocation() {
     }, {});
 
     const actionButtons = (
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
+        <div className="flex items-center gap-3">
             {view === 'PREVIEW' && (
                 <>
-                    <button onClick={() => { setView('EMPTY'); setAllocations([]); }} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#475569', padding: '0.5rem 1rem', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
-                    <button onClick={handleConfirm} style={{ background: '#4c1d95', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Save size={16} /> Commit & Save
+                    <button
+                        onClick={() => { setView('EMPTY'); setAllocations([]); }}
+                        className="px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleConfirm}
+                        className="px-4 py-2 text-sm font-semibold text-white bg-zinc-900 rounded-lg hover:bg-zinc-800 shadow-sm flex items-center gap-2"
+                    >
+                        <Save size={16} strokeWidth={1.5} />Commit & Save
                     </button>
                 </>
             )}
             {view === 'ALLOCATED' && (
                 <>
-                    <button onClick={() => handleExport('csv')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#0f172a', padding: '0.5rem 1rem', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <FileText size={16} /> CSV
+                    <button
+                        onClick={() => handleExport('csv')}
+                        className="px-3 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2"
+                    >
+                        <FileText size={16} strokeWidth={1.5} /> CSV
                     </button>
-                    <button onClick={() => handleExport('pdf')} style={{ background: 'white', border: '1px solid #cbd5e1', color: '#0f172a', padding: '0.5rem 1rem', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Printer size={16} /> Print All (PDF)
+                    <button
+                        onClick={() => handleExport('pdf')}
+                        className="px-3 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2"
+                    >
+                        <Printer size={16} strokeWidth={1.5} /> Print All
                     </button>
-                    <button onClick={handleAutoAllocate} style={{ background: '#fff1f2', color: '#e11d48', border: '1px solid #fecdd3', padding: '0.5rem 1rem', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <RefreshCcw size={16} /> Re-Allocate
+                    <button
+                        onClick={handleAutoAllocate}
+                        className="px-3 py-2 text-sm font-semibold text-zinc-600 bg-zinc-50 border border-zinc-200 rounded-lg hover:bg-zinc-100 transition-colors flex items-center gap-2"
+                    >
+                        <RefreshCcw size={16} strokeWidth={1.5} /> Re-Allocate
                     </button>
                 </>
             )}
         </div>
     );
 
-    if (loading) return <AdminLayout title="Seat Allocation"><div>Loading...</div></AdminLayout>;
-    if (!assessment) return <AdminLayout title="Seat Allocation"><div>Assessment not found</div></AdminLayout>;
+    if (loading) return <AdminLayout title="Seat Allocation"><div className="p-12 text-center text-slate-400">Loading workspace...</div></AdminLayout>;
+    if (!assessment) return <AdminLayout title="Seat Allocation"><div className="p-12 text-center text-red-400">Assessment not found</div></AdminLayout>;
 
     return (
-        <AdminLayout
-            title={
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <Link to={`/admin/assessments/${id}`} style={{ textDecoration: 'none', color: '#64748b', display: 'flex', alignItems: 'center' }}>
-                            <ArrowLeft size={20} />
+        <AdminLayout title="Seat Allocation">
+            <PageHeader
+                title={
+                    <div className="flex items-center gap-2">
+                        <Link to="/admin/allocations" className="text-slate-400 hover:text-slate-600 transition-colors">
+                            <ArrowLeft size={24} strokeWidth={1.5} />
                         </Link>
                         <span>Seat Allocation</span>
                     </div>
-                    <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 'normal', marginLeft: 'calc(20px + 1rem)' }}>{assessment.title}</span>
-                </div>
-            }
-            actions={actionButtons}
-        >
+                }
+                description={`Managing seats for: ${assessment.title}`}
+                actions={actionButtons}
+            />
+
             {view === 'EMPTY' && (
-                <div style={{ padding: '6rem 2rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <div style={{ fontSize: '3rem', marginBottom: '1.5rem', background: '#f8fafc', width: '80px', height: '80px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🪑</div>
+                <div className="max-w-2xl mx-auto mt-12 bg-white rounded-2xl border border-slate-200 shadow-sm p-12 text-center">
+                    <div className="w-20 h-20 bg-zinc-50 text-zinc-900 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Armchair size={40} strokeWidth={1.5} />
+                    </div>
 
                     {assessment.candidates && assessment.candidates.length === 0 ? (
                         <>
-                            <h3 style={{ fontSize: '1.25rem', color: '#0f172a', margin: '0 0 0.5rem 0' }}>No Candidates Found</h3>
-                            <p style={{ maxWidth: '500px', color: '#64748b', marginBottom: '2rem' }}>
+                            <h3 className="text-xl font-bold text-slate-900 mb-2">No Candidates Found</h3>
+                            <p className="text-slate-500 mb-8 max-w-md mx-auto">
                                 You cannot allocate seats because no students have been added to this assessment yet.
                             </p>
-                            <Link to={`/admin/assessments/${id}`} style={{ textDecoration: 'none' }}>
-                                <button style={{ background: '#4c1d95', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '8px', fontWeight: '600', cursor: 'pointer' }}>
+                            <Link to={`/admin/assessments/${id}`}>
+                                <button className="px-6 py-3 bg-zinc-900 text-white rounded-xl font-semibold hover:bg-zinc-800 shadow-lg shadow-zinc-200 transition-all">
                                     &larr; Go Back & Add Candidates
                                 </button>
                             </Link>
                         </>
                     ) : (
                         <>
-                            <h3 style={{ fontSize: '1.25rem', color: '#0f172a', margin: '0 0 0.5rem 0' }}>No Seats Allocated</h3>
-                            <p style={{ maxWidth: '500px', color: '#64748b', marginBottom: '2rem' }}>
-                                Ready to assign seats? Use Auto-Allocate to distribute eligible students across active labs sequentially.
+                            <h3 className="text-xl font-bold text-slate-900 mb-2">Ready to Allocate?</h3>
+                            <p className="text-slate-500 mb-8 max-w-md mx-auto">
+                                Use our intelligent auto-allocation to distribute {assessment.candidates?.length || 0} eligible students across available labs optimizing for capacity.
                             </p>
-                            <button onClick={handleAutoAllocate} style={{ background: '#4c1d95', color: 'white', border: 'none', padding: '0.75rem 2rem', borderRadius: '8px', fontSize: '1rem', fontWeight: '600', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(76, 29, 149, 0.4)' }}>
-                                ⚡ Auto Allocation
+                            <button
+                                onClick={handleAutoAllocate}
+                                className="px-8 py-3 bg-zinc-900 text-white rounded-xl font-semibold hover:bg-zinc-800 shadow-lg shadow-zinc-200 transition-all flex items-center gap-2 mx-auto"
+                            >
+                                <RefreshCcw size={18} strokeWidth={1.5} /> Run Auto Allocation
                             </button>
                         </>
                     )}
@@ -201,56 +222,62 @@ export default function SeatAllocation() {
             )}
 
             {(view === 'PREVIEW' || view === 'ALLOCATED') && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem' }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {Object.keys(groupedAllocations).map(labName => (
-                        <div key={labName} style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                            <div style={{ padding: '1rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', fontWeight: '600', color: '#334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div key={labName} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[500px]">
+                            <div className="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center shrink-0">
                                 <div>
-                                    {labName} <span style={{ fontSize: '0.75rem', color: '#64748b', background: 'white', padding: '2px 8px', borderRadius: '12px', border: '1px solid #e2e8f0', marginLeft: '8px' }}>{groupedAllocations[labName].length} Students</span>
+                                    <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wide">{labName}</h3>
+                                    <div className="text-xs text-slate-500 mt-1">{groupedAllocations[labName].length} Seats Assigned</div>
                                 </div>
                                 <button
                                     onClick={() => {
-                                        // Find valid labId from one of the allocations in this group
                                         const labId = groupedAllocations[labName][0]?.lab_id;
-                                        if (labId) {
-                                            handleExport('pdf', labId);
-                                        } else {
-                                            console.error('Lab ID missing for group:', labName, groupedAllocations[labName]);
-                                            alert('Error: Could not identify Lab ID for printing.');
-                                        }
+                                        if (labId) handleExport('pdf', labId);
                                     }}
+                                    className="p-1.5 bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-zinc-900 hover:border-zinc-300 transition-colors"
                                     title="Print this lab"
-                                    style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '6px', cursor: 'pointer', color: '#475569' }}
                                 >
-                                    <Printer size={16} />
+                                    <Printer size={16} strokeWidth={1.5} />
                                 </button>
                             </div>
-                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-                                <tbody>
-                                    {groupedAllocations[labName].map(a => (
-                                        <tr key={a.seat_number + a.user_id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                            <td style={{ padding: '0.75rem', fontWeight: '700', width: '50px', textAlign: 'center', color: '#4c1d95', background: '#f5f3ff' }}>
-                                                {a.seat_number}
-                                            </td>
-                                            <td style={{ padding: '0.75rem' }}>
-                                                <div style={{ fontWeight: '500', color: '#0f172a' }}>{a.user_name}</div>
-                                                <div style={{ fontSize: '0.75rem', color: '#64748b', fontFamily: 'monospace' }}>{a.enrollment_no}</div>
-                                            </td>
-                                            {view === 'ALLOCATED' && (
-                                                <td style={{ padding: '0.75rem', textAlign: 'right' }}>
-                                                    <button
-                                                        onClick={() => { setEditingAllocation(a); setShowEditModal(true); }}
-                                                        style={{ background: 'white', border: '1px solid #e2e8f0', color: '#64748b', cursor: 'pointer', padding: '4px', borderRadius: '4px' }}
-                                                        title="Edit Seat"
-                                                    >
-                                                        <Edit2 size={14} />
-                                                    </button>
-                                                </td>
-                                            )}
+
+                            <div className="flex-1 overflow-y-auto p-0">
+                                <table className="w-full text-left text-sm border-collapse">
+                                    <thead className="bg-slate-50 sticky top-0 z-10 shadow-sm">
+                                        <tr>
+                                            <th className="px-4 py-2 text-xs font-semibold text-slate-500 w-16 text-center">Seat</th>
+                                            <th className="px-4 py-2 text-xs font-semibold text-slate-500">Student</th>
+                                            {view === 'ALLOCATED' && <th className="px-2 py-2 w-8"></th>}
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100">
+                                        {groupedAllocations[labName].map(a => (
+                                            <tr key={`${a.seat_number}-${a.user_id}`} className="hover:bg-slate-50 transition-colors group">
+                                                <td className="px-4 py-3 text-center">
+                                                    <span className="inline-block w-8 h-8 leading-8 rounded-lg bg-zinc-100 text-zinc-900 font-bold text-xs ring-1 ring-zinc-200">
+                                                        {a.seat_number}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="font-medium text-slate-900 truncate max-w-[150px]" title={a.user_name}>{a.user_name}</div>
+                                                    <div className="text-xs text-slate-500 font-mono">{a.enrollment_no}</div>
+                                                </td>
+                                                {view === 'ALLOCATED' && (
+                                                    <td className="px-2 py-3 text-right">
+                                                        <button
+                                                            onClick={() => { setEditingAllocation(a); setShowEditModal(true); }}
+                                                            className="p-1.5 rounded-md text-slate-400 hover:text-zinc-900 hover:bg-slate-100 transition-colors opacity-0 group-hover:opacity-100"
+                                                        >
+                                                            <Edit2 size={14} strokeWidth={1.5} />
+                                                        </button>
+                                                    </td>
+                                                )}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -258,43 +285,63 @@ export default function SeatAllocation() {
 
             {/* Edit Modal */}
             {showEditModal && editingAllocation && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1100, backdropFilter: 'blur(4px)' }}>
-                    <div style={{ background: 'white', width: '400px', padding: '2rem', borderRadius: '16px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
-                        <h3 style={{ margin: '0 0 1.5rem 0', color: '#0f172a' }}>Edit Seat Allocation</h3>
-                        <div style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px' }}>
-                            <div style={{ fontWeight: '600', color: '#334155' }}>{editingAllocation.user_name}</div>
-                            <div style={{ fontSize: '0.9rem', color: '#64748b' }}>{editingAllocation.enrollment_no}</div>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm transition-all">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden transform transition-all">
+                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                            <h3 className="text-lg font-bold text-slate-900">Edit Seat</h3>
+                            <button onClick={() => setShowEditModal(false)} className="text-slate-400 hover:text-slate-600">
+                                <X size={20} strokeWidth={1.5} />
+                            </button>
                         </div>
-                        <form onSubmit={handleUpdateSeat}>
-                            <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600', color: '#334155' }}>Lab</label>
-                                <select
-                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', background: 'white' }}
-                                    value={editingAllocation.lab_id}
-                                    onChange={e => setEditingAllocation({ ...editingAllocation, lab_id: parseInt(e.target.value) })}
-                                >
-                                    {labs.map(l => (
-                                        <option key={l.id} value={l.id}>{l.name} (Max {l.total_seats})</option>
-                                    ))}
-                                </select>
+
+                        <div className="p-6">
+                            <div className="mb-6 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                <div className="text-sm font-semibold text-slate-900">{editingAllocation.user_name}</div>
+                                <div className="text-xs text-slate-500 font-mono mt-0.5">{editingAllocation.enrollment_no}</div>
                             </div>
 
-                            <div style={{ marginBottom: '1.5rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600', color: '#334155' }}>Seat Number</label>
-                                <input
-                                    type="number"
-                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem' }}
-                                    value={editingAllocation.seat_number}
-                                    onChange={e => setEditingAllocation({ ...editingAllocation, seat_number: parseInt(e.target.value) })}
-                                    min="1"
-                                />
-                            </div>
+                            <form onSubmit={handleUpdateSeat} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1">New Lab</label>
+                                    <select
+                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-100 outline-none transition-all bg-white"
+                                        value={editingAllocation.lab_id}
+                                        onChange={e => setEditingAllocation({ ...editingAllocation, lab_id: parseInt(e.target.value) })}
+                                    >
+                                        {labs.map(l => (
+                                            <option key={l.id} value={l.id}>{l.name} (Max {l.total_seats})</option>
+                                        ))}
+                                    </select>
+                                </div>
 
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                                <button type="button" onClick={() => setShowEditModal(false)} style={{ background: 'white', color: '#475569', border: '1px solid #cbd5e1', padding: '0.75rem 1.5rem', borderRadius: '10px', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
-                                <button type="submit" style={{ background: '#4c1d95', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '10px', fontWeight: '600', cursor: 'pointer' }}>Save Changes</button>
-                            </div>
-                        </form>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1">New Seat Number</label>
+                                    <input
+                                        type="number"
+                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-zinc-500 focus:ring-2 focus:ring-zinc-100 outline-none transition-all"
+                                        value={editingAllocation.seat_number}
+                                        onChange={e => setEditingAllocation({ ...editingAllocation, seat_number: parseInt(e.target.value) })}
+                                        min="1"
+                                    />
+                                </div>
+
+                                <div className="flex gap-3 justify-end mt-8">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowEditModal(false)}
+                                        className="px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="px-4 py-2 text-sm font-semibold text-white bg-zinc-900 rounded-lg hover:bg-zinc-800 shadow-sm shadow-zinc-200 transition-colors"
+                                    >
+                                        Save Changes
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             )}

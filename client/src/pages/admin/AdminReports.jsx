@@ -2,7 +2,11 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import AdminLayout from '../../components/admin/AdminLayout';
-import { Search, Eye, Download, Calendar, Users, TrendingUp, BarChart3 } from 'lucide-react';
+import PageHeader from '../../components/PageHeader';
+import StatusBadge from '../../components/StatusBadge';
+import EmptyState from '../../components/EmptyState';
+import { Search, Eye, Calendar, Users, TrendingUp, BarChart3, FileBarChart } from 'lucide-react';
+import StatsCard from '../../components/StatsCard';
 
 export default function AdminReports() {
     const [events, setEvents] = useState([]);
@@ -34,14 +38,13 @@ export default function AdminReports() {
             let totalAttendance = 0;
 
             // Fetch attendance count for each event
-            for (const event of res.data) {
-                try {
-                    const statsRes = await api.get(`/events/${event.id}/stats`);
-                    totalAttendance += statsRes.data.count || 0;
-                } catch (err) {
-                    console.error(`Failed to fetch stats for event ${event.id}`);
-                }
-            }
+            // Note: Optimally this should be a single backend call, but keeping logic effectively same for now
+            const attendancePromises = res.data.map(event =>
+                api.get(`/events/${event.id}/stats`).then(r => r.data.count || 0).catch(() => 0)
+            );
+
+            const results = await Promise.all(attendancePromises);
+            totalAttendance = results.reduce((a, b) => a + b, 0);
 
             setStats({
                 totalEvents,
@@ -57,95 +60,101 @@ export default function AdminReports() {
         e.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const getStatusBadge = (state) => {
-        let color = '#64748b';
-        let bg = '#f1f5f9';
-        let label = 'NOT STARTED';
-
-        if (state === 'ACTIVE') { color = '#15803d'; bg = '#dcfce7'; label = 'LIVE'; }
-        else if (state === 'PAUSED') { color = '#b45309'; bg = '#fef3c7'; label = 'PAUSED'; }
-        else if (state === 'STOPPED') { color = '#b91c1c'; bg = '#fee2e2'; label = 'CLOSED'; }
-
-        return (
-            <span style={{
-                color: color, backgroundColor: bg, padding: '4px 10px',
-                borderRadius: '20px', fontSize: '0.75rem', fontWeight: '700',
-                letterSpacing: '0.02em', textTransform: 'uppercase'
-            }}>
-                {label}
-            </span>
-        );
-    };
-
     return (
-        <AdminLayout title="Reports & Analytics">
-            {/* Search */}
-            <div style={{ marginBottom: '2rem' }}>
-                <div style={{ position: 'relative', maxWidth: '400px' }}>
-                    <Search size={20} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+        <AdminLayout title="Reports">
+            <PageHeader
+                title="Reports & Analytics"
+                description="View attendance records, session performance, and student engagement metrics."
+            />
+
+            {/* Metrics */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+                <StatsCard
+                    title="Total Sessions Conducted"
+                    value={stats.totalEvents}
+                    icon={Calendar}
+                    iconColor="text-zinc-600"
+                    iconBg="bg-zinc-100"
+                />
+                <StatsCard
+                    title="Total Attendance"
+                    value={stats.totalAttendance}
+                    icon={Users}
+                    iconColor="text-zinc-900"
+                    iconBg="bg-zinc-100"
+                />
+                <StatsCard
+                    title="Avg. Attendance / Session"
+                    value={stats.avgAttendance}
+                    icon={TrendingUp}
+                    iconColor="text-zinc-500"
+                    iconBg="bg-zinc-100"
+                />
+            </div>
+
+            {/* Search & Table */}
+            <div className="flex flex-col gap-6">
+                <div className="relative max-w-md">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} strokeWidth={1.5} />
                     <input
                         type="text"
-                        placeholder="Search Events..."
-                        style={{
-                            width: '100%', padding: '0.85rem 1rem 0.85rem 3rem',
-                            borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '1rem',
-                            outline: 'none', background: '#f8fafc', color: '#334155'
-                        }}
+                        placeholder="Search session reports..."
+                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100 outline-none transition-all shadow-sm"
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
                     />
                 </div>
-            </div>
 
-            {/* Table */}
-            <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0' }}>
-                    <thead>
-                        <tr style={{ background: '#f8fafc' }}>
-                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', borderRadius: '12px 0 0 12px' }}>Event Name</th>
-                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>Date</th>
-                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>Status</th>
-                            <th style={{ padding: '1rem', textAlign: 'right', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', borderRadius: '0 12px 12px 0' }}>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {loading ? (
-                            <tr><td colSpan="4" style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8' }}>Loading events...</td></tr>
-                        ) : filteredEvents.length === 0 ? (
-                            <tr><td colSpan="4" style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8' }}>No events found.</td></tr>
-                        ) : (
-                            filteredEvents.map(event => (
-                                <tr key={event.id} style={{ transition: 'background 0.2s' }}>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', fontWeight: '600', color: '#0f172a' }}>
-                                        {event.name}
-                                        <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px' }}>{event.venue || 'No Venue'}</div>
-                                    </td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', color: '#475569' }}>
-                                        {new Date(event.created_at).toLocaleDateString()}
-                                    </td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9' }}>
-                                        {getStatusBadge(event.session_state)}
-                                    </td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', textAlign: 'right' }}>
-                                        <Link to={`/admin/events/${event.id}/attendance`} style={{ textDecoration: 'none' }}>
-                                            <button style={{
-                                                background: 'white', color: '#4c1d95', border: '1px solid #e2e8f0',
-                                                padding: '0.5rem 1rem', borderRadius: '8px', fontWeight: '600',
-                                                fontSize: '0.85rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px',
-                                                transition: 'all 0.2s'
-                                            }}
-                                                onMouseOver={(e) => { e.currentTarget.style.background = '#f5f3ff'; e.currentTarget.style.borderColor = '#ddd6fe'; }}
-                                                onMouseOut={(e) => { e.currentTarget.style.background = 'white'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
-                                            >
-                                                <Eye size={16} /> View Details
-                                            </button>
-                                        </Link>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+                {loading ? (
+                    <div className="p-12 text-center text-slate-400">Loading reports...</div>
+                ) : filteredEvents.length === 0 ? (
+                    <EmptyState
+                        title="No Reports Found"
+                        description="No sessions match your search criteria."
+                        icon={FileBarChart}
+                    />
+                ) : (
+                    <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                        <th className="px-6 py-4">Event Name</th>
+                                        <th className="px-6 py-4">Date</th>
+                                        <th className="px-6 py-4">Status</th>
+                                        <th className="px-6 py-4 text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {filteredEvents.map(event => (
+                                        <tr key={event.id} className="hover:bg-slate-50 transition-colors group">
+                                            <td className="px-6 py-4">
+                                                <div className="font-semibold text-slate-900">{event.name}</div>
+                                                <div className="text-xs text-slate-500 mt-0.5">{event.venue || 'No Venue'}</div>
+                                            </td>
+                                            <td className="px-6 py-4 text-slate-600">
+                                                <div className="flex items-center gap-2">
+                                                    <Calendar size={14} className="text-slate-400" strokeWidth={1.5} />
+                                                    {new Date(event.created_at).toLocaleDateString()}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <StatusBadge status={event.session_state} />
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <Link to={`/admin/events/${event.id}/attendance`}>
+                                                    <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-zinc-600 text-xs font-semibold hover:bg-zinc-50 hover:text-zinc-900 transition-colors shadow-sm">
+                                                        <Eye size={14} strokeWidth={1.5} /> View Report
+                                                    </button>
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
             </div>
         </AdminLayout>
     );

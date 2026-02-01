@@ -314,9 +314,9 @@ export default function CreatePlacement() {
                                     style={{
                                         padding: '0.5rem 1rem',
                                         borderRadius: '20px',
-                                        border: selectedBranches.includes(branch) ? '1px solid #4c1d95' : '1px solid #cbd5e1',
-                                        background: selectedBranches.includes(branch) ? '#f3e8ff' : 'white',
-                                        color: selectedBranches.includes(branch) ? '#4c1d95' : '#64748b',
+                                        border: selectedBranches.includes(branch) ? '1px solid #18181b' : '1px solid #e4e4e7',
+                                        background: selectedBranches.includes(branch) ? '#f4f4f5' : 'white',
+                                        color: selectedBranches.includes(branch) ? '#18181b' : '#71717a',
                                         cursor: 'pointer',
                                         fontWeight: '600',
                                         fontSize: '0.9rem'
@@ -339,9 +339,9 @@ export default function CreatePlacement() {
                                     style={{
                                         padding: '0.5rem 1rem',
                                         borderRadius: '20px',
-                                        border: selectedYears.includes(year) ? '1px solid #4c1d95' : '1px solid #cbd5e1',
-                                        background: selectedYears.includes(year) ? '#f3e8ff' : 'white',
-                                        color: selectedYears.includes(year) ? '#4c1d95' : '#64748b',
+                                        border: selectedYears.includes(year) ? '1px solid #18181b' : '1px solid #e4e4e7',
+                                        background: selectedYears.includes(year) ? '#f4f4f5' : 'white',
+                                        color: selectedYears.includes(year) ? '#18181b' : '#71717a',
                                         cursor: 'pointer',
                                         fontWeight: '600',
                                         fontSize: '0.9rem'
@@ -370,11 +370,11 @@ export default function CreatePlacement() {
                         disabled={submitting}
                         style={{
                             padding: '1rem 2rem', borderRadius: '12px', border: 'none',
-                            background: '#4c1d95', color: 'white', fontWeight: '600', cursor: 'pointer',
+                            background: '#18181b', color: 'white', fontWeight: '600', cursor: 'pointer',
                             display: 'flex', alignItems: 'center', gap: '0.75rem', opacity: submitting ? 0.7 : 1
                         }}
                     >
-                        <Save size={20} />
+                        <Save size={20} strokeWidth={1.5} />
                         {submitting ? 'Saving...' : id ? 'Update Drive' : 'Create Drive'}
                     </button>
                 </div>

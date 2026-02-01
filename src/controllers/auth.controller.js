@@ -26,12 +26,9 @@ const requestOtp = async (req, res) => {
             });
         }
 
-        // 2. Real Account: Use Supabase Magic Link / OTP
+        // 2. Send OTP via Supabase
         const { error } = await supabase.auth.signInWithOtp({
-            email: email,
-            options: {
-                shouldCreateUser: false // Don't auto-create users on login
-            }
+            email: email
         });
 
         if (error) {

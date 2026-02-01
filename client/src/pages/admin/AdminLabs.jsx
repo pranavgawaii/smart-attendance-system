@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
 import AdminLayout from '../../components/admin/AdminLayout';
-import { Plus, Edit2, CheckCircle, Ban, Monitor } from 'lucide-react';
+import PageHeader from '../../components/PageHeader';
+import StatusBadge from '../../components/StatusBadge';
+import EmptyState from '../../components/EmptyState';
+import { Plus, Edit2, CheckCircle, Ban, Monitor, Server, X } from 'lucide-react';
+import StatsCard from '../../components/StatsCard';
 
 export default function AdminLabs() {
     const [labs, setLabs] = useState([]);
@@ -74,135 +78,167 @@ export default function AdminLabs() {
         }
     };
 
-    const actionButtons = (
-        <button
-            onClick={handleOpenCreate}
-            style={{
-                background: '#4c1d95',
-                color: 'white',
-                border: 'none',
-                padding: '0.75rem 1.5rem',
-                borderRadius: '12px',
-                fontWeight: '600',
-                fontSize: '0.9rem',
-                cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '8px',
-                boxShadow: '0 4px 6px -1px rgba(76, 29, 149, 0.3)'
-            }}
-        >
-            <Plus size={18} /> Add Lab
-        </button>
-    );
+    const totalCapacity = labs.reduce((acc, lab) => acc + (lab.status === 'active' ? lab.total_seats : 0), 0);
+    const activeLabs = labs.filter(l => l.status === 'active').length;
 
     return (
-        <AdminLayout title="Labs Management" actions={actionButtons}>
-            <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0' }}>
-                    <thead>
-                        <tr style={{ background: '#f8fafc' }}>
-                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', borderRadius: '12px 0 0 12px' }}>Lab Name</th>
-                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>Capacity</th>
-                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>Status</th>
-                            <th style={{ padding: '1rem', textAlign: 'right', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', borderRadius: '0 12px 12px 0' }}>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {loading ? (
-                            <tr><td colSpan="4" style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8' }}>Loading labs...</td></tr>
-                        ) : labs.length === 0 ? (
-                            <tr><td colSpan="4" style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8' }}>No labs found. Add one to get started.</td></tr>
-                        ) : (
-                            labs.map(lab => (
-                                <tr key={lab.id} style={{ opacity: lab.status === 'disabled' ? 0.6 : 1, transition: 'background 0.2s' }}>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', fontWeight: '600', color: '#0f172a' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                            <div style={{ padding: '6px', background: '#f1f5f9', borderRadius: '6px', color: '#475569' }}><Monitor size={16} /></div>
-                                            {lab.name}
-                                        </div>
-                                    </td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', color: '#475569' }}>{lab.total_seats} Seats</td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9' }}>
-                                        <span style={{
-                                            padding: '4px 10px',
-                                            borderRadius: '20px',
-                                            fontSize: '0.75rem',
-                                            fontWeight: '700',
-                                            color: (lab.status || 'active') === 'active' ? '#15803d' : '#b91c1c',
-                                            background: (lab.status || 'active') === 'active' ? '#dcfce7' : '#fee2e2',
-                                            letterSpacing: '0.02em',
-                                            textTransform: 'uppercase'
-                                        }}>
-                                            {lab.status || 'ACTIVE'}
-                                        </span>
-                                    </td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', textAlign: 'right' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                                            <button
-                                                onClick={() => handleOpenEdit(lab)}
-                                                style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'white', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                                title="Edit Lab"
-                                            >
-                                                <Edit2 size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => toggleStatus(lab)}
-                                                style={{
-                                                    padding: '0.5rem', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                                                    background: lab.status === 'active' ? '#ef4444' : '#22c55e',
-                                                    color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-                                                }}
-                                                title={lab.status === 'active' ? 'Disable Lab' : 'Enable Lab'}
-                                            >
-                                                {lab.status === 'active' ? <Ban size={16} /> : <CheckCircle size={16} />}
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+        <AdminLayout title="Labs">
+            <PageHeader
+                title="Infrastructure & Labs"
+                description="Manage computer labs, seating capacities, and operational status."
+                actions={
+                    <button
+                        onClick={handleOpenCreate}
+                        className="bg-zinc-900 hover:bg-black text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors shadow-sm flex items-center gap-2"
+                    >
+                        <Plus size={16} strokeWidth={1.5} /> Add Lab
+                    </button>
+                }
+            />
+
+            {/* Metrics */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <StatsCard
+                    title="Total Capacity"
+                    value={totalCapacity}
+                    icon={Server}
+                    iconColor="text-zinc-600"
+                    iconBg="bg-zinc-100"
+                    trendLabel="seats available"
+                />
+                <StatsCard
+                    title="Active Labs"
+                    value={activeLabs}
+                    icon={Monitor}
+                    iconColor="text-zinc-900"
+                    iconBg="bg-zinc-100"
+                />
             </div>
+
+            {loading ? (
+                <div className="p-12 text-center text-slate-400">Loading labs...</div>
+            ) : labs.length === 0 ? (
+                <EmptyState
+                    title="No Labs Configured"
+                    description="Add a computer lab to start planning seating allocations."
+                    actionLabel="Add New Lab"
+                    actionLink="#" // We use the button manually
+                    icon={Monitor}
+                />
+            ) : (
+                <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                    <th className="px-6 py-4">Lab Name</th>
+                                    <th className="px-6 py-4">Capacity</th>
+                                    <th className="px-6 py-4">Status</th>
+                                    <th className="px-6 py-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {labs.map(lab => (
+                                    <tr key={lab.id} className={`hover:bg-slate-50 transition-colors group ${lab.status === 'disabled' ? 'opacity-60 bg-slate-50/50' : ''}`}>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 rounded-lg bg-slate-100 text-slate-500">
+                                                    <Monitor size={16} strokeWidth={1.5} />
+                                                </div>
+                                                <div className="font-semibold text-slate-900">{lab.name}</div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-600 font-medium">
+                                            {lab.total_seats} Seats
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <StatusBadge status={lab.status || 'active'} />
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => handleOpenEdit(lab)}
+                                                    className="p-2 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                                                    title="Edit Lab"
+                                                >
+                                                    <Edit2 size={16} strokeWidth={1.5} />
+                                                </button>
+                                                <button
+                                                    onClick={() => toggleStatus(lab)}
+                                                    className={`
+                                                        p-2 rounded-lg border transition-colors
+                                                        ${lab.status === 'active'
+                                                            ? 'bg-zinc-50 border-zinc-200 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600'
+                                                            : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
+                                                        }
+                                                    `}
+                                                    title={lab.status === 'active' ? 'Disable Lab' : 'Enable Lab'}
+                                                >
+                                                    {lab.status === 'active' ? <Ban size={16} strokeWidth={1.5} /> : <CheckCircle size={16} strokeWidth={1.5} />}
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
 
             {/* Modal */}
             {showModal && (
-                <div style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(15, 23, 42, 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-                    backdropFilter: 'blur(4px)'
-                }}>
-                    <div style={{ background: 'white', width: '90%', maxWidth: '400px', padding: '2rem', borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
-                        <h2 style={{ marginTop: 0, marginBottom: '1.5rem', color: '#0f172a', fontSize: '1.5rem', fontWeight: '700' }}>{isEditing ? 'Edit Lab' : 'Add New Lab'}</h2>
-                        <form onSubmit={handleSubmit}>
-                            <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600', color: '#334155' }}>Lab Name</label>
-                                <input
-                                    placeholder="e.g. N-516"
-                                    value={formData.name}
-                                    onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                    required
-                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', outline: 'none' }}
-                                />
-                            </div>
-                            <div style={{ marginBottom: '2rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: '600', color: '#334155' }}>Total Seats</label>
-                                <input
-                                    type="number"
-                                    placeholder="e.g. 60"
-                                    value={formData.total_seats}
-                                    onChange={e => setFormData({ ...formData, total_seats: e.target.value })}
-                                    required
-                                    min="1"
-                                    style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', outline: 'none' }}
-                                />
-                            </div>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm transition-all">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden transform transition-all">
+                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                            <h3 className="text-lg font-bold text-slate-900">{isEditing ? 'Edit Lab' : 'Add New Lab'}</h3>
+                            <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600">
+                                <X size={20} strokeWidth={1.5} />
+                            </button>
+                        </div>
 
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                                <button type="button" onClick={() => setShowModal(false)} style={{ background: 'white', border: '1px solid #cbd5e1', padding: '0.75rem 1.5rem', borderRadius: '10px', cursor: 'pointer', color: '#475569', fontWeight: '600' }}>Cancel</button>
-                                <button type="submit" style={{ background: '#4c1d95', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '10px', cursor: 'pointer', color: 'white', fontWeight: '600', boxShadow: '0 4px 6px -1px rgba(76, 29, 149, 0.4)' }}>Save Lab</button>
-                            </div>
-                        </form>
+                        <div className="p-6">
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1">Lab Name/Number</label>
+                                    <input
+                                        placeholder="e.g. N-516"
+                                        value={formData.name}
+                                        onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                        required
+                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1">Total Capacity</label>
+                                    <input
+                                        type="number"
+                                        placeholder="e.g. 60"
+                                        value={formData.total_seats}
+                                        onChange={e => setFormData({ ...formData, total_seats: e.target.value })}
+                                        required
+                                        min="1"
+                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
+                                    />
+                                </div>
+
+                                <div className="flex gap-3 justify-end mt-8">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowModal(false)}
+                                        className="px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="px-4 py-2 text-sm font-semibold text-white bg-zinc-900 rounded-lg hover:bg-black shadow-sm transition-colors"
+                                    >
+                                        {isEditing ? 'Save Changes' : 'Add Lab'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             )}

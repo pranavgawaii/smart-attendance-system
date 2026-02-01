@@ -7,7 +7,6 @@ import { QrCode, LogOut, MapPin, ClipboardList, Home, History, ScanLine, X, Brie
 export default function StudentDashboard() {
     const { user, logout } = useAuth();
 
-    const [activeEvent, setActiveEvent] = useState(null);
     const [activeAssessment, setActiveAssessment] = useState(null);
     const [myAllocation, setMyAllocation] = useState(null);
     const [history, setHistory] = useState([]);
@@ -16,7 +15,6 @@ export default function StudentDashboard() {
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [scanResult, setScanResult] = useState(null);
 
-    // UI Navigation helper
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -26,21 +24,20 @@ export default function StudentDashboard() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            // Simplified fetch just for status / history
-            const allocationRes = await api.get('/student/my-allocation');
-            if (allocationRes.data.status !== 'NO_ACTIVE_ASSESSMENT') {
+            // Fetch placement allocations for this student
+            const allocationsRes = await api.get(`/allocations/student/${user.id}`);
+            if (allocationsRes.data && allocationsRes.data.length > 0) {
+                const nextAllocation = allocationsRes.data[0]; // First upcoming allocation
                 setActiveAssessment({
-                    title: allocationRes.data.assessment_name,
-                    start_time: allocationRes.data.start_time || '00:00',
-                    end_time: allocationRes.data.end_time || '23:59',
-                    status: 'LIVE'
+                    title: `${nextAllocation.placement_assessment.company_name}${nextAllocation.placement_assessment.position ? ` - ${nextAllocation.placement_assessment.position}` : ''}`,
+                    start_time: nextAllocation.placement_assessment.start_time,
+                    end_time: nextAllocation.placement_assessment.end_time,
+                    status: 'UPCOMING'
                 });
-                if (allocationRes.data.status === 'ALLOCATED') {
-                    setMyAllocation({
-                        lab_name: allocationRes.data.lab_name,
-                        seat_number: allocationRes.data.seat_number
-                    });
-                }
+                setMyAllocation({
+                    lab_name: nextAllocation.lab.lab_name,
+                    seat_number: nextAllocation.seat_number
+                });
             }
 
             const historyRes = await api.get('/attendance/my-history');
@@ -53,58 +50,41 @@ export default function StudentDashboard() {
         }
     };
 
-    // Render Helpers
-    const isMarkedPresent = false; // logic moved or simplified? 
-    // Actually, we can check history for today's event if we want to show status on the dashboard still.
-    // But since we removed activeEvent detailed polling here to simplify, let's just keep history.
-
     const renderHome = () => (
-        <div style={{ padding: '1.5rem', paddingBottom: '7rem', maxWidth: '640px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        <div className="p-6 pb-28 max-w-2xl mx-auto flex flex-col gap-8">
 
             {/* Dashboard Actions */}
-            <div style={{ padding: '1.5rem', maxWidth: '640px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="flex flex-col gap-4">
 
                 {/* Placements Card */}
-                <Link to="/student/placements" style={{ textDecoration: 'none' }}>
-                    <div style={{
-                        background: 'white', padding: '1.5rem', borderRadius: '24px', border: '1px solid #e2e8f0',
-                        display: 'flex', alignItems: 'center', gap: '1.5rem',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
-                        transition: 'transform 0.2s'
-                    }}>
-                        <div style={{
-                            background: '#f0f9ff', width: '56px', height: '56px', borderRadius: '16px',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0284c7'
-                        }}>
-                            <Briefcase size={28} strokeWidth={2.5} />
+                <Link to="/student/placements" className="block group">
+                    <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm hover:shadow-md hover:border-zinc-300 transition-all flex items-center gap-6">
+                        <div className="bg-zinc-100 w-14 h-14 rounded-2xl flex items-center justify-center text-zinc-900">
+                            <Briefcase size={24} strokeWidth={2} />
                         </div>
-                        <div style={{ flex: 1 }}>
-                            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700', color: '#0f172a' }}>Placement Drives</h3>
-                            <p style={{ margin: '4px 0 0', fontSize: '0.9rem', color: '#64748b' }}>View and apply for opportunities</p>
+                        <div className="flex-1">
+                            <h3 className="text-lg font-bold text-zinc-900">Placement Drives</h3>
+                            <p className="mt-1 text-sm text-zinc-500 font-medium">View and apply for opportunities</p>
                         </div>
-                        <ArrowRight size={20} color="#cbd5e1" />
+                        <div className="text-zinc-300 group-hover:text-zinc-400 transition-colors">
+                            <ArrowRight size={20} />
+                        </div>
                     </div>
                 </Link>
 
                 {/* Mark Attendance Card */}
-                <Link to="/student/attendance" style={{ textDecoration: 'none' }}>
-                    <div style={{
-                        background: 'white', padding: '1.5rem', borderRadius: '24px', border: '1px solid #e2e8f0',
-                        display: 'flex', alignItems: 'center', gap: '1.5rem',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
-                        transition: 'transform 0.2s'
-                    }}>
-                        <div style={{
-                            background: '#fdf4ff', width: '56px', height: '56px', borderRadius: '16px',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c026d3'
-                        }}>
-                            <QrCode size={28} strokeWidth={2.5} />
+                <Link to="/student/attendance" className="block group">
+                    <div className="bg-white p-6 rounded-2xl border border-zinc-200 shadow-sm hover:shadow-md hover:border-zinc-300 transition-all flex items-center gap-6">
+                        <div className="bg-zinc-100 w-14 h-14 rounded-2xl flex items-center justify-center text-zinc-900">
+                            <QrCode size={24} strokeWidth={2} />
                         </div>
-                        <div style={{ flex: 1 }}>
-                            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700', color: '#0f172a' }}>Mark Attendance</h3>
-                            <p style={{ margin: '4px 0 0', fontSize: '0.9rem', color: '#64748b' }}>Scan QR or enter code manually</p>
+                        <div className="flex-1">
+                            <h3 className="text-lg font-bold text-zinc-900">Mark Attendance</h3>
+                            <p className="mt-1 text-sm text-zinc-500 font-medium">Scan QR or enter code manually</p>
                         </div>
-                        <ArrowRight size={20} color="#cbd5e1" />
+                        <div className="text-zinc-300 group-hover:text-zinc-400 transition-colors">
+                            <ArrowRight size={20} />
+                        </div>
                     </div>
                 </Link>
 
@@ -112,45 +92,32 @@ export default function StudentDashboard() {
 
             {/* Today's Assessment Card */}
             {(activeAssessment || myAllocation) && (
-                <div style={{ background: 'white', padding: '2rem', borderRadius: '24px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', border: '1px solid #f1f5f9' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                        <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '700', color: '#0f172a' }}>Today's Assessment</h3>
+                <div className="bg-white p-8 rounded-3xl shadow-sm border border-zinc-100 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-zinc-50 rounded-bl-full -mr-16 -mt-16 opacity-50"></div>
+
+                    <div className="flex justify-between items-center mb-6 relative z-10">
+                        <h3 className="text-lg font-bold text-zinc-900 tracking-tight">Today's Assessment</h3>
                         {activeAssessment && (
-                            <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#7e22ce', background: '#f3e8ff', padding: '6px 12px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            <span className="text-[10px] font-bold text-zinc-700 bg-zinc-100 px-3 py-1.5 rounded-full uppercase tracking-wider border border-zinc-200">
                                 {activeAssessment.status}
                             </span>
                         )}
                     </div>
 
                     {activeAssessment && (
-                        <div style={{ marginBottom: '1.25rem' }}>
-                            <h4 style={{ margin: '0', fontSize: '1.1rem', fontWeight: '600', color: '#334155' }}>{activeAssessment.title}</h4>
+                        <div className="mb-6 relative z-10">
+                            <h4 className="text-xl font-bold text-zinc-800 leading-tight">{activeAssessment.title}</h4>
                         </div>
                     )}
 
                     {myAllocation && (
-                        <div style={{
-                            background: '#f8fafc',
-                            padding: '1.25rem',
-                            borderRadius: '16px',
-                            border: '1px solid #e2e8f0',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '1rem'
-                        }}>
-                            <div style={{
-                                background: '#dbeafe',
-                                padding: '12px',
-                                borderRadius: '12px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                            }}>
-                                <MapPin size={20} color="#2563eb" />
+                        <div className="bg-zinc-50 p-5 rounded-2xl border border-zinc-200/60 flex items-center gap-4 relative z-10">
+                            <div className="bg-white border border-zinc-200 w-10 h-10 rounded-xl flex items-center justify-center shrink-0">
+                                <MapPin size={20} className="text-zinc-700" />
                             </div>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b', marginBottom: '4px' }}>YOUR SEAT</div>
-                                <div style={{ fontSize: '1rem', fontWeight: '700', color: '#0f172a' }}>
+                            <div className="flex-1 min-w-0">
+                                <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Your Seat</div>
+                                <div className="text-base font-bold text-zinc-900 truncate">
                                     {myAllocation.lab_name} • Seat {myAllocation.seat_number}
                                 </div>
                             </div>
@@ -163,43 +130,34 @@ export default function StudentDashboard() {
     );
 
     const renderHistory = () => (
-        <div style={{ padding: '1.5rem', paddingBottom: '7rem', maxWidth: '640px', margin: '0 auto' }}>
-            <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', color: '#0f172a', fontWeight: '800', letterSpacing: '-0.025em' }}>Attendance History</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div className="p-6 pb-28 max-w-2xl mx-auto">
+            <h2 className="text-2xl font-bold text-zinc-900 mb-6 tracking-tight">Attendance History</h2>
+            <div className="flex flex-col gap-4">
                 {history.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '4rem 2rem', background: 'white', borderRadius: '24px', border: '1px solid #f1f5f9' }}>
-                        <div style={{ background: '#f8fafc', width: '64px', height: '64px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
-                            <History size={32} color="#94a3b8" />
+                    <div className="text-center py-16 bg-white rounded-3xl border border-zinc-100">
+                        <div className="bg-zinc-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 text-zinc-300">
+                            <History size={32} />
                         </div>
-                        <h4 style={{ margin: '0 0 0.5rem 0', color: '#334155', fontSize: '1.1rem', fontWeight: '600' }}>No Records Yet</h4>
-                        <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.9rem' }}>
+                        <h4 className="text-zinc-900 font-semibold mb-2">No Records Yet</h4>
+                        <p className="text-zinc-400 text-sm">
                             Your past attendance will appear here.
                         </p>
                     </div>
                 ) : (
                     history.map((h, i) => (
-                        <div key={i} style={{
-                            padding: '1.25rem',
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            background: 'white',
-                            borderRadius: '16px',
-                            border: '1px solid #f1f5f9',
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
-                        }}>
-                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                <div style={{ background: '#dcfce7', padding: '12px', borderRadius: '12px', color: '#166534' }}>
+                        <div key={i} className="bg-white p-5 rounded-2xl border border-zinc-200/60 shadow-sm flex items-center justify-between">
+                            <div className="flex gap-4 items-center">
+                                <div className="bg-zinc-100 w-10 h-10 rounded-xl flex items-center justify-center text-zinc-900 shrink-0">
                                     <ClipboardList size={20} />
                                 </div>
                                 <div>
-                                    <div style={{ fontWeight: '600', color: '#0f172a', fontSize: '1rem' }}>{h.event_name}</div>
-                                    <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '2px' }}>
+                                    <div className="font-semibold text-zinc-900 text-sm">{h.event_name}</div>
+                                    <div className="text-xs text-zinc-500 mt-0.5 font-medium">
                                         {new Date(h.scan_time).toLocaleDateString()} • {new Date(h.scan_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </div>
                                 </div>
                             </div>
-                            <span style={{ color: '#15803d', fontWeight: '700', fontSize: '0.75rem', background: '#dcfce7', padding: '6px 12px', borderRadius: '20px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            <span className="text-[10px] font-bold text-zinc-700 bg-zinc-100 px-3 py-1 rounded-full uppercase tracking-wider border border-zinc-200">
                                 Present
                             </span>
                         </div>
@@ -212,47 +170,22 @@ export default function StudentDashboard() {
     if (!user) return null;
 
     return (
-        <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
+        <div className="min-h-screen bg-zinc-50 font-sans">
 
             {/* Header */}
-            <div style={{
-                background: 'white',
-                padding: '1rem 1.5rem',
-                borderBottom: '1px solid #e2e8f0',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                position: 'sticky',
-                top: 0,
-                zIndex: 50,
-                boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <img src="/mitadtlogo.png" alt="Logo" style={{ height: '36px' }} />
+            <div className="bg-white px-6 py-4 border-b border-zinc-200 sticky top-0 z-50 flex justify-between items-center shadow-sm/50 backdrop-blur-md bg-white/90">
+                <div className="flex items-center gap-3">
+                    <img src="/mitadtlogo.png" alt="Logo" className="h-9" />
                     <div>
-                        <div style={{ fontSize: '0.75rem', fontWeight: '600', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Student Portal</div>
-                        <div style={{ fontSize: '0.95rem', fontWeight: '700', color: '#0f172a' }}>{user.name}</div>
+                        <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Student Portal</div>
+                        <div className="text-sm font-bold text-zinc-900 leading-tight">{user.name}</div>
                     </div>
                 </div>
 
-                <div style={{ position: 'relative' }}>
+                <div className="relative">
                     <button
                         onClick={() => setShowProfileMenu(!showProfileMenu)}
-                        style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '50%',
-                            background: '#4c1d95',
-                            color: 'white',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            border: 'none',
-                            fontWeight: '700',
-                            fontSize: '1rem',
-                            cursor: 'pointer',
-                            boxShadow: '0 2px 4px rgba(76, 29, 149, 0.2)'
-                        }}
+                        className="w-10 h-10 rounded-full bg-zinc-900 text-white flex items-center justify-center font-bold text-sm shadow-md ring-2 ring-white active:scale-95 transition-transform"
                     >
                         {user.name?.charAt(0)}
                     </button>
@@ -260,43 +193,19 @@ export default function StudentDashboard() {
                     {showProfileMenu && (
                         <>
                             <div
-                                style={{ position: 'fixed', inset: 0, zIndex: 90 }}
+                                className="fixed inset-0 z-40 bg-zinc-900/10 backdrop-blur-[1px]"
                                 onClick={() => setShowProfileMenu(false)}
                             />
-                            <div style={{
-                                position: 'absolute',
-                                top: '120%',
-                                right: 0,
-                                width: '220px',
-                                background: 'white',
-                                border: '1px solid #e2e8f0',
-                                borderRadius: '16px',
-                                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
-                                overflow: 'hidden',
-                                zIndex: 100
-                            }}>
-                                <div style={{ padding: '1.25rem', borderBottom: '1px solid #f1f5f9' }}>
-                                    <p style={{ margin: 0, fontWeight: '700', color: '#0f172a', fontSize: '0.95rem' }}>{user.name}</p>
-                                    <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '0.85rem' }}>{user.enrollment_no}</p>
+                            <div className="absolute top-full right-0 mt-3 w-64 bg-white border border-zinc-200 rounded-2xl shadow-xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
+                                <div className="p-5 border-b border-zinc-50 bg-zinc-50/50">
+                                    <p className="font-bold text-zinc-900 text-sm">{user.name}</p>
+                                    <p className="mt-1 text-xs text-zinc-500 font-medium font-mono">{user.enrollment_no}</p>
                                 </div>
                                 <button
                                     onClick={logout}
-                                    style={{
-                                        width: '100%',
-                                        padding: '1rem 1.25rem',
-                                        background: 'none',
-                                        border: 'none',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '0.75rem',
-                                        color: '#dc2626',
-                                        fontSize: '0.9rem',
-                                        fontWeight: '600',
-                                        textAlign: 'left',
-                                        cursor: 'pointer'
-                                    }}
+                                    className="w-full p-4 text-left flex items-center gap-3 text-red-600 text-sm font-semibold hover:bg-red-50 transition-colors"
                                 >
-                                    <LogOut size={18} /> Sign Out
+                                    <LogOut size={16} strokeWidth={2} /> Sign Out
                                 </button>
                             </div>
                         </>
@@ -305,60 +214,22 @@ export default function StudentDashboard() {
             </div>
 
             {/* Content Area */}
-            <div style={{ minHeight: 'calc(100vh - 140px)', overflowY: 'auto' }}>
+            <div className="min-h-[calc(100vh-140px)]">
                 {activeTab === 'HOME' && renderHome()}
                 {activeTab === 'HISTORY' && renderHistory()}
 
                 {/* Result Overlay */}
                 {scanResult && (
-                    <div style={{
-                        position: 'fixed',
-                        inset: 0,
-                        zIndex: 200,
-                        background: 'rgba(0,0,0,0.85)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: '2rem'
-                    }}>
-                        <div style={{
-                            background: 'white',
-                            padding: '2.5rem',
-                            borderRadius: '24px',
-                            textAlign: 'center',
-                            width: '100%',
-                            maxWidth: '360px',
-                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
-                        }}>
-                            <div style={{
-                                width: '80px',
-                                height: '80px',
-                                borderRadius: '50%',
-                                margin: '0 auto 1.5rem auto',
-                                background: scanResult.status === 'success' ? '#dcfce7' : '#fee2e2',
-                                color: scanResult.status === 'success' ? '#166534' : '#991b1b',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                            }}>
+                    <div className="fixed inset-0 z-[60] bg-zinc-900/90 backdrop-blur-sm flex items-center justify-center p-6 animate-in fade-in duration-200">
+                        <div className="bg-white p-10 rounded-3xl text-center w-full max-w-sm shadow-2xl scale-100 animate-in zoom-in-95 duration-300">
+                            <div className={`w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center ${scanResult.status === 'success' ? 'bg-zinc-100 text-zinc-900' : 'bg-red-50 text-red-600'}`}>
                                 {scanResult.status === 'success' ? <ClipboardList size={40} /> : <X size={40} />}
                             </div>
-                            <h3 style={{ fontSize: '1.5rem', marginBottom: '0.75rem', color: '#0f172a', fontWeight: '700' }}>{scanResult.title}</h3>
-                            <p style={{ color: '#64748b', marginBottom: '2rem', fontSize: '0.95rem' }}>{scanResult.message}</p>
+                            <h3 className="text-2xl font-bold text-zinc-900 mb-3 tracking-tight">{scanResult.title}</h3>
+                            <p className="text-zinc-500 mb-8 font-medium">{scanResult.message}</p>
                             <button
                                 onClick={() => { setScanResult(null); setActiveTab('HOME'); }}
-                                style={{
-                                    width: '100%',
-                                    padding: '1rem',
-                                    background: '#4c1d95',
-                                    color: 'white',
-                                    borderRadius: '12px',
-                                    border: 'none',
-                                    fontWeight: '700',
-                                    fontSize: '1rem',
-                                    cursor: 'pointer',
-                                    boxShadow: '0 4px 6px -1px rgba(76, 29, 149, 0.3)'
-                                }}
+                                className="w-full py-3.5 bg-zinc-900 text-white rounded-xl font-bold shadow-lg hover:bg-zinc-800 transition-transform active:scale-95"
                             >
                                 Done
                             </button>
@@ -368,87 +239,30 @@ export default function StudentDashboard() {
             </div>
 
             {/* Bottom Navigation */}
-            <div style={{
-                position: 'fixed',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: '68px',
-                background: 'white',
-                borderTop: '1px solid #e2e8f0',
-                display: 'flex',
-                justifyContent: 'space-around',
-                alignItems: 'center',
-                zIndex: 100,
-                boxShadow: '0 -2px 10px rgba(0,0,0,0.03)'
-            }}>
+            <div className="fixed bottom-0 left-0 right-0 h-[80px] bg-white border-t border-zinc-200 flex justify-around items-center z-40 pb-4">
                 <button
                     onClick={() => setActiveTab('HOME')}
-                    style={{
-                        background: 'none',
-                        border: 'none',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '4px',
-                        flex: 1,
-                        padding: '8px 0',
-                        color: activeTab === 'HOME' ? '#4c1d95' : '#94a3b8',
-                        cursor: 'pointer'
-                    }}
+                    className={`flex flex-col items-center gap-1.5 flex-1 p-2 transition-colors ${activeTab === 'HOME' ? 'text-zinc-900' : 'text-zinc-400 hover:text-zinc-600'}`}
                 >
                     <Home size={24} strokeWidth={activeTab === 'HOME' ? 2.5 : 2} />
-                    <span style={{ fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Home</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest">Home</span>
                 </button>
 
                 <Link
                     to="/student/attendance"
-                    style={{
-                        background: 'none',
-                        border: 'none',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '4px',
-                        flex: 1,
-                        padding: '8px 0',
-                        transform: 'translateY(-16px)',
-                        cursor: 'pointer',
-                        textDecoration: 'none'
-                    }}
+                    className="flex flex-col items-center gap-1 flex-1 -translate-y-6"
                 >
-                    <div style={{
-                        width: '64px',
-                        height: '64px',
-                        background: '#4c1d95',
-                        borderRadius: '20px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
-                        boxShadow: '0 10px 25px -5px rgba(76, 29, 149, 0.4)'
-                    }}>
-                        <QrCode size={32} />
+                    <div className="w-16 h-16 bg-zinc-900 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-zinc-900/30 hover:scale-105 transition-transform">
+                        <QrCode size={32} strokeWidth={2} />
                     </div>
                 </Link>
 
                 <button
                     onClick={() => setActiveTab('HISTORY')}
-                    style={{
-                        background: 'none',
-                        border: 'none',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '4px',
-                        flex: 1,
-                        padding: '8px 0',
-                        color: activeTab === 'HISTORY' ? '#4c1d95' : '#94a3b8',
-                        cursor: 'pointer'
-                    }}
+                    className={`flex flex-col items-center gap-1.5 flex-1 p-2 transition-colors ${activeTab === 'HISTORY' ? 'text-zinc-900' : 'text-zinc-400 hover:text-zinc-600'}`}
                 >
                     <History size={24} strokeWidth={activeTab === 'HISTORY' ? 2.5 : 2} />
-                    <span style={{ fontSize: '0.7rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>History</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest">History</span>
                 </button>
             </div>
 

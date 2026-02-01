@@ -5,6 +5,20 @@ const eventModel = require('./models/event.model');
 const qrService = require('./services/qr.service');
 const qrModel = require('./models/qr.model');
 
+// Add new route imports
+const healthRoutes = require('./routes/health.routes'); // Assuming this exists based on the instruction's app.use
+const authRoutes = require('./routes/auth.routes'); // Assuming this exists
+const qrRoutes = require('./routes/qr.routes'); // Assuming this exists
+const eventRoutes = require('./routes/event.routes'); // Assuming this exists
+const attendanceRoutes = require('./routes/attendance.routes'); // Assuming this exists
+const userRoutes = require('./routes/user.routes'); // Assuming this exists
+const studentRoutes = require('./routes/student.routes'); // Assuming this exists
+const assessmentRoutes = require('./routes/assessment.routes');
+const labRoutes = require('./routes/lab.routes');
+const labsRoutes = require('./routes/labs.routes');
+const placementRoutes = require('./routes/placement.routes');
+const adminManagementRoutes = require('./routes/admin-management.routes');
+
 const PORT = process.env.PORT || 3000;
 
 // Validate required environment variables
@@ -13,6 +27,20 @@ if (!process.env.ADMIN_EMAIL) {
     console.error('Please set ADMIN_EMAIL in your .env file');
     process.exit(1);
 }
+
+// Routes
+app.use('/health', healthRoutes);
+app.use('/auth', authRoutes);
+app.use('/qr', qrRoutes);
+app.use('/events', eventRoutes);
+app.use('/attendance', attendanceRoutes);
+app.use('/users', userRoutes);
+app.use('/students', studentRoutes);
+app.use('/assessments', assessmentRoutes);
+app.use('/labs-old', labRoutes);
+app.use('/labs', labsRoutes);
+app.use('/placement', placementRoutes);
+app.use('/admin', adminManagementRoutes);
 
 const resumeActiveSessions = async () => {
     try {
