@@ -11,7 +11,6 @@ import StudentAttendance from './pages/student/StudentAttendance';
 // import AdminDashboard from './pages/AdminDashboard'; // Deprecated
 import EventDetails from './pages/EventDetails';
 import ProtectedRoute from './components/ProtectedRoute';
-import ProtectedRoute from './components/ProtectedRoute';
 // import AdminLayout from './layouts/AdminLayout'; // Removed Legacy Layout
 import StandaloneLayout from './layouts/StandaloneLayout';
 import AdminHome from './pages/admin/AdminHome';
