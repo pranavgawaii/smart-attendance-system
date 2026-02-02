@@ -125,26 +125,7 @@ export default function Sidebar({ isCollapsed, toggleSidebar }) {
                     </div>
                 ))}
 
-                {/* Active Semesters / Library Section (from reference) */}
-                {!isCollapsed && (
-                    <div className="mt-8 px-3">
-                        <p className="text-xs font-medium text-zinc-400 mb-3 tracking-wide uppercase">Active Semesters</p>
-                        <div className="space-y-1">
-                            <button className="w-full flex items-center justify-between text-zinc-600 hover:text-zinc-900 text-xs py-1.5 group transition-colors">
-                                <span className="flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-900"></span>
-                                    Fall 2025
-                                </span>
-                            </button>
-                            <button className="w-full flex items-center justify-between text-zinc-600 hover:text-zinc-900 text-xs py-1.5 group transition-colors">
-                                <span className="flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-zinc-300 group-hover:bg-zinc-400 transition"></span>
-                                    Spring 2026
-                                </span>
-                            </button>
-                        </div>
-                    </div>
-                )}
+
             </div>
 
             {/* User Profile Footer */}

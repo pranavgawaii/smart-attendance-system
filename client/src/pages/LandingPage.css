@@ -1308,15 +1308,19 @@
         justify-content: center;
     }
 }
+
 /* --- Premium Footer Redesign --- */
 .landing-footer-premium {
-    background-color: #0f172a; /* Slate 900 - Deep Brand Background */
-    color: #cbd5e1; /* Slate 300 - Readable Text */
+    background-color: #0f172a;
+    /* Slate 900 - Deep Brand Background */
+    color: #cbd5e1;
+    /* Slate 300 - Readable Text */
     padding-top: 5rem;
     font-size: 0.95rem;
     position: relative;
     overflow: hidden;
-    border-top: 1px solid rgba(255, 255, 255, 0.05); /* Very subtle top border */
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    /* Very subtle top border */
 }
 
 .footer-container-premium {
@@ -1324,7 +1328,8 @@
     margin: 0 auto;
     padding: 0 2rem 4rem;
     display: grid;
-    grid-template-columns: 1.5fr 2fr; /* Brand column takes more space */
+    grid-template-columns: 1.5fr 2fr;
+    /* Brand column takes more space */
     gap: 4rem;
 }
 
@@ -1359,7 +1364,8 @@
 
 .footer-brand-sub {
     font-size: 0.85rem;
-    color: #94a3b8; /* Slate 400 */
+    color: #94a3b8;
+    /* Slate 400 */
     font-weight: 500;
     margin: 0;
 }
@@ -1388,7 +1394,7 @@
     border-radius: 8px;
     color: #cbd5e1;
     transition: all 0.2s ease;
-    border: 1px solid rgba(255,255,255,0.05);
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .social-icon-box:hover {
@@ -1428,7 +1434,8 @@
 
 .footer-link-col a:hover {
     color: #fff;
-    padding-left: 4px; /* Subtle slide effect */
+    padding-left: 4px;
+    /* Subtle slide effect */
 }
 
 .address-span {
@@ -1440,8 +1447,10 @@
 
 /* Bottom Bar */
 .footer-bottom-premium {
-    border-top: 1px solid rgba(255, 255, 255, 0.08); /* Distinct separator */
-    background-color: #020617; /* Slightly darker shade for bottom */
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    /* Distinct separator */
+    background-color: #020617;
+    /* Slightly darker shade for bottom */
     padding: 1.5rem 2rem;
 }
 
@@ -1477,13 +1486,14 @@
     text-decoration: none;
     position: relative;
     padding-bottom: 2px;
-    border-bottom: 1px solid rgba(255,255,255,0.3);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
     transition: all 0.2s ease;
 }
 
 .developer-link-premium:hover {
     border-bottom-color: #fff;
-    text-shadow: 0 0 8px rgba(255, 255, 255, 0.5); /* Glowing highlight */
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+    /* Glowing highlight */
 }
 
 /* Mobile Responsive */
@@ -1492,15 +1502,17 @@
         grid-template-columns: 1fr;
         gap: 3rem;
     }
-    
+
     .footer-links-grid {
-        grid-template-columns: repeat(2, 1fr); /* 2 cols on tablet */
+        grid-template-columns: repeat(2, 1fr);
+        /* 2 cols on tablet */
     }
 }
 
 @media (max-width: 600px) {
     .footer-links-grid {
-        grid-template-columns: 1fr; /* Stack vertically on mobile */
+        grid-template-columns: 1fr;
+        /* Stack vertically on mobile */
         gap: 2.5rem;
     }
 
@@ -1508,20 +1520,24 @@
         flex-direction: column;
         text-align: center;
     }
-    
+
     .footer-logo-lockup {
-        justify-content: flex-start; /* Keep aligned left or center? User prefers premium usually aligned left */
+        justify-content: flex-start;
+        /* Keep aligned left or center? User prefers premium usually aligned left */
     }
 }
 
 /* --- Premium Light Footer Redesign (Theme Match) --- */
 .landing-footer-premium {
-    background-color: #ffffff; /* Match Minimalist Page BG */
-    color: #64748b; /* Slate 500 */
+    background-color: #ffffff;
+    /* Match Minimalist Page BG */
+    color: #64748b;
+    /* Slate 500 */
     padding-top: 5rem;
     font-size: 0.95rem;
     position: relative;
-    border-top: 1px solid #e2e8f0; /* Crisp light border */
+    border-top: 1px solid #e2e8f0;
+    /* Crisp light border */
 }
 
 .footer-container-premium {
@@ -1535,7 +1551,8 @@
 
 /* Brand Column Light */
 .footer-brand-name {
-    color: #0f172a; /* Slate 900 Strong Brand */
+    color: #0f172a;
+    /* Slate 900 Strong Brand */
 }
 
 .footer-brand-sub {
@@ -1543,18 +1560,21 @@
 }
 
 .footer-mission {
-    color: #475569; /* Slate 600 */
+    color: #475569;
+    /* Slate 600 */
 }
 
 /* Social Icons Light */
 .social-icon-box {
-    background-color: #f1f5f9; /* Slate 100 */
+    background-color: #f1f5f9;
+    /* Slate 100 */
     border: 1px solid #e2e8f0;
     color: #64748b;
 }
 
 .social-icon-box:hover {
-    background-color: #0f172a; /* Dark interaction for contrast */
+    background-color: #0f172a;
+    /* Dark interaction for contrast */
     color: #ffffff;
     border-color: #0f172a;
     transform: translateY(-2px);
@@ -1562,7 +1582,8 @@
 
 /* Links Grid Light */
 .footer-link-col h5 {
-    color: #0f172a; /* Dark Headings */
+    color: #0f172a;
+    /* Dark Headings */
 }
 
 .footer-link-col a {
@@ -1570,7 +1591,8 @@
 }
 
 .footer-link-col a:hover {
-    color: #2563eb; /* Brand Blue Hover */
+    color: #2563eb;
+    /* Brand Blue Hover */
     padding-left: 4px;
 }
 
@@ -1580,7 +1602,8 @@
 
 /* Bottom Bar Light */
 .footer-bottom-premium {
-    background-color: #f8fafc; /* Slate 50 - Subtle difference */
+    background-color: #f8fafc;
+    /* Slate 50 - Subtle difference */
     border-top: 1px solid #e2e8f0;
     padding: 1.5rem 2rem;
     color: #64748b;
@@ -1595,14 +1618,17 @@
 }
 
 .developer-link-premium {
-    color: #0f172a; /* Dark for developer name */
+    color: #0f172a;
+    /* Dark for developer name */
     border-bottom: 1px solid #cbd5e1;
 }
 
 .developer-link-premium:hover {
     border-bottom-color: #0f172a;
-    text-shadow: none; /* Clean hover, no glow */
-    background: rgba(15, 23, 42, 0.05); /* Subtle highlight */
+    text-shadow: none;
+    /* Clean hover, no glow */
+    background: rgba(15, 23, 42, 0.05);
+    /* Subtle highlight */
     padding: 0 4px;
     margin: 0 -4px;
     border-radius: 4px;
