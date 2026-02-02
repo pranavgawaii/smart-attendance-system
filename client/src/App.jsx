@@ -11,6 +11,7 @@ import StudentAttendance from './pages/student/StudentAttendance';
 // import AdminDashboard from './pages/AdminDashboard'; // Deprecated
 import EventDetails from './pages/EventDetails';
 import ProtectedRoute from './components/ProtectedRoute';
+import ProtectedRoute from './components/ProtectedRoute';
 // import AdminLayout from './layouts/AdminLayout'; // Removed Legacy Layout
 import StandaloneLayout from './layouts/StandaloneLayout';
 import AdminHome from './pages/admin/AdminHome';
@@ -55,15 +56,11 @@ function App() {
               </ProtectedRoute>
             } />
 
+            {/* Student Routes */}
+            {/* Student Routes */}
             <Route path="/student" element={
               <ProtectedRoute role="student">
                 <StudentDashboard />
-              </ProtectedRoute>
-            } />
-
-            <Route path="/student/attendance" element={
-              <ProtectedRoute role="student">
-                <StudentAttendance />
               </ProtectedRoute>
             } />
 
@@ -76,6 +73,18 @@ function App() {
             <Route path="/student/placements/:id" element={
               <ProtectedRoute role="student">
                 <StudentJobDetails />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/student/attendance" element={
+              <ProtectedRoute role="student">
+                <StudentAttendance />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/student/profile" element={
+              <ProtectedRoute role="student">
+                <Profile />
               </ProtectedRoute>
             } />
 
