@@ -65,21 +65,16 @@ app.use('/api', (req, res) => {
 });
 
 // Serve Frontend in Production
-// Serve Frontend in Production
-// Serve Frontend in Production
-if (process.env.NODE_ENV === 'production') {
+// On Vercel, we use vercel.json rewrites for faster native serving
+if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
     const path = require('path');
     const fs = require('fs');
 
-    // Resolve dist path more robustly
-    const distPath = path.resolve(process.cwd(), 'client/dist');
-
-    console.log(`[Static] Attempting to serve from: ${distPath}`);
+    const distPath = path.resolve(__dirname, '../client/dist');
 
     if (fs.existsSync(distPath)) {
         app.use(express.static(distPath));
 
-        // SPA Catch-all
         app.get('*', (req, res) => {
             if (!req.url.startsWith('/api')) {
                 const indexPath = path.join(distPath, 'index.html');
@@ -92,8 +87,6 @@ if (process.env.NODE_ENV === 'production') {
                 res.status(404).json({ error: 'API Endpoint Not Found' });
             }
         });
-    } else {
-        console.warn(`[Static] ⚠️ Warning: ${distPath} not found`);
     }
 }
 
