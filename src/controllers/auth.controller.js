@@ -3,12 +3,20 @@ const { supabase } = require('../config/db');
 // Login with Email + Password
 const login = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email: rawEmail, password } = req.body;
+        const email = rawEmail?.trim().toLowerCase();
 
         // Validate inputs
         if (!email || !password) {
             return res.status(400).json({
                 error: 'Email and password are required'
+            });
+        }
+
+        if (!supabase) {
+            console.error('[Auth] Supabase client not initialized. Check Env Vars.');
+            return res.status(500).json({
+                error: 'Authentication service not configured. Please contact administrator.'
             });
         }
 

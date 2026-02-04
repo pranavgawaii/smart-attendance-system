@@ -29,9 +29,18 @@ app.use((req, res, next) => {
 app.use(cors());
 app.use(express.json());
 
-// Debug Route
+// Debug & Health Check
 app.get('/api/test', (req, res) => {
-    res.json({ status: 'ok', message: 'API is reachable', time: new Date().toISOString() });
+    const { supabase } = require('./config/db');
+    res.json({
+        status: 'ok',
+        message: 'Backend is reachable',
+        serverTime: new Date().toISOString(),
+        environment: process.env.NODE_ENV,
+        isVercel: !!process.env.VERCEL,
+        supabaseInitialized: !!supabase,
+        authProviderSet: !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)
+    });
 });
 
 // Routes - Consolidated under /api
