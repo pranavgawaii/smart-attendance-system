@@ -1,12 +1,26 @@
 {
-    "buildCommand": "cd client && npm install && npm run build",
-    "outputDirectory": "client/dist",
-    "installCommand": "npm install",
-    "framework": null,
-    "rewrites": [
+    "version": 2,
+    "builds": [
         {
-            "source": "/api/(.*)",
-            "destination": "https://smart-attendance-system-production-ec2b.up.railway.app/api/$1"
+            "src": "src/server.js",
+            "use": "@vercel/node"
+        },
+        {
+            "src": "client/package.json",
+            "use": "@vercel/static-build",
+            "config": {
+                "distDir": "dist"
+            }
+        }
+    ],
+    "routes": [
+        {
+            "src": "/api/(.*)",
+            "dest": "/src/server.js"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/client/dist/$1"
         }
     ]
 }

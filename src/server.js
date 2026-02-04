@@ -61,20 +61,43 @@ const resumeActiveSessions = async () => {
     }
 };
 
-const server = app.listen(PORT, async () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log("✅ Connected to Supabase backend");
+// Only start the server if running directly (not imported as a module)
+if (require.main === module) {
+    const server = app.listen(PORT, async () => {
+        console.log(`🚀 Server running on port ${PORT}`);
+        console.log("✅ Connected to Supabase backend");
 
-    try {
-        // Clean up any orphaned sessions from before
-        await qrModel.cleanupOrphanedSessions();
+        try {
+            // Clean up any orphaned sessions from before
+            await qrModel.cleanupOrphanedSessions();
 
-        // Resume active QR sessions
-        await resumeActiveSessions();
-    } catch (err) {
-        console.error("❌ Error during server startup initialization:", err.message);
-    }
-});
+            // Resume active QR sessions
+            await resumeActiveSessions();
+        } catch (err) {
+            console.error("❌ Error during server startup initialization:", err.message);
+        }
+    });
+
+    // Graceful shutdown logic remains here within the conditional block
+    const gracefulShutdown = async (signal) => {
+        console.log(`\n${signal} received. Closing server gracefully...`);
+
+        server.close(async () => {
+            console.log('HTTP server closed');
+            console.log('Backend connection closed');
+            process.exit(0);
+        });
+
+        // Force shutdown after 10 seconds
+        setTimeout(() => {
+            console.error('Forced shutdown after timeout');
+            process.exit(1);
+        }, 10000);
+    };
+
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+}
 
 // Graceful shutdown
 const gracefulShutdown = async (signal) => {
