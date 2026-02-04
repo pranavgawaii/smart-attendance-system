@@ -25,17 +25,20 @@ const login = async (req, res) => {
         }
 
         // Get user profile with role
+        console.log(`[Auth] Searching for profile with email: "${email}" in user_profiles`);
         const { data: profile, error: profileError } = await supabase
-            .from('users')
+            .from('user_profiles')
             .select('*')
-            .eq('email', email)
+            .ilike('email', email)
             .single();
 
         if (profileError || !profile) {
+            console.error('[Auth] Profile lookup failed:', profileError?.message || 'No profile data found');
             return res.status(404).json({
                 error: 'User profile not found'
             });
         }
+        console.log(`[Auth] Profile found for: ${profile.email}, role: ${profile.role}`);
 
         // Return user data with role
         return res.json({
