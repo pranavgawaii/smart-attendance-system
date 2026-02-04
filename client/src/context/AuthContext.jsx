@@ -104,12 +104,17 @@ export const AuthProvider = ({ children }) => {
     };
 
     const loginWithEmail = async (email, password) => {
-        const res = await api.post('/auth/login', { email, password });
-        if (res.data && res.data.success) {
-            login(res.data);
-            return res.data;
+        try {
+            const res = await api.post('/auth/login', { email, password });
+            if (res.data && res.data.success) {
+                login(res.data);
+                return res.data;
+            }
+            throw new Error(res.data?.error || 'Invalid credentials');
+        } catch (error) {
+            console.error('[AuthContext] Login error details:', error.response?.data || error.message);
+            throw error;
         }
-        throw new Error(res.data?.error || 'Login failed');
     };
 
     return (

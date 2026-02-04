@@ -27,19 +27,7 @@ if (!process.env.ADMIN_EMAIL) {
     console.warn('Some admin features may not work correctly');
 }
 
-// Routes
-app.use('/health', healthRoutes);
-app.use('/auth', authRoutes);
-app.use('/qr', qrRoutes);
-app.use('/events', eventRoutes);
-app.use('/attendance', attendanceRoutes);
-app.use('/users', userRoutes);
-app.use('/students', studentRoutes);
-app.use('/assessments', assessmentRoutes);
-app.use('/labs-old', labRoutes);
-app.use('/labs', labsRoutes);
-app.use('/placement', placementRoutes);
-app.use('/admin', adminManagementRoutes);
+// Routes are handled in app.js
 
 const resumeActiveSessions = async () => {
     try {

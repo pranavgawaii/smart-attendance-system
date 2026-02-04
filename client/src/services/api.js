@@ -1,9 +1,12 @@
 import axios from 'axios';
 
 const api = axios.create({
+    // Use window.location.origin for same-origin requests (Vercel/Vite Proxy)
+    // Fallback to localhost:3000 only if explicitly needed during local debugging
     baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
 });
 
+console.log('[API CONFIG] baseURL:', api.defaults.baseURL);
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem('token');
     if (token) {

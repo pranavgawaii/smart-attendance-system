@@ -18,41 +18,27 @@ const { authenticateToken, verifySuperAdmin } = require('./middlewares/auth.midd
 
 const app = express();
 
+// Request Logger
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    console.log('Headers:', JSON.stringify(req.headers, null, 2));
+    next();
+});
+
 // Force restart for new routes
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Request Logger
-app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-    next();
-});
-
 // Debug Route
 app.get('/api/test', (req, res) => {
     res.json({ status: 'ok', message: 'API is reachable', time: new Date().toISOString() });
 });
 
-// Routes
-app.use('/health', healthRoutes);
-app.use('/auth', authRoutes);
-app.use('/users', userRoutes);
-app.use('/events', authenticateToken, eventRoutes);
-app.use('/qr-sessions', authenticateToken, qrRoutes);
-app.use('/attendance', authenticateToken, attendanceRoutes);
-app.use('/labs-old', authenticateToken, labRoutes);
-app.use('/labs', authenticateToken, labsRoutes);
-app.use('/assessments', authenticateToken, assessmentRoutes);
-app.use('/student', authenticateToken, studentRoutes);
-app.use('/placement', authenticateToken, placementRoutes);
-app.use('/placement-assessments', authenticateToken, placementAssessmentsRoutes);
-app.use('/allocations', authenticateToken, allocationsRoutes);
-app.use('/admin-management', authenticateToken, verifySuperAdmin, adminManagementRoutes);
-
-// Compatibility: Also mount under /api for robust frontend connecting
+// Routes - Consolidated under /api
 const apiRouter = express.Router();
+apiRouter.use('/health', healthRoutes);
 apiRouter.use('/auth', authRoutes);
 apiRouter.use('/users', userRoutes);
 apiRouter.use('/events', authenticateToken, eventRoutes);
@@ -66,6 +52,7 @@ apiRouter.use('/placement', authenticateToken, placementRoutes);
 apiRouter.use('/placement-assessments', authenticateToken, placementAssessmentsRoutes);
 apiRouter.use('/allocations', authenticateToken, allocationsRoutes);
 apiRouter.use('/admin-management', authenticateToken, verifySuperAdmin, adminManagementRoutes);
+
 app.use('/api', apiRouter);
 
 // Global Error Handler (Ensure JSON response)
