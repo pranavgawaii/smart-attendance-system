@@ -67,11 +67,15 @@ app.use('/api', (req, res) => {
 });
 
 // Serve Frontend in Production
-const path = require('path');
-app.use(express.static(path.join(__dirname, '../client/dist')));
+// Serve Frontend (Only in production/non-Vercel environments)
+// On Vercel, vercel.json handles static serving more efficiently
+if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
+    const path = require('path');
+    app.use(express.static(path.join(__dirname, '../client/dist')));
 
-app.get(/.*/, (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
-});
+    app.get(/.*/, (req, res) => {
+        res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+    });
+}
 
 module.exports = app;
