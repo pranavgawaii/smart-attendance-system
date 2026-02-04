@@ -65,15 +65,19 @@ if (require.main === module) {
         }
     });
 
-    // Graceful shutdown logic remains here within the conditional block
+    // Graceful shutdown logic
     const gracefulShutdown = async (signal) => {
         console.log(`\n${signal} received. Closing server gracefully...`);
 
-        server.close(async () => {
-            console.log('HTTP server closed');
-            console.log('Backend connection closed');
+        if (server) {
+            server.close(async () => {
+                console.log('HTTP server closed');
+                console.log('Backend connection closed');
+                process.exit(0);
+            });
+        } else {
             process.exit(0);
-        });
+        }
 
         // Force shutdown after 10 seconds
         setTimeout(() => {
@@ -85,27 +89,6 @@ if (require.main === module) {
     process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
     process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 }
-
-// Graceful shutdown
-const gracefulShutdown = async (signal) => {
-    console.log(`\n${signal} received. Closing server gracefully...`);
-
-    server.close(async () => {
-        console.log('HTTP server closed');
-        // Supabase client doesn't need explicit "end()" or "close()" like pg pool
-        console.log('Backend connection closed');
-        process.exit(0);
-    });
-
-    // Force shutdown after 10 seconds
-    setTimeout(() => {
-        console.error('Forced shutdown after timeout');
-        process.exit(1);
-    }, 10000);
-};
-
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Export the app for Vercel serverless
 module.exports = app;
