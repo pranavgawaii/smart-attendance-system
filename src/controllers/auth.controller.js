@@ -86,9 +86,9 @@ const getCurrentUser = async (req, res) => {
 
         // Get profile
         const { data: profile } = await supabase
-            .from('users')
+            .from('user_profiles')
             .select('*')
-            .eq('email', user.email)
+            .ilike('email', user.email)
             .single();
 
         return res.json({

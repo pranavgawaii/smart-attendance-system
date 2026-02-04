@@ -25,8 +25,6 @@ app.use((req, res, next) => {
     next();
 });
 
-// Force restart for new routes
-
 // Middleware
 app.use(cors());
 app.use(express.json());
