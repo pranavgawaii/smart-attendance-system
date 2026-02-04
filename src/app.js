@@ -29,17 +29,46 @@ app.use((req, res, next) => {
 app.use(cors());
 app.use(express.json());
 
-// Debug & Health Check
-app.get('/api/test', (req, res) => {
+// Debug & Health Check - Absolute Last Resort Diagnostic
+app.get('/api/test', async (req, res) => {
     const { supabase } = require('./config/db');
+    let dbStatus = 'Unknown';
+    let dbError = null;
+
+    if (supabase) {
+        try {
+            // Test actual connectivity by counting rows in a public-ish table
+            const { count, error } = await supabase
+                .from('user_profiles')
+                .select('*', { count: 'exact', head: true });
+
+            if (error) {
+                dbStatus = 'Connected but Error';
+                dbError = error.message;
+            } else {
+                dbStatus = 'Connected and Healthy';
+            }
+        } catch (e) {
+            dbStatus = 'Failed to Connect';
+            dbError = e.message;
+        }
+    }
+
     res.json({
         status: 'ok',
-        message: 'Backend is reachable',
-        serverTime: new Date().toISOString(),
-        environment: process.env.NODE_ENV,
-        isVercel: !!process.env.VERCEL,
-        supabaseInitialized: !!supabase,
-        authProviderSet: !!(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)
+        message: 'Backend Service Alive',
+        diagnostics: {
+            environment: process.env.NODE_ENV,
+            isVercel: !!process.env.VERCEL,
+            supabaseInitialized: !!supabase,
+            databaseConnectivity: dbStatus,
+            databaseDetail: dbError,
+            // Only show first/last characters for security
+            keysLoaded: {
+                url: process.env.SUPABASE_URL ? `${process.env.SUPABASE_URL.substring(0, 12)}...` : 'MISSING',
+                key: process.env.SUPABASE_SERVICE_ROLE_KEY ? `...${process.env.SUPABASE_SERVICE_ROLE_KEY.substring(process.env.SUPABASE_SERVICE_ROLE_KEY.length - 4)}` : 'MISSING',
+            }
+        }
     });
 });
 

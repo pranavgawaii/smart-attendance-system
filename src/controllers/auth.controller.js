@@ -21,14 +21,17 @@ const login = async (req, res) => {
         }
 
         // Supabase auth sign in
+        console.log(`[Auth] Attempting login for ${email}...`);
         const { data, error } = await supabase.auth.signInWithPassword({
             email,
             password
         });
 
         if (error) {
+            console.error(`[Auth] Supabase Auth Error: ${error.message} (Email: ${email})`);
             return res.status(401).json({
-                error: 'Invalid email or password'
+                error: 'Invalid email or password',
+                debug: process.env.NODE_ENV === 'development' ? error.message : undefined
             });
         }
 
