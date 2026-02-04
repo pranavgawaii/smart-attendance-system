@@ -35,11 +35,12 @@ app.get('/api/test', async (req, res) => {
     let dbStatus = 'Unknown';
     let dbError = null;
     let profileExists = 'Checking...';
+    let authUserExists = 'Checking...';
     let userCount = 0;
 
     if (supabase) {
         try {
-            // 1. Check if ANY users exist
+            // 1. Check if ANY users exist in user_profiles
             const { count, error } = await supabase
                 .from('user_profiles')
                 .select('*', { count: 'exact', head: true });
@@ -52,14 +53,24 @@ app.get('/api/test', async (req, res) => {
                 userCount = count || 0;
             }
 
-            // 2. specifically check if admin@test.com is there
-            const { data: adminUser } = await supabase
+            // 2. specifically check if admin@test.com is there in user_profiles
+            const { data: adminProfile } = await supabase
                 .from('user_profiles')
                 .select('email, role')
                 .ilike('email', 'admin@test.com')
                 .maybeSingle();
 
-            profileExists = adminUser ? `YES (${adminUser.role})` : 'NO - Profile missing from database';
+            profileExists = adminProfile ? `YES (${adminProfile.role})` : 'NO - Record missing from user_profiles table';
+
+            // 3. SECURELY check if user exists in Supabase AUTH (requires service role key)
+            const { data: { users }, error: authListError } = await supabase.auth.admin.listUsers();
+            if (!authListError) {
+                const hasAuth = users.some(u => u.email.toLowerCase() === 'admin@test.com');
+                authUserExists = hasAuth ? 'YES - Account found in Auth' : 'NO - Account missing from Auth tab';
+            } else {
+                authUserExists = `Error checking Auth: ${authListError.message}`;
+            }
+
         } catch (e) {
             dbStatus = 'Failed to Connect';
             dbError = e.message;
@@ -74,8 +85,9 @@ app.get('/api/test', async (req, res) => {
             environment: process.env.NODE_ENV,
             isVercel: !!process.env.VERCEL,
             databaseHealthy: dbStatus === 'Connected and Healthy',
-            totalRegisteredUsers: userCount,
-            adminProfileStatus: profileExists,
+            totalTableRecords: userCount,
+            adminTableStatus: profileExists,
+            adminAuthStatus: authUserExists,
             supabaseError: dbError
         },
         keysMasked: {
