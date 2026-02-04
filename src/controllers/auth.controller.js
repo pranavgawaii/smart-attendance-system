@@ -21,22 +21,23 @@ const login = async (req, res) => {
         }
 
         // Supabase auth sign in
-        console.log(`[Auth] Attempting login for ${email}...`);
+        console.log(`[Auth] Attempting login for: ${email}`);
         const { data, error } = await supabase.auth.signInWithPassword({
             email,
             password
         });
 
         if (error) {
-            console.error(`[Auth] Supabase Auth Error: ${error.message} (Email: ${email})`);
-            return res.status(401).json({
-                error: 'Invalid email or password',
-                debug: process.env.NODE_ENV === 'development' ? error.message : undefined
+            console.error(`[Auth] ❌ Supabase Auth Rejection: ${error.message}`);
+            return res.status(error.status || 401).json({
+                error: 'Invalid credentials. Check email/password or Supabase project.',
+                code: 'AUTH_FAILED',
+                message: error.message
             });
         }
 
         // Get user profile with role
-        console.log(`[Auth] Searching for profile with email: "${email}" in user_profiles`);
+        console.log(`[Auth] ✅ Auth successful. Fetching profile for: ${email}`);
         const { data: profile, error: profileError } = await supabase
             .from('user_profiles')
             .select('*')
@@ -44,12 +45,14 @@ const login = async (req, res) => {
             .single();
 
         if (profileError || !profile) {
-            console.error('[Auth] Profile lookup failed:', profileError?.message || 'No profile data found');
+            console.error('[Auth] ❌ Profile lookup failed for authenticated user:', email);
             return res.status(404).json({
-                error: 'User profile not found'
+                error: 'Login successful, but user has no profile record in user_profiles table.',
+                code: 'PROFILE_MISSING'
             });
         }
-        console.log(`[Auth] Profile found for: ${profile.email}, role: ${profile.role}`);
+
+        console.log(`[Auth] ✅ Profile found. Role: ${profile.role}`);
 
         // Return user data with role
         return res.json({
@@ -61,7 +64,7 @@ const login = async (req, res) => {
                 name: profile.name,
                 enrollment_no: profile.enrollment_no
             },
-            token: data.session.access_token, // Normalized for frontend
+            token: data.session.access_token,
             session: data.session
         });
 
