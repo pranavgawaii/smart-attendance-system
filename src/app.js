@@ -67,15 +67,29 @@ app.use('/api', (req, res) => {
 });
 
 // Serve Frontend in Production
-// Serve Frontend (Only in production/non-Vercel environments)
-// On Vercel, vercel.json handles static serving more efficiently
-if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
+// Serve Frontend in Production
+if (process.env.NODE_ENV === 'production') {
     const path = require('path');
-    app.use(express.static(path.join(__dirname, '../client/dist')));
+    const fs = require('fs');
+    const distPath = path.join(__dirname, '../client/dist');
 
-    app.get(/.*/, (req, res) => {
-        res.sendFile(path.join(__dirname, '../client/dist/index.html'));
-    });
+    // Check if dist exists to avoid crashes, though Vercel should have it
+    if (fs.existsSync(distPath)) {
+        console.log('✅ Serving static files from:', distPath);
+        app.use(express.static(distPath));
+
+        // Catch-all route for SPA
+        app.get('*', (req, res) => {
+            // Only serve index.html if not an API request (extra safety)
+            if (!req.url.startsWith('/api')) {
+                res.sendFile(path.join(distPath, 'index.html'));
+            } else {
+                res.status(404).json({ error: 'API Endpoint Not Found' });
+            }
+        });
+    } else {
+        console.warn('⚠️ Warning: client/dist directory not found at:', distPath);
+    }
 }
 
 module.exports = app;
