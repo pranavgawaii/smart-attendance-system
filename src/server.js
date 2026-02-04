@@ -21,11 +21,10 @@ const adminManagementRoutes = require('./routes/admin-management.routes');
 
 const PORT = process.env.PORT || 3000;
 
-// Validate required environment variables
+// Validate required environment variables (warn but don't crash in serverless)
 if (!process.env.ADMIN_EMAIL) {
-    console.error('❌ FATAL ERROR: ADMIN_EMAIL is not configured in environment variables');
-    console.error('Please set ADMIN_EMAIL in your .env file');
-    process.exit(1);
+    console.warn('⚠️  WARNING: ADMIN_EMAIL is not configured in environment variables');
+    console.warn('Some admin features may not work correctly');
 }
 
 // Routes
@@ -119,3 +118,6 @@ const gracefulShutdown = async (signal) => {
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Export the app for Vercel serverless
+module.exports = app;
