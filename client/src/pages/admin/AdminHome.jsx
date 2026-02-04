@@ -196,8 +196,8 @@ export default function AdminHome() {
 
                                             {/* Status Badge */}
                                             <div className={`px-2.5 py-1 rounded-full text-[10px] font-medium border ${assessment.status === 'PUBLISHED'
-                                                    ? 'bg-zinc-900 text-zinc-50 border-zinc-900'
-                                                    : 'bg-zinc-100 text-zinc-500 border-zinc-200'
+                                                ? 'bg-zinc-900 text-zinc-50 border-zinc-900'
+                                                : 'bg-zinc-100 text-zinc-500 border-zinc-200'
                                                 }`}>
                                                 {assessment.status === 'PUBLISHED' ? 'Scheduled' : 'Draft'}
                                             </div>

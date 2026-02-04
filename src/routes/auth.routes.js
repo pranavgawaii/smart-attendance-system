@@ -1,10 +1,15 @@
 const express = require('express');
-const router = express.Router();
-const authController = require('../controllers/auth.controller');
-const { restrictSignup } = require('../middlewares/restrictSignup');
+const { login, logout, getCurrentUser } = require('../controllers/auth.controller');
 
-router.post('/request-otp', restrictSignup, authController.requestOtp);
-router.post('/verify-otp', authController.verifyOtp);
-router.post('/logout', authController.logout);
+const router = express.Router();
+
+// POST /api/auth/login
+router.post('/login', login);
+
+// POST /api/auth/logout
+router.post('/logout', logout);
+
+// GET /api/auth/me
+router.get('/me', getCurrentUser);
 
 module.exports = router;

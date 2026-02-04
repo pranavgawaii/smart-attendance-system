@@ -1,24 +1,12 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-    LayoutDashboard,
-    Calendar,
-    Users,
-    Briefcase,
-    Award,
-    Settings,
-    Monitor,
-    FileText,
-    Building2,
     LogOut,
     PanelLeftClose,
-    PanelLeft,
-    Shield,
     ChevronRight,
-    BookOpen,
-    GraduationCap
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { getAdminMenu } from '../config/adminMenu';
 import logo from '../assets/mitadtlogo.png';
 
 export default function Sidebar({ isCollapsed, toggleSidebar }) {
@@ -31,42 +19,13 @@ export default function Sidebar({ isCollapsed, toggleSidebar }) {
         navigate('/login');
     };
 
-    const isSuperAdmin = user?.role === 'super_admin';
-
-    const menuSections = [
-        {
-            title: null, // No title for first section in reference
-            items: [
-                { icon: LayoutDashboard, label: 'Dashboard', path: '/admin' },
-                { icon: Calendar, label: 'Sessions', path: '/admin/events' },
-                { icon: Users, label: 'Students', path: '/admin/users' },
-                { icon: Award, label: 'Assessments', path: '/admin/assessments' },
-                { icon: Monitor, label: 'Labs', path: '/admin/labs' },
-            ]
-        },
-        {
-            title: 'Placement',
-            items: [
-                { icon: Building2, label: 'Drives', path: '/admin/placements' },
-                { icon: Briefcase, label: 'Allocations', path: '/admin/allocations' },
-                { icon: FileText, label: 'Reports', path: '/admin/reports' },
-            ]
-        },
-        {
-            title: 'System',
-            items: [
-                { icon: Settings, label: 'Settings', path: '/admin/settings' },
-                isSuperAdmin ? { icon: Shield, label: 'Admins', path: '/admin/manage-admins' } : null,
-            ].filter(Boolean)
-        }
-    ];
+    const menuSections = getAdminMenu(user?.role);
 
     return (
         <aside className={`
             bg-zinc-50 border-r border-zinc-200 flex flex-col fixed h-screen z-50 transition-all duration-300 ease-in-out
             ${isCollapsed ? 'w-[70px]' : 'w-64'}
         `}>
-            {/* 1. Brand Header */}
             {/* 1. Brand Header */}
             <div className="flex items-center gap-3 h-20 px-6 mb-2">
                 <div className="w-8 h-8 flex items-center justify-center shrink-0">
@@ -77,7 +36,7 @@ export default function Sidebar({ isCollapsed, toggleSidebar }) {
                     />
                 </div>
                 {!isCollapsed && (
-                    <div className="flex flex-col">
+                    <div className="flex-col flex">
                         <span className="text-sm font-bold tracking-tight text-zinc-900 leading-tight whitespace-nowrap">MIT ADT University</span>
                         <span className="text-[10px] font-medium text-zinc-500 tracking-wide">Training & Placement Cell</span>
                     </div>
@@ -95,7 +54,16 @@ export default function Sidebar({ isCollapsed, toggleSidebar }) {
                         )}
                         <nav className="space-y-1">
                             {section.items.map((item) => {
-                                const isActive = location.pathname === item.path || (item.path !== '/admin' && location.pathname.startsWith(item.path));
+                                // Get all possible menu paths to find the most specific match
+                                const allMenuPaths = menuSections.flatMap(s => s.items.map(i => i.path));
+
+                                const isActive = item.path === '/admin'
+                                    ? location.pathname === '/admin'
+                                    : location.pathname === item.path || (
+                                        location.pathname.startsWith(item.path + '/') &&
+                                        !allMenuPaths.some(p => p !== item.path && location.pathname.startsWith(p) && p.length > item.path.length)
+                                    );
+
                                 return (
                                     <Link
                                         key={item.label}
@@ -124,8 +92,6 @@ export default function Sidebar({ isCollapsed, toggleSidebar }) {
                         </nav>
                     </div>
                 ))}
-
-
             </div>
 
             {/* User Profile Footer */}
@@ -152,7 +118,7 @@ export default function Sidebar({ isCollapsed, toggleSidebar }) {
                     )}
                 </div>
 
-                {/* Collapse Toggle (Moved to bottom or removed if not in reference? Reference doesn't show toggle, but I'll keep it subtle) */}
+                {/* Collapse Toggle */}
                 <button
                     onClick={toggleSidebar}
                     className="absolute -right-3 top-20 bg-white border border-zinc-200 rounded-full p-1 text-zinc-400 hover:text-zinc-900 shadow-sm md:flex hidden"

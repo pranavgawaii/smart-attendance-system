@@ -16,8 +16,12 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-            // Token expired or invalid
+            // Token expired or invalid - thorough cleanup
             localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('session');
+            localStorage.removeItem('role');
+
             if (!window.location.pathname.includes('/login')) {
                 window.location.href = '/login';
             }

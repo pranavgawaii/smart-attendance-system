@@ -65,7 +65,7 @@ export default function AdminPlacements() {
     const internshipCount = drives.filter(d => d.job_type === 'INTERNSHIP').length;
 
     return (
-        <AdminLayout title="Placements">
+        <AdminLayout title="Placement Drives">
             <PageHeader
                 title="Placement Drives"
                 description="Manage campus placement drives, job postings, and student applications."
@@ -104,7 +104,7 @@ export default function AdminPlacements() {
             </div>
 
             {loading ? (
-                <div className="p-12 text-center text-slate-400">Loading placement data...</div>
+                <div className="p-12 text-center text-zinc-400">Loading placement data...</div>
             ) : error ? (
                 <div className="p-12 text-center text-red-500 bg-red-50 rounded-xl border border-red-100">
                     Error loading data: {error}
@@ -118,11 +118,11 @@ export default function AdminPlacements() {
                     icon={Building2}
                 />
             ) : (
-                <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                <tr className="bg-zinc-50 border-b border-zinc-200 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                                     <th className="px-6 py-4">Company</th>
                                     <th className="px-6 py-4">Role</th>
                                     <th className="px-6 py-4">Type</th>
@@ -131,22 +131,22 @@ export default function AdminPlacements() {
                                     <th className="px-6 py-4 text-right">Status</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100">
+                            <tbody className="divide-y divide-zinc-100">
                                 {drives.map(drive => {
                                     const isExpired = new Date(drive.deadline) < new Date();
                                     return (
-                                        <tr key={drive.id} className="hover:bg-slate-50 transition-colors group">
+                                        <tr key={drive.id} className="hover:bg-zinc-50 transition-colors group">
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400">
+                                                    <div className="w-10 h-10 rounded-lg bg-zinc-50 border border-zinc-200 flex items-center justify-center text-zinc-400">
                                                         <Building2 size={20} strokeWidth={1.5} />
                                                     </div>
                                                     <div>
-                                                        <div className="font-semibold text-slate-900">{drive.company_name}</div>
+                                                        <div className="font-semibold text-zinc-900">{drive.company_name}</div>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-slate-600 font-medium">{drive.role}</td>
+                                            <td className="px-6 py-4 text-zinc-600 font-medium">{drive.role}</td>
                                             <td className="px-6 py-4">
                                                 <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${drive.job_type === 'INTERNSHIP'
                                                     ? 'bg-zinc-100 text-zinc-900 ring-1 ring-zinc-200'
@@ -155,9 +155,9 @@ export default function AdminPlacements() {
                                                     {drive.job_type}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 text-slate-500 text-sm font-mono">{drive.stipend_ctc || '-'}</td>
+                                            <td className="px-6 py-4 text-zinc-500 text-sm font-mono">{drive.stipend_ctc || '-'}</td>
                                             <td className="px-6 py-4">
-                                                <div className="flex items-center gap-2 text-sm text-slate-500">
+                                                <div className="flex items-center gap-2 text-sm text-zinc-500">
                                                     <Calendar size={14} strokeWidth={1.5} />
                                                     {new Date(drive.deadline).toLocaleDateString()}
                                                 </div>
@@ -169,14 +169,14 @@ export default function AdminPlacements() {
                                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                         <Link
                                                             to={`/admin/placements/edit/${drive.id}`}
-                                                            className="p-1.5 rounded-lg text-slate-400 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
+                                                            className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
                                                             title="Edit"
                                                         >
                                                             <Edit2 size={16} strokeWidth={1.5} />
                                                         </Link>
                                                         <button
                                                             onClick={() => handleDelete(drive.id)}
-                                                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                                            className="p-1.5 rounded-lg text-zinc-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                                                             title="Delete"
                                                         >
                                                             <Trash2 size={16} strokeWidth={1.5} />

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
-import { Monitor, Plus, Edit, Trash2, Calendar, Activity, X } from 'lucide-react';
+import { Monitor, Plus, Edit, Trash2, Calendar, Activity, X, Play, Square, Loader2 } from 'lucide-react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import PageHeader from '../../components/PageHeader';
 import StatusBadge from '../../components/StatusBadge';
@@ -19,6 +19,7 @@ export default function AdminEvents() {
     const [interval, setInterval] = useState(10);
     const [error, setError] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
+    const [actionLoading, setActionLoading] = useState(null);
 
     useEffect(() => {
         fetchEvents();
@@ -106,10 +107,30 @@ export default function AdminEvents() {
         }
     };
 
+    const handleToggleSession = async (eventId, currentState) => {
+        setActionLoading(eventId);
+        try {
+            if (currentState === 'ACTIVE' || currentState === 'LIVE') {
+                await api.post(`/events/${eventId}/stop-session`);
+                setSuccessMsg('Session ended successfully');
+            } else {
+                await api.post(`/events/${eventId}/start-session`);
+                setSuccessMsg('Session activated successfully');
+            }
+            fetchEvents();
+            setTimeout(() => setSuccessMsg(''), 3000);
+        } catch (err) {
+            console.error(err);
+            alert('Failed to change session state');
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
     const activeSessions = events.filter(e => e.session_state === 'ACTIVE' || e.session_state === 'LIVE').length;
 
     return (
-        <AdminLayout title="Sessions">
+        <AdminLayout title="Sessions Management">
             <PageHeader
                 title="Sessions Management"
                 description="Create and manage attendance sessions, venues, and configurations."
@@ -150,11 +171,11 @@ export default function AdminEvents() {
             )}
 
             {/* Events Table */}
-            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                            <tr className="bg-zinc-50 border-b border-zinc-200 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                                 <th className="px-6 py-4">ID</th>
                                 <th className="px-6 py-4">Event Name</th>
                                 <th className="px-6 py-4">Venue</th>
@@ -163,21 +184,21 @@ export default function AdminEvents() {
                                 <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
+                        <tbody className="divide-y divide-zinc-100">
                             {loading ? (
-                                <tr><td colSpan="6" className="p-8 text-center text-slate-400">Loading sessions...</td></tr>
+                                <tr><td colSpan="6" className="p-8 text-center text-zinc-400">Loading sessions...</td></tr>
                             ) : events.length === 0 ? (
-                                <tr><td colSpan="6" className="p-8 text-center text-slate-400">No sessions found. Create one to get started.</td></tr>
+                                <tr><td colSpan="6" className="p-8 text-center text-zinc-400">No sessions found. Create one to get started.</td></tr>
                             ) : (
                                 events.map(event => (
-                                    <tr key={event.id} className="hover:bg-slate-50 transition-colors group">
-                                        <td className="px-6 py-4 text-slate-400 font-mono text-xs">#{event.id}</td>
+                                    <tr key={event.id} className="hover:bg-zinc-50 transition-colors group">
+                                        <td className="px-6 py-4 text-zinc-400 font-mono text-xs">#{event.event_display_id || '--'}</td>
                                         <td className="px-6 py-4">
-                                            <div className="font-semibold text-slate-900">{event.name}</div>
-                                            <div className="text-xs text-slate-500 mt-0.5">{event.qr_refresh_interval}s interval</div>
+                                            <div className="font-semibold text-zinc-900">{event.name}</div>
+                                            <div className="text-xs text-zinc-500 mt-0.5">{event.qr_refresh_interval}s interval</div>
                                         </td>
-                                        <td className="px-6 py-4 text-slate-600 font-medium">{event.venue || 'N/A'}</td>
-                                        <td className="px-6 py-4 text-slate-500 text-sm">
+                                        <td className="px-6 py-4 text-zinc-600 font-medium">{event.venue || 'N/A'}</td>
+                                        <td className="px-6 py-4 text-zinc-500 text-sm">
                                             {new Date(event.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                                         </td>
                                         <td className="px-6 py-4">
@@ -185,21 +206,41 @@ export default function AdminEvents() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                {/* Session Control Button */}
+                                                <button
+                                                    onClick={() => handleToggleSession(event.id, event.session_state)}
+                                                    disabled={actionLoading === event.id}
+                                                    className={`p-2 rounded-lg border transition-all ${event.session_state === 'ACTIVE' || event.session_state === 'LIVE'
+                                                        ? 'bg-red-50 border-red-100 text-red-600 hover:bg-red-100'
+                                                        : 'bg-green-50 border-green-100 text-green-600 hover:bg-green-100'
+                                                        }`}
+                                                    title={event.session_state === 'ACTIVE' || event.session_state === 'LIVE' ? 'Stop Session' : 'Start Session'}
+                                                >
+                                                    {actionLoading === event.id ? (
+                                                        <Loader2 size={16} className="animate-spin" />
+                                                    ) : event.session_state === 'ACTIVE' || event.session_state === 'LIVE' ? (
+                                                        <Square size={16} fill="currentColor" strokeWidth={1} />
+                                                    ) : (
+                                                        <Play size={16} fill="currentColor" strokeWidth={1} />
+                                                    )}
+                                                </button>
+
                                                 <Link to={`/admin/events/${event.id}`} target="_blank" rel="noopener noreferrer">
-                                                    <button className="p-2 rounded-lg bg-white border border-slate-200 text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 transition-colors" title="Projector View">
+                                                    <button className="p-2 rounded-lg bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 transition-colors" title="Projector View">
                                                         <Monitor size={16} strokeWidth={1.5} />
                                                     </button>
                                                 </Link>
+
                                                 <button
                                                     onClick={() => handleEdit(event)}
-                                                    className="p-2 rounded-lg bg-white border border-slate-200 text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 transition-colors"
+                                                    className="p-2 rounded-lg bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 transition-colors"
                                                     title="Edit"
                                                 >
                                                     <Edit size={16} strokeWidth={1.5} />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(event.id)}
-                                                    className="p-2 rounded-lg bg-white border border-slate-200 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-600 transition-colors"
+                                                    className="p-2 rounded-lg bg-white border border-zinc-200 text-zinc-400 hover:bg-zinc-50 hover:text-zinc-600 transition-colors"
                                                     title="Delete"
                                                 >
                                                     <Trash2 size={16} strokeWidth={1.5} />
@@ -216,13 +257,13 @@ export default function AdminEvents() {
 
             {/* Create/Edit Modal */}
             {createModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm transition-all">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/50 backdrop-blur-sm transition-all">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden transform transition-all">
-                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                            <h3 className="text-lg font-bold text-slate-900">
+                        <div className="px-6 py-4 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                            <h3 className="text-lg font-bold text-zinc-900">
                                 {editingEventId ? 'Edit Session' : 'Create New Session'}
                             </h3>
-                            <button onClick={() => setCreateModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                            <button onClick={() => setCreateModalOpen(false)} className="text-zinc-400 hover:text-zinc-600 transition-colors">
                                 <X size={20} strokeWidth={1.5} />
                             </button>
                         </div>
@@ -236,30 +277,30 @@ export default function AdminEvents() {
 
                             <form onSubmit={handleSaveEvent} className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-1">Event Name</label>
+                                    <label className="block text-sm font-semibold text-zinc-700 mb-1">Event Name</label>
                                     <input
                                         type="text"
                                         required
                                         placeholder="e.g. TCS Pre-placement Talk"
                                         value={newEventName}
                                         onChange={e => setNewEventName(e.target.value)}
-                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all placeholder:text-slate-400"
+                                        className="w-full px-4 py-2 rounded-lg border border-zinc-200 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-100 outline-none transition-all placeholder:text-zinc-400"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-1">Venue</label>
+                                    <label className="block text-sm font-semibold text-zinc-700 mb-1">Venue</label>
                                     <input
                                         type="text"
                                         placeholder="e.g. Main Auditorium"
                                         value={venue}
                                         onChange={e => setVenue(e.target.value)}
-                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all placeholder:text-slate-400"
+                                        className="w-full px-4 py-2 rounded-lg border border-zinc-200 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-100 outline-none transition-all placeholder:text-zinc-400"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-1">
+                                    <label className="block text-sm font-semibold text-zinc-700 mb-1">
                                         QR Refresh Interval (seconds)
                                     </label>
                                     <input
@@ -268,16 +309,16 @@ export default function AdminEvents() {
                                         max="60"
                                         value={interval}
                                         onChange={e => setInterval(e.target.value)}
-                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all placeholder:text-slate-400"
+                                        className="w-full px-4 py-2 rounded-lg border border-zinc-200 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-100 outline-none transition-all placeholder:text-zinc-400"
                                     />
-                                    <p className="mt-1 text-xs text-slate-500">Recommended: 10 seconds for optimal security.</p>
+                                    <p className="mt-1 text-xs text-zinc-500">Recommended: 10 seconds for optimal security.</p>
                                 </div>
 
                                 <div className="flex gap-3 justify-end mt-8">
                                     <button
                                         type="button"
                                         onClick={() => setCreateModalOpen(false)}
-                                        className="px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                                        className="px-4 py-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-lg hover:bg-zinc-50 transition-colors"
                                     >
                                         Cancel
                                     </button>

@@ -54,9 +54,14 @@ router.post('/create', authenticateToken, async (req, res) => {
                 if (studentIndex >= students.length) break;
 
                 const student = students[studentIndex];
+                const student_name = student.name || student.full_name || 'N/A';
+                const enrollment_no = student.enrollment_no || 'N/A';
+
                 allocations.push({
                     placement_assessment_id: assessment_id,
-                    student_id: student.id || null, // Will be null if student doesn't exist in system
+                    student_id: student.id || null,
+                    student_name: student_name,
+                    enrollment_no: enrollment_no,
                     lab_id: lab.id,
                     seat_number: getSeatNumber(i)
                 });
@@ -92,11 +97,11 @@ router.get('/assessment/:assessmentId', authenticateToken, async (req, res) => {
             .from('allocations')
             .select(`
                 *,
+                student:user_profiles(name, enrollment_no),
                 lab:labs(lab_name, capacity),
                 placement_assessment:placement_assessments(company_name, assessment_date)
             `)
             .eq('placement_assessment_id', req.params.assessmentId)
-            .order('lab_id', { ascending: true })
             .order('seat_number', { ascending: true });
 
         if (error) throw error;

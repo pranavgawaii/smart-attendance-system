@@ -1,11 +1,13 @@
 const { supabase } = require('../config/db');
 
-const createSession = async ({ event_id, token, expires_at }) => {
+// Create a new QR token for a session
+const createToken = async ({ session_id, token, code, expires_at }) => {
   const { data, error } = await supabase
-    .from('qr_sessions')
+    .from('qr_tokens')
     .insert([{
-      event_id,
+      session_id,
       token,
+      code,
       expires_at
     }])
     .select()
@@ -15,12 +17,14 @@ const createSession = async ({ event_id, token, expires_at }) => {
   return data;
 };
 
-const getLatestSession = async (event_id) => {
+// Get the latest active token for a session
+const getLatestToken = async (session_id) => {
   const { data, error } = await supabase
-    .from('qr_sessions')
+    .from('qr_tokens')
     .select('*')
-    .eq('event_id', event_id)
-    .order('created_at', { ascending: false })
+    .eq('session_id', session_id)
+    .gt('expires_at', new Date().toISOString())
+    .order('generated_at', { ascending: false })
     .limit(1)
     .maybeSingle();
 
@@ -28,86 +32,66 @@ const getLatestSession = async (event_id) => {
   return data;
 };
 
-const findValidSession = async (token) => {
-  const { data, error } = await supabase
-    .from('qr_sessions')
-    .select('*')
-    .eq('token', token)
-    .gt('expires_at', new Date().toISOString())
-    .maybeSingle();
-
-  if (error) throw error;
-  return data;
-};
-
-const verifyToken = async (event_id, token) => {
+// Verify if a token is valid for a session
+const verifyToken = async (session_id, token) => {
   try {
     const { data, error } = await supabase
-      .from('qr_sessions')
+      .from('qr_tokens')
       .select('id')
+      .eq('session_id', session_id)
       .eq('token', token)
-      .eq('event_id', event_id)
       .gt('expires_at', new Date().toISOString())
       .limit(1)
       .maybeSingle();
 
-    if (error) {
-      console.error('[QR Model] Error verifying token:', error);
-      return false;
-    }
+    if (error) return false;
     return !!data;
   } catch (error) {
-    console.error('Error verifying token:', error);
     return false;
   }
 };
 
-const getSessionByToken = async (event_id, token) => {
+// Find a token by string (for manual entry or validation)
+const findByToken = async (session_id, tokenString) => {
+  // Check main token OR code
   const { data, error } = await supabase
-    .from('qr_sessions')
+    .from('qr_tokens')
     .select('*')
-    .eq('event_id', event_id)
-    .eq('token', token)
+    .eq('session_id', session_id)
+    .or(`token.eq.${tokenString},code.eq.${tokenString}`)
+    .gt('expires_at', new Date().toISOString())
+    .limit(1)
     .maybeSingle();
 
   if (error) return null;
   return data;
 };
 
+// Cleanup routine (Required by server.js)
 const cleanupOrphanedSessions = async () => {
   try {
-    // In Supabase/PostgreSQL, we can do this with a filter on delete
-    // However, Supabase doesn't support subqueries in delete directly via the client easily.
-    // Given Supabase usually has Cascade deletes set up at the DB level, this might be redundant.
-    // But to match behavior:
-    const { data: validEventIds, error: eventError } = await supabase.from('events').select('id');
-    if (eventError) throw eventError;
-
-    const ids = validEventIds.map(e => e.id);
-
-    const { data, error } = await supabase
-      .from('qr_sessions')
+    const { error } = await supabase
+      .from('qr_tokens')
       .delete()
-      .not('event_id', 'in', `(${ids.join(',')})`)
-      .select();
+      .lt('expires_at', new Date().toISOString());
 
-    if (error) throw error;
-
-    if (data?.length > 0) {
-      console.log(`[QR Model] 🧹 Cleaned up ${data.length} orphaned QR sessions.`);
-    }
-    return data?.length || 0;
-  } catch (error) {
-    console.error('[QR Model] Error cleaning up orphaned sessions:', error.message);
-    return 0;
+    if (error) console.error('[QR] Cleanup failed:', error.message);
+    else console.log('[QR] Cleanup complete');
+  } catch (e) {
+    console.error('[QR] Cleanup error:', e);
   }
 };
 
+// Legacy method alias if needed
+const createSession = createToken;
+const getSessionByToken = findByToken;
+
 module.exports = {
-  createSession,
-  getLatestSession,
-  findValidSession,
+  createToken,
+  getLatestToken,
   verifyToken,
-  getSessionByToken,
-  cleanupOrphanedSessions
+  findByToken,
+  cleanupOrphanedSessions,
+  createSession,
+  getSessionByToken
 };

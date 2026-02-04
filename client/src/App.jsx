@@ -18,13 +18,17 @@ import AdminUsers from './pages/admin/AdminUsers';
 import AdminEvents from './pages/admin/AdminEvents';
 import AdminEventAttendance from './pages/admin/AdminEventAttendance';
 import AdminAttendance from './pages/admin/AdminAttendance';
-import AdminAssessments from './pages/admin/AdminAssessments';
-import CreateAssessment from './pages/admin/CreateAssessment';
-import AdminAssessmentDetails from './pages/admin/AdminAssessmentDetails';
+// import AdminAssessments from './pages/admin/AdminAssessments'; // Removed
+// import CreateAssessment from './pages/admin/CreateAssessment'; // Removed
+// import AdminAssessmentDetails from './pages/admin/AdminAssessmentDetails'; // Removed
 import SeatAllocation from './pages/admin/SeatAllocation';
 import AdminAllocations from './pages/admin/AdminAllocations';
 import AllocationsHome from './pages/admin/AllocationsHome';
 import CreateAllocation from './pages/admin/CreateAllocation';
+// import AdminStudentAnalytics from './pages/admin/AdminStudentAnalytics'; // REMOVED
+import PlacementApplications from './pages/admin/PlacementApplications';
+import PlacementEligibility from './pages/admin/PlacementEligibility';
+import PlacementStats from './pages/admin/PlacementStats';
 import AdminLabs from './pages/admin/AdminLabs';
 import Labs from './pages/admin/Labs';
 import AdminReports from './pages/admin/AdminReports';
@@ -34,6 +38,7 @@ import CreatePlacement from './pages/admin/CreatePlacement';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminManagement from './pages/admin/AdminManagement';
 import StudentProfile from './pages/admin/StudentProfile';
+import BulkStudentUpload from './pages/admin/BulkStudentUpload';
 
 import ProfileSetup from './pages/ProfileSetup';
 
@@ -98,12 +103,18 @@ function App() {
               <Route path="events" element={<AdminEvents />} />
               <Route path="events/:id/attendance" element={<AdminEventAttendance />} />
               <Route path="attendance" element={<AdminAttendance />} />
-              <Route path="assessments" element={<AdminAssessments />} />
+              {/* <Route path="assessments" element={<AdminAssessments />} /> */}
+              <Route path="users/bulk-upload" element={<BulkStudentUpload />} />
+              {/* <Route path="users/analytics" element={<AdminStudentAnalytics />} /> */}
+              {/* REMOVED: <Route path="users/analytics" element={<AdminStudentAnalytics />} /> */}
               <Route path="placements" element={<AdminPlacements />} />
               <Route path="placements/create" element={<CreatePlacement />} />
               <Route path="placements/edit/:id" element={<CreatePlacement />} />
-              <Route path="assessments/create" element={<CreateAssessment />} />
-              <Route path="assessments/:id" element={<AdminAssessmentDetails />} />
+              <Route path="placements/applications" element={<PlacementApplications />} />
+              <Route path="placements/eligibility" element={<PlacementEligibility />} />
+              <Route path="placements/stats" element={<PlacementStats />} />
+              {/* <Route path="assessments/create" element={<CreateAssessment />} /> */}
+              {/* <Route path="assessments/:id" element={<AdminAssessmentDetails />} /> */}
               <Route path="allocations-old" element={<AdminAllocations />} />
               <Route path="allocations" element={<AllocationsHome />} />
               <Route path="allocations/create" element={<CreateAllocation />} />

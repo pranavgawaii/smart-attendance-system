@@ -5,9 +5,9 @@ export default function PageHeader({ title, description, actions, children }) {
         <div className="mb-8">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{title}</h1>
+                    <h1 className="text-2xl font-medium text-zinc-900 tracking-tight">{title}</h1>
                     {description && (
-                        <p className="text-sm text-slate-500 mt-1">{description}</p>
+                        <p className="text-sm text-zinc-500 mt-1">{description}</p>
                     )}
                 </div>
                 {actions && (

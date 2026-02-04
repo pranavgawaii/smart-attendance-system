@@ -100,6 +100,16 @@ const findByEnrollment = async (enrollment_no) => {
   return data;
 };
 
+const countStudents = async () => {
+  const { count, error } = await supabase
+    .from(TABLE_NAME)
+    .select('*', { count: 'exact', head: true })
+    .eq('role', 'student');
+
+  if (error) throw error;
+  return count || 0;
+};
+
 module.exports = {
   createUser,
   findById,
@@ -108,5 +118,6 @@ module.exports = {
   adminUpdate,
   findAdmins,
   toggleUserStatus,
-  findByEnrollment
+  findByEnrollment,
+  countStudents
 };

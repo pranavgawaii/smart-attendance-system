@@ -11,29 +11,50 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const storedToken = localStorage.getItem('token');
-        const storedUser = localStorage.getItem('user');
-        const storedSession = localStorage.getItem('session');
-
-        if (storedToken) {
+        const initializeAuth = async () => {
             try {
-                // Decode token to check expiration if it's a standard JWT
-                const decoded = jwtDecode(storedToken);
-                if (decoded.exp * 1000 < Date.now()) {
-                    logout();
-                } else {
+                const storedToken = localStorage.getItem('token');
+                const storedUser = localStorage.getItem('user');
+                const storedSession = localStorage.getItem('session');
+
+                if (storedToken && storedToken !== 'undefined') {
                     setToken(storedToken);
-                    if (storedUser) setUser(JSON.parse(storedUser));
-                    if (storedSession) setSession(JSON.parse(storedSession));
+
+                    if (storedUser && storedUser !== 'undefined') {
+                        try {
+                            setUser(JSON.parse(storedUser));
+                        } catch (e) {
+                            console.error("Failed to parse stored user", e);
+                        }
+                    }
+
+                    if (storedSession && storedSession !== 'undefined') {
+                        try {
+                            setSession(JSON.parse(storedSession));
+                        } catch (e) {
+                            console.error("Failed to parse stored session", e);
+                        }
+                    }
+
+                    // Optional: Check expiration if jwtDecode is available and token is JWT
+                    try {
+                        const decoded = jwtDecode(storedToken);
+                        if (decoded && decoded.exp && decoded.exp * 1000 < Date.now()) {
+                            console.warn("Token expired, logging out");
+                            logout();
+                        }
+                    } catch (e) {
+                        // Not a JWT or decode failed, ignore
+                    }
                 }
-            } catch (e) {
-                // If decoding fails (might be a different token format), we still keep state if user data exists
-                setToken(storedToken);
-                if (storedUser) setUser(JSON.parse(storedUser));
-                if (storedSession) setSession(JSON.parse(storedSession));
+            } catch (error) {
+                console.error("Auth initialization error:", error);
+            } finally {
+                setLoading(false);
             }
-        }
-        setLoading(false);
+        };
+
+        initializeAuth();
     }, []);
 
     const login = (data) => {
@@ -82,16 +103,13 @@ export const AuthProvider = ({ children }) => {
         setSession(null);
     };
 
-    const requestOTP = async (email) => {
-        return await api.post('/auth/request-otp', { email });
-    };
-
-    const verifyOTP = async (email, otp) => {
-        const res = await api.post('/auth/verify-otp', { email, otp });
-        if (res.data) {
+    const loginWithEmail = async (email, password) => {
+        const res = await api.post('/auth/login', { email, password });
+        if (res.data && res.data.success) {
             login(res.data);
+            return res.data;
         }
-        return res.data;
+        throw new Error(res.data?.error || 'Login failed');
     };
 
     return (
@@ -102,8 +120,7 @@ export const AuthProvider = ({ children }) => {
             login,
             logout,
             loading,
-            requestOTP,
-            verifyOTP
+            loginWithEmail
         }}>
             {!loading && children}
         </AuthContext.Provider>

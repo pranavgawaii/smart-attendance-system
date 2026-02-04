@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Users, AlertTriangle } from 'lucide-react';
+import { Users, AlertTriangle, UserMinus, ShieldAlert } from 'lucide-react';
 
 export default function Step3SeatingMode({ formData, updateFormData, nextStep, prevStep }) {
     const [selectedMode, setSelectedMode] = useState(formData.seating_mode || 'normal');
@@ -8,26 +8,29 @@ export default function Step3SeatingMode({ formData, updateFormData, nextStep, p
         {
             id: 'normal',
             name: 'Normal Seating',
-            icon: '👤👤👤👤👤',
+            icon: Users,
             capacity: '100%',
-            description: 'Students sit in consecutive seats with no gaps',
-            reduction: 0
+            description: 'Standard density. Students occupy every seat.',
+            reduction: 0,
+            color: 'emerald'
         },
         {
             id: 'alternate',
             name: 'Alternate Seating',
-            icon: '👤_👤_👤_',
+            icon: UserMinus,
             capacity: '50%',
-            description: 'One seat gap between students for social distancing',
-            reduction: 50
+            description: 'Medium density. One empty seat between students.',
+            reduction: 50,
+            color: 'amber'
         },
         {
             id: 'distanced',
             name: 'Distanced Seating',
-            icon: '👤__👤__👤',
+            icon: ShieldAlert,
             capacity: '33%',
-            description: 'Two seat gaps between students for maximum distancing',
-            reduction: 67
+            description: 'Low density. Two empty seats for maximum safety.',
+            reduction: 67,
+            color: 'red'
         }
     ];
 
@@ -41,82 +44,98 @@ export default function Step3SeatingMode({ formData, updateFormData, nextStep, p
     };
 
     return (
-        <div className="bg-white border border-slate-200 rounded-xl p-6">
-            <h3 className="text-lg font-bold text-slate-900 mb-2">Seating Mode</h3>
-            <p className="text-sm text-slate-500 mb-6">Choose how students will be seated in the labs</p>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                {modes.map(mode => (
-                    <button
-                        key={mode.id}
-                        onClick={() => handleSelect(mode.id)}
-                        className={`p-6 rounded-xl border-2 text-left transition-all ${selectedMode === mode.id
-                            ? 'border-zinc-900 bg-zinc-50 shadow-md'
-                            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                            }`}
-                    >
-                        <div className="text-3xl mb-3">{mode.icon}</div>
-                        <h4 className="font-bold text-slate-900 mb-1">{mode.name}</h4>
-                        <div className="flex items-center gap-2 mb-2">
-                            <span className={`px-2 py-0.5 rounded text-xs font-semibold ${mode.reduction === 0
-                                ? 'bg-emerald-100 text-emerald-700'
-                                : mode.reduction === 50
-                                    ? 'bg-yellow-100 text-yellow-700'
-                                    : 'bg-orange-100 text-orange-700'
-                                }`}>
-                                {mode.capacity} Capacity
-                            </span>
-                        </div>
-                        <p className="text-sm text-slate-600">{mode.description}</p>
-                    </button>
-                ))}
+        <div className="p-8">
+            <div className="flex items-center gap-3 mb-8 pb-4 border-b border-zinc-100">
+                <div className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center text-white shadow-sm">
+                    <Users size={20} strokeWidth={1.5} />
+                </div>
+                <div>
+                    <h3 className="text-xl font-bold text-zinc-900">Seating Arrangement</h3>
+                    <p className="text-sm text-zinc-500">Configure how students should be distributed across labs.</p>
+                </div>
             </div>
 
-            {/* Warning for reduced capacity modes */}
-            {(selectedMode === 'alternate' || selectedMode === 'distanced') && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
-                    <div className="flex items-start gap-3">
-                        <AlertTriangle size={20} strokeWidth={1.5} className="text-yellow-600 flex-shrink-0 mt-0.5" />
-                        <div>
-                            <p className="font-semibold text-yellow-900 mb-1">Reduced Capacity</p>
-                            <p className="text-sm text-yellow-700">
-                                This mode reduces lab capacity by {modes.find(m => m.id === selectedMode)?.reduction}%.
-                                You'll need more labs to accommodate all students.
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                {modes.map(mode => {
+                    const isSelected = selectedMode === mode.id;
+                    return (
+                        <button
+                            key={mode.id}
+                            onClick={() => handleSelect(mode.id)}
+                            className={`
+                                relative p-6 rounded-2xl border-2 text-left transition-all duration-300 group
+                                ${isSelected
+                                    ? 'border-zinc-900 bg-zinc-50 shadow-md scale-[1.02]'
+                                    : 'border-zinc-100 hover:border-zinc-300 hover:bg-white bg-white hover:shadow-sm'
+                                }
+                            `}
+                        >
+                            <div className={`
+                                w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-colors
+                                ${isSelected ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-500 group-hover:bg-zinc-200'}
+                            `}>
+                                <mode.icon size={24} strokeWidth={1.5} />
+                            </div>
+
+                            <h4 className="font-bold text-zinc-900 mb-2 text-lg">{mode.name}</h4>
+
+                            <div className="flex items-center gap-2 mb-3">
+                                <span className={`
+                                    px-2.5 py-1 rounded-md text-xs font-bold tracking-wide uppercase
+                                    ${mode.color === 'emerald' ? 'bg-emerald-100 text-emerald-800' :
+                                        mode.color === 'amber' ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'}
+                                `}>
+                                    {mode.capacity} Capacity
+                                </span>
+                            </div>
+
+                            <p className="text-sm text-zinc-500 leading-relaxed font-medium">
+                                {mode.description}
                             </p>
-                        </div>
+
+                            {/* Selection Ring */}
+                            <div className={`
+                                absolute top-4 right-4 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all
+                                ${isSelected ? 'border-zinc-900 bg-zinc-900' : 'border-zinc-200'}
+                            `}>
+                                {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                            </div>
+                        </button>
+                    );
+                })}
+            </div>
+
+            {/* Capacity Warning */}
+            {(selectedMode === 'alternate' || selectedMode === 'distanced') && (
+                <div className="bg-amber-50/50 border border-amber-200 rounded-xl p-5 mb-8 flex items-start gap-4">
+                    <div className="bg-amber-100 p-2 rounded-lg text-amber-600">
+                        <AlertTriangle size={20} />
+                    </div>
+                    <div>
+                        <h4 className="text-sm font-bold text-amber-900 mb-1">Reduced Lab Capacity</h4>
+                        <p className="text-sm text-amber-700 leading-relaxed">
+                            You have selected <strong>{modes.find(m => m.id === selectedMode)?.name}</strong>.
+                            This will reduce the effective capacity of each lab by <strong>{modes.find(m => m.id === selectedMode)?.reduction}%</strong>.
+                            Ensure you select enough labs in the next step to accommodate all {formData.students?.length || 0} students.
+                        </p>
                     </div>
                 </div>
             )}
 
-            {/* Visual Preview */}
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 mb-6">
-                <p className="text-sm font-semibold text-slate-700 mb-4">
-                    <Users size={14} strokeWidth={1.5} className="inline mr-1" />
-                    Seating Preview
-                </p>
-                <div className="bg-white rounded-lg p-4 border border-slate-200">
-                    <div className="flex items-center justify-center gap-2 text-2xl">
-                        {modes.find(m => m.id === selectedMode)?.icon}
-                    </div>
-                    <p className="text-center text-sm text-slate-600 mt-3">
-                        {modes.find(m => m.id === selectedMode)?.description}
-                    </p>
-                </div>
-            </div>
-
-            {/* Navigation */}
-            <div className="flex justify-between pt-6 border-t border-slate-100">
+            {/* Footer */}
+            <div className="flex justify-between mt-auto pt-6 border-t border-zinc-100">
                 <button
                     onClick={prevStep}
-                    className="px-6 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-lg font-semibold text-sm hover:bg-slate-50 transition-colors"
+                    className="px-6 py-2.5 bg-white border border-zinc-200 text-zinc-600 rounded-xl font-bold text-sm hover:bg-zinc-50 transition-colors"
                 >
                     ← Back
                 </button>
                 <button
                     onClick={handleNext}
-                    className="px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg font-semibold text-sm transition-colors shadow-sm"
+                    className="flex items-center gap-2 px-8 py-3 bg-zinc-900 hover:bg-black text-white rounded-xl font-bold text-sm transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0"
                 >
-                    Next: Select Labs →
+                    Continue to Labs
+                    <span className="text-zinc-400">→</span>
                 </button>
             </div>
         </div>

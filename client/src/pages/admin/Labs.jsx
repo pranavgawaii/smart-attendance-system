@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
+import PageHeader from '../../components/PageHeader';
 import EmptyState from '../../components/EmptyState';
 import { Plus, Edit2, Trash2, Power, X, AlertCircle, Beaker } from 'lucide-react';
 import api from '../../services/api';
@@ -129,18 +130,19 @@ export default function Labs() {
     };
 
     return (
-        <AdminLayout
-            title="Labs Management"
-            description="Manage computer labs for placement assessments and seat allocations."
-            actions={
-                <button
-                    onClick={() => handleOpenModal()}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors shadow-sm flex items-center gap-2"
-                >
-                    <Plus size={16} strokeWidth={1.5} /> Add Lab
-                </button>
-            }
-        >
+        <AdminLayout title="Labs Management">
+            <PageHeader
+                title="Labs Management"
+                description="Manage computer labs for placement assessments and seat allocations."
+                actions={
+                    <button
+                        onClick={() => handleOpenModal()}
+                        className="bg-zinc-900 hover:bg-black text-white px-4 py-2 rounded-lg font-semibold text-sm transition-colors shadow-sm flex items-center gap-2"
+                    >
+                        <Plus size={16} strokeWidth={1.5} /> Add Lab
+                    </button>
+                }
+            />
 
             {/* Error Alert */}
             {error && !showModal && (
@@ -158,7 +160,7 @@ export default function Labs() {
 
             {/* Labs Table */}
             {loading ? (
-                <div className="p-12 text-center text-slate-400">Loading labs...</div>
+                <div className="p-12 text-center text-zinc-400">Loading labs...</div>
             ) : labs.length === 0 ? (
                 <EmptyState
                     title="No Labs Found"
@@ -166,30 +168,30 @@ export default function Labs() {
                     icon={Beaker}
                 />
             ) : (
-                <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                <tr className="bg-zinc-50 border-b border-zinc-200 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                                     <th className="px-6 py-4">Lab Name</th>
                                     <th className="px-6 py-4">Capacity</th>
                                     <th className="px-6 py-4">Status</th>
                                     <th className="px-6 py-4 text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100">
+                            <tbody className="divide-y divide-zinc-100">
                                 {labs.map(lab => (
-                                    <tr key={lab.id} className="hover:bg-slate-50 transition-colors group">
+                                    <tr key={lab.id} className="hover:bg-zinc-50 transition-colors group">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+                                                <div className="w-10 h-10 rounded-lg bg-zinc-50 border border-zinc-100 flex items-center justify-center text-zinc-600">
                                                     <Beaker size={20} strokeWidth={1.5} />
                                                 </div>
-                                                <div className="font-semibold text-slate-900">{lab.lab_name}</div>
+                                                <div className="font-semibold text-zinc-900">{lab.lab_name}</div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="text-slate-600 font-mono text-sm">
+                                            <div className="text-zinc-600 font-mono text-sm">
                                                 {lab.capacity} seats
                                             </div>
                                         </td>
@@ -198,7 +200,7 @@ export default function Labs() {
                                                 onClick={() => handleToggleStatus(lab)}
                                                 className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${lab.status === 'enabled'
                                                     ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20 hover:bg-emerald-100'
-                                                    : 'bg-slate-100 text-slate-600 ring-1 ring-slate-300/50 hover:bg-slate-200'
+                                                    : 'bg-zinc-100 text-zinc-600 ring-1 ring-zinc-300/50 hover:bg-zinc-200'
                                                     }`}
                                             >
                                                 <Power size={14} strokeWidth={1.5} />
@@ -209,14 +211,14 @@ export default function Labs() {
                                             <div className="flex items-center justify-end gap-2">
                                                 <button
                                                     onClick={() => handleOpenModal(lab)}
-                                                    className="p-2 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                                                    className="p-2 rounded-lg text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
                                                     title="Edit Lab"
                                                 >
                                                     <Edit2 size={16} strokeWidth={1.5} />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(lab)}
-                                                    className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                                    className="p-2 rounded-lg text-zinc-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                                                     title="Delete Lab"
                                                 >
                                                     <Trash2 size={16} strokeWidth={1.5} />
@@ -233,15 +235,15 @@ export default function Labs() {
 
             {/* Add/Edit Modal */}
             {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/50 backdrop-blur-sm">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                            <h3 className="text-lg font-bold text-slate-900">
+                        <div className="px-6 py-4 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
+                            <h3 className="text-lg font-bold text-zinc-900">
                                 {editingLab ? 'Edit Lab' : 'Add New Lab'}
                             </h3>
                             <button
                                 onClick={handleCloseModal}
-                                className="text-slate-400 hover:text-slate-600 transition-colors"
+                                className="text-zinc-400 hover:text-zinc-600 transition-colors"
                             >
                                 <X size={20} strokeWidth={1.5} />
                             </button>
@@ -257,7 +259,7 @@ export default function Labs() {
 
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-1">
+                                    <label className="block text-sm font-semibold text-zinc-700 mb-1">
                                         Lab Name <span className="text-red-500">*</span>
                                     </label>
                                     <input
@@ -265,13 +267,13 @@ export default function Labs() {
                                         value={formData.lab_name}
                                         onChange={(e) => setFormData({ ...formData, lab_name: e.target.value })}
                                         placeholder="e.g., Lab 501"
-                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
+                                        className="w-full px-4 py-2 rounded-lg border border-zinc-200 focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100 outline-none transition-all"
                                         disabled={submitting}
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-1">
+                                    <label className="block text-sm font-semibold text-zinc-700 mb-1">
                                         Capacity <span className="text-red-500">*</span>
                                     </label>
                                     <input
@@ -280,10 +282,10 @@ export default function Labs() {
                                         onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
                                         placeholder="e.g., 60"
                                         min="1"
-                                        className="w-full px-4 py-2 rounded-lg border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
+                                        className="w-full px-4 py-2 rounded-lg border border-zinc-200 focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100 outline-none transition-all"
                                         disabled={submitting}
                                     />
-                                    <p className="text-xs text-slate-500 mt-1">Number of seats available in this lab</p>
+                                    <p className="text-xs text-zinc-500 mt-1">Number of seats available in this lab</p>
                                 </div>
                             </div>
 
@@ -291,14 +293,14 @@ export default function Labs() {
                                 <button
                                     type="button"
                                     onClick={handleCloseModal}
-                                    className="px-4 py-2 text-sm font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                                    className="px-4 py-2 text-sm font-semibold text-zinc-600 bg-white border border-zinc-200 rounded-lg hover:bg-zinc-50 transition-colors"
                                     disabled={submitting}
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm shadow-indigo-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="px-4 py-2 text-sm font-semibold text-white bg-zinc-900 rounded-lg hover:bg-black shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                     disabled={submitting}
                                 >
                                     {submitting ? 'Saving...' : editingLab ? 'Update Lab' : 'Create Lab'}

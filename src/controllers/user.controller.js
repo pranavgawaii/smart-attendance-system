@@ -1,3 +1,4 @@
+const { supabase } = require('../config/db');
 const userModel = require('../models/user.model');
 const jwt = require('jsonwebtoken');
 
@@ -37,30 +38,112 @@ const createBulkUsers = async (req, res) => {
         const results = {
             success: 0,
             failed: 0,
-            errors: []
+            errors: [],
+            credentials: [] // To return generated passwords
+        };
+
+        const DEPT_PREFIXES = {
+            'computer science': 'cse',
+            'information technology': 'it',
+            'electronics': 'ece',
+            'electronics & telecommunication': 'entc',
+            'mechanical': 'mech',
+            'civil': 'civil',
+            'robotics': 'robo',
+            'artificial intelligence': 'ai'
+        };
+
+        // Helper to get prefix
+        const getDeptPrefix = (dept) => {
+            if (!dept) return 'student';
+            const lowerDept = dept.toLowerCase().trim();
+            for (const key in DEPT_PREFIXES) {
+                if (lowerDept.includes(key)) return DEPT_PREFIXES[key];
+            }
+            return 'mit'; // Default fallback
         };
 
         for (const user of users) {
             try {
-                if (!user.name || !user.email || !user.enrollment_no) {
+                // 1. Validate Fields
+                if (!user.name || !user.email || !user.enrollment_no || !user.mobile) {
                     results.failed++;
-                    results.errors.push({ enrollment: user.enrollment_no, error: 'Missing Required Fields' });
+                    results.errors.push({ enrollment: user.enrollment_no, error: 'Missing Required Fields (Name, Email, Enrollment, Mobile)' });
                     continue;
                 }
 
-                await userModel.createUser({
-                    name: user.name,
-                    email: user.email.toLowerCase(),
-                    enrollment_no: user.enrollment_no,
-                    branch: user.branch || '',
-                    role: 'student',
-                    academic_year: user.academic_year || null
+                const enrollment = user.enrollment_no.trim();
+                const mobile = user.mobile.toString().replace(/\D/g, ''); // Digits only
+                const email = user.email.toLowerCase().trim();
+                const dept = user.department || '';
+
+                if (mobile.length < 4) {
+                    results.failed++;
+                    results.errors.push({ enrollment: enrollment, error: 'Mobile number too short for password generation' });
+                    continue;
+                }
+
+                // 2. Generate Password
+                // Formula: {dept_prefix} + {last_4_enrollment} + & + {last_4_mobile}
+                const deptPrefix = getDeptPrefix(dept);
+                const last4Enrollment = enrollment.slice(-4);
+                const last4Mobile = mobile.slice(-4);
+                const password = `${deptPrefix}${last4Enrollment}&${last4Mobile}`;
+
+                // 3. Create Supabase Auth User (Admin API)
+                // This creates the user in auth.users and returns the ID
+                const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+                    email: email,
+                    password: password,
+                    email_confirm: true, // Auto-confirm email
+                    user_metadata: { name: user.name, role: 'student' }
                 });
+
+                if (authError) {
+                    throw authError;
+                }
+
+                const userId = authData.user.id;
+
+                // 4. Create User Profile (If not auto-created by triggers, or to update details)
+                // We'll upsert to be safe, ensuring profile exists with correct data
+                const { error: profileError } = await supabase
+                    .from('user_profiles')
+                    .upsert({
+                        id: userId, // Link to Auth ID
+                        email: email,
+                        name: user.name,
+                        enrollment_no: enrollment,
+                        branch: dept,
+                        role: 'student',
+                        academic_year: user.year || null,
+                        user_status: 'active'
+                    });
+
+                if (profileError) {
+                    // Start Rollback (Optional: Delete Auth User if profile fails for consistency)
+                    // await supabase.auth.admin.deleteUser(userId); 
+                    throw profileError;
+                }
+
+                // 5. Success - Add to results
                 results.success++;
+                results.credentials.push({
+                    name: user.name,
+                    email: email,
+                    enrollment_no: enrollment,
+                    password: password // RETURN PLAINTEXT PASSWORD FOR CSV EXPORT
+                });
+
             } catch (err) {
                 console.error('Bulk Insert Error for', user.email, err.message);
                 results.failed++;
-                results.errors.push({ enrollment: user.enrollment_no, error: (err.code === '23505' || err.message?.includes('unique')) ? 'Duplicate' : err.message });
+                // Handle "User already registered" specifically
+                const isDuplicate = err.message?.includes('already been registered') || err.code === '23505';
+                results.errors.push({
+                    enrollment: user.enrollment_no,
+                    error: isDuplicate ? 'User/Email already exists' : err.message
+                });
             }
         }
 

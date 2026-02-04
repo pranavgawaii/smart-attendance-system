@@ -11,5 +11,13 @@ coverage/
 .env
 .env.local
 
+
 # Railway (deprecated)
 railway.json
+
+# Debug & Temporary Scripts
+check_*.js
+debug_*.js
+*.txt
+diag.txt
+get_logo_base64.js

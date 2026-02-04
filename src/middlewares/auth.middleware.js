@@ -27,14 +27,36 @@ const authenticateToken = async (req, res, next) => {
         }
 
         // 3. For real users, we need to fetch their profile/role from user_profiles
-        const { data: profile, error: profileError } = await supabase
+        // Try exact match by ID first (Supabase standard)
+        let { data: profile, error: profileError } = await supabase
             .from('user_profiles')
             .select('*')
             .eq('id', data.user.id)
-            .single();
+            .maybeSingle();
 
-        if (profileError || !profile) {
-            console.error('[AuthMiddleware] Profile lookup failed:', profileError?.message);
+        // 4. Fallback for migrated users (Lookup by email and sync ID)
+        if (!profile) {
+            console.log(`[AuthMiddleware] ID lookup failed for ${data.user.email}. Attempting email fallback...`);
+            const { data: emailProfile, error: emailError } = await supabase
+                .from('user_profiles')
+                .select('*')
+                .eq('email', data.user.email)
+                .maybeSingle();
+
+            if (emailProfile) {
+                profile = emailProfile;
+                // Proactively sync IDs for next time
+                supabase.from('user_profiles')
+                    .update({ id: data.user.id })
+                    .eq('email', data.user.email)
+                    .then(({ error: syncError }) => {
+                        if (!syncError) console.log(`[AuthMiddleware] Synced ID for ${data.user.email}`);
+                    });
+            }
+        }
+
+        if (!profile) {
+            console.error('[AuthMiddleware] Profile lookup failed for:', data.user.email);
             return res.status(403).json({ error: 'User authenticated, but profile missing.' });
         }
 

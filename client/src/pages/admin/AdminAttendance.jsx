@@ -30,8 +30,8 @@ export default function AdminAttendance() {
     );
 
     const getStatusBadge = (state) => {
-        let color = '#64748b';
-        let bg = '#f1f5f9';
+        let color = '#71717a'; // Zinc-500
+        let bg = '#f4f4f5'; // Zinc-100
         let label = 'NOT STARTED';
 
         if (state === 'ACTIVE') { color = '#18181b'; bg = '#f4f4f5'; label = 'LIVE'; } // Zinc-900 / Zinc-100
@@ -51,18 +51,19 @@ export default function AdminAttendance() {
 
     return (
         <AdminLayout title="Attendance Reports">
-            {/* Controls */}
-            <div style={{ marginBottom: '2rem' }}>
-                <div style={{ position: 'relative', maxWidth: '400px' }}>
-                    <Search size={20} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+            <PageHeader
+                title="Attendance Reports"
+                description="View and manage attendance records across all sessions and events."
+            />
+
+            {/* Search */}
+            <div className="mb-6">
+                <div className="relative max-w-md group">
+                    <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-zinc-600 transition-colors" strokeWidth={1.5} />
                     <input
                         type="text"
-                        placeholder="Search Events..."
-                        style={{
-                            width: '100%', padding: '0.85rem 1rem 0.85rem 3rem',
-                            borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '1rem',
-                            outline: 'none', background: '#f8fafc', color: '#334155'
-                        }}
+                        placeholder="Search events or venues..."
+                        className="w-full pl-11 pr-4 py-2.5 bg-white border border-zinc-200 rounded-xl text-sm focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100 outline-none transition-all shadow-sm"
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
                     />
@@ -70,50 +71,51 @@ export default function AdminAttendance() {
             </div>
 
             {/* Table */}
-            <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0' }}>
-                    <thead>
-                        <tr style={{ background: '#f8fafc' }}>
-                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', borderRadius: '12px 0 0 12px' }}>Event Name</th>
-                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>Date</th>
-                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>Status</th>
-                            <th style={{ padding: '1rem', textAlign: 'right', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', borderRadius: '0 12px 12px 0' }}>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {loading ? (
-                            <tr><td colSpan="4" style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8' }}>Loading events...</td></tr>
-                        ) : filteredEvents.length === 0 ? (
-                            <tr><td colSpan="4" style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8' }}>No events found.</td></tr>
-                        ) : (
-                            filteredEvents.map(event => (
-                                <tr key={event.id} style={{ transition: 'background 0.2s' }}>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', fontWeight: '600', color: '#0f172a' }}>
-                                        {event.name}
-                                        <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px' }}>{event.venue || 'No Venue'}</div>
-                                    </td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', color: '#475569' }}>
-                                        {new Date(event.created_at).toLocaleDateString()}
-                                    </td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9' }}>
-                                        {getStatusBadge(event.session_state)}
-                                    </td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', textAlign: 'right' }}>
-                                        <Link to={`/admin/events/${event.id}/attendance`} style={{ textDecoration: 'none' }}>
-                                            <button style={{
-                                                background: 'white', color: '#18181b', border: '1px solid #e2e8f0',
-                                                padding: '0.5rem 1rem', borderRadius: '8px', fontWeight: '600',
-                                                fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
-                                            }}>
-                                                <Eye size={16} /> View
-                                            </button>
-                                        </Link>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+            <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-zinc-50 border-b border-zinc-200 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                                <th className="px-6 py-4">Event Details</th>
+                                <th className="px-6 py-4">Creation Date</th>
+                                <th className="px-6 py-4">Session Status</th>
+                                <th className="px-6 py-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-100">
+                            {loading ? (
+                                <tr><td colSpan="4" className="p-8 text-center text-zinc-400">Loading sessions...</td></tr>
+                            ) : filteredEvents.length === 0 ? (
+                                <tr><td colSpan="4" className="p-8 text-center text-zinc-400">No sessions found matching your search.</td></tr>
+                            ) : (
+                                filteredEvents.map(event => (
+                                    <tr key={event.id} className="hover:bg-zinc-50 transition-colors group">
+                                        <td className="px-6 py-4">
+                                            <div className="font-semibold text-zinc-900">{event.name}</div>
+                                            <div className="text-xs text-zinc-500 mt-0.5">{event.venue || 'No Venue Specified'}</div>
+                                        </td>
+                                        <td className="px-6 py-4 text-zinc-600 text-sm">
+                                            <div className="flex items-center gap-2">
+                                                <Calendar size={14} className="text-zinc-400" strokeWidth={1.5} />
+                                                {new Date(event.created_at).toLocaleDateString()}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <StatusBadge status={event.session_state} />
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <Link to={`/admin/events/${event.id}/attendance`}>
+                                                <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 bg-white text-zinc-600 text-xs font-semibold hover:bg-zinc-50 hover:text-zinc-900 transition-colors shadow-sm">
+                                                    <Eye size={14} strokeWidth={1.5} /> View Attendance
+                                                </button>
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </AdminLayout>
     );

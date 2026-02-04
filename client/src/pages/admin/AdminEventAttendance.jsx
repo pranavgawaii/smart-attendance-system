@@ -147,51 +147,63 @@ export default function AdminEventAttendance() {
     );
 
     return (
-        <AdminLayout
-            title={
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <Link to="/admin/events" style={{ textDecoration: 'none', color: '#64748b', display: 'flex', alignItems: 'center' }}>
-                            <ArrowLeft size={20} strokeWidth={1.5} />
+        <AdminLayout title="Attendance Logs">
+            <PageHeader
+                title={eventName || 'Attendance List'}
+                description={`Viewing attendance logs for ${eventName || 'this event'}.`}
+                actions={
+                    <div className="flex items-center gap-3">
+                        <Link to="/admin/events">
+                            <button className="p-2 rounded-lg bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 transition-colors shadow-sm" title="Back to Sessions">
+                                <ArrowLeft size={16} strokeWidth={1.5} />
+                            </button>
                         </Link>
-                        <span>{eventName || 'Attendance List'}</span>
-                        {(sessionState === 'ACTIVE' || sessionState === 'LIVE') && (
-                            <span style={{ background: '#18181b', color: 'white', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>LIVE</span>
-                        )}
+                        <button onClick={downloadCsv} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 bg-white text-zinc-600 text-xs font-semibold hover:bg-zinc-50 hover:text-zinc-900 transition-colors shadow-sm">
+                            <Download size={14} strokeWidth={1.5} /> CSV
+                        </button>
+                        <button onClick={downloadPdf} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 bg-white text-zinc-600 text-xs font-semibold hover:bg-zinc-50 hover:text-zinc-900 transition-colors shadow-sm">
+                            <Download size={14} strokeWidth={1.5} /> PDF
+                        </button>
+                        <button onClick={() => fetchAttendance()} className="p-2 rounded-lg bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900 transition-colors shadow-sm" title="Refresh Feed">
+                            <RefreshCw size={16} strokeWidth={1.5} className={loading ? 'animate-spin' : ''} />
+                        </button>
                     </div>
-                </div>
-            }
-            actions={actionButtons}
-        >
-            {/* Controls */}
-            <div style={{ marginBottom: '2rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                <div style={{ flex: 1, minWidth: '300px', position: 'relative' }}>
-                    <Search size={20} strokeWidth={1.5} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                }
+            >
+                {/* Live Status Indicator */}
+                {(sessionState === 'ACTIVE' || sessionState === 'LIVE') && (
+                    <div className="mt-2 inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-zinc-900 text-white text-[10px] font-bold uppercase tracking-wider animate-pulse border border-zinc-800">
+                        <span className="w-1.5 h-1.5 bg-white rounded-full"></span>
+                        Live Session Active
+                    </div>
+                )}
+            </PageHeader>
+
+            {/* Filters & Search */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-6 justify-between items-center">
+                <div className="relative w-full sm:w-96 group">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-zinc-600 transition-colors" size={18} strokeWidth={1.5} />
                     <input
                         type="text"
                         placeholder="Search by Name or Enrollment..."
-                        style={{
-                            width: '100%', padding: '0.85rem 1rem 0.85rem 3rem',
-                            borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '1rem',
-                            outline: 'none', background: '#f8fafc', color: '#334155'
-                        }}
+                        className="w-full pl-11 pr-4 py-2.5 bg-white border border-zinc-200 rounded-xl text-sm focus:border-zinc-400 focus:ring-2 focus:ring-zinc-100 outline-none transition-all shadow-sm"
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem', background: '#f1f5f9', padding: '4px', borderRadius: '12px' }}>
+
+                <div className="flex bg-zinc-100 p-1 rounded-xl border border-zinc-200 shadow-sm">
                     {['ALL', 'PRESENT', 'REVOKED'].map(f => (
                         <button
                             key={f}
                             onClick={() => setFilter(f)}
-                            style={{
-                                background: filter === f ? '#18181b' : 'transparent',
-                                color: filter === f ? 'white' : '#64748b',
-                                border: 'none', padding: '0.6rem 1.25rem', borderRadius: '10px',
-                                fontWeight: '600', cursor: 'pointer', fontSize: '0.9rem',
-                                boxShadow: filter === f ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                                transition: 'all 0.2s'
-                            }}
+                            className={`
+                                px-4 py-1.5 rounded-lg text-xs font-semibold transition-all
+                                ${filter === f
+                                    ? 'bg-white text-zinc-900 shadow-sm ring-1 ring-zinc-200'
+                                    : 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50'
+                                }
+                            `}
                         >
                             {f}
                         </button>
@@ -199,57 +211,67 @@ export default function AdminEventAttendance() {
                 </div>
             </div>
 
-            {/* Table */}
-            <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0' }}>
-                    <thead>
-                        <tr style={{ background: '#f8fafc' }}>
-                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', borderRadius: '12px 0 0 12px' }}>Enrollment</th>
-                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>Name</th>
-                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>Time</th>
-                            <th style={{ padding: '1rem', textAlign: 'left', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0' }}>Status</th>
-                            <th style={{ padding: '1rem', textAlign: 'right', fontWeight: '600', color: '#64748b', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', borderRadius: '0 12px 12px 0' }}>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {loading ? (
-                            <tr><td colSpan="5" style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8' }}>Loading attendance...</td></tr>
-                        ) : filteredData.length === 0 ? (
-                            <tr><td colSpan="5" style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8' }}>No records found matching criteria.</td></tr>
-                        ) : (
-                            filteredData.map(record => (
-                                <tr key={record.log_id} style={{ transition: 'background 0.2s' }}>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', fontFamily: 'monospace', color: '#475569', fontWeight: '500' }}>{record.enrollment_no}</td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', fontWeight: '500', color: '#0f172a' }}>{record.name}</td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', color: '#64748b', fontSize: '0.9rem' }}>
-                                        {new Date(record.scan_time).toLocaleTimeString()}
-                                    </td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9' }}>
-                                        {getStatusBadge(record.status)}
-                                    </td>
-                                    <td style={{ padding: '1.25rem 1rem', borderBottom: '1px solid #f1f5f9', textAlign: 'right' }}>
-                                        {record.status === 'PRESENT' && (
-                                            <button
-                                                onClick={() => handleUpdateStatus(record.log_id, 'REVOKED')}
-                                                style={{ fontSize: '0.8rem', color: '#52525b', background: 'white', border: '1px solid #e4e4e7', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
-                                            >
-                                                Revoke
-                                            </button>
-                                        )}
-                                        {record.status === 'REVOKED' && (
-                                            <button
-                                                onClick={() => handleUpdateStatus(record.log_id, 'PRESENT')}
-                                                style={{ fontSize: '0.8rem', color: '#18181b', background: 'white', border: '1px solid #e4e4e7', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}
-                                            >
-                                                Restore
-                                            </button>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+            {/* Attendance Table */}
+            <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-zinc-50 border-b border-zinc-200 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                                <th className="px-6 py-4">Enrollment</th>
+                                <th className="px-6 py-4">Student Name</th>
+                                <th className="px-6 py-4">Scan Time</th>
+                                <th className="px-6 py-4">Status</th>
+                                <th className="px-6 py-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-zinc-100">
+                            {loading && attendance.length === 0 ? (
+                                <tr><td colSpan="5" className="p-12 text-center text-zinc-400">Fetching attendance logs...</td></tr>
+                            ) : filteredData.length === 0 ? (
+                                <tr><td colSpan="5" className="p-12 text-center text-zinc-400">No records found matching criteria.</td></tr>
+                            ) : (
+                                filteredData.map(record => (
+                                    <tr key={record.log_id} className="hover:bg-zinc-50 transition-colors group">
+                                        <td className="px-6 py-4 font-mono text-xs text-zinc-500">{record.enrollment_no || '-'}</td>
+                                        <td className="px-6 py-4 font-semibold text-zinc-900">{record.name}</td>
+                                        <td className="px-6 py-4 text-zinc-500 text-sm">
+                                            {record.scan_time ? new Date(record.scan_time).toLocaleTimeString() : '-'}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${record.status === 'PRESENT'
+                                                ? 'bg-zinc-50 text-zinc-900 border-zinc-200'
+                                                : record.status === 'REVOKED'
+                                                    ? 'bg-red-50 text-red-700 border-red-100'
+                                                    : 'bg-zinc-100 text-zinc-500 border-zinc-200'
+                                                }`}>
+                                                {record.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex items-center justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                                                {record.status === 'PRESENT' ? (
+                                                    <button
+                                                        onClick={() => handleUpdateStatus(record.log_id, 'REVOKED')}
+                                                        className="px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 border border-red-100 rounded-lg hover:bg-red-100 transition-colors"
+                                                    >
+                                                        Revoke
+                                                    </button>
+                                                ) : record.status === 'REVOKED' ? (
+                                                    <button
+                                                        onClick={() => handleUpdateStatus(record.log_id, 'PRESENT')}
+                                                        className="px-3 py-1.5 text-xs font-semibold text-zinc-900 bg-zinc-50 border border-zinc-200 rounded-lg hover:bg-zinc-100 transition-colors"
+                                                    >
+                                                        Restore
+                                                    </button>
+                                                ) : null}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </AdminLayout>
     );

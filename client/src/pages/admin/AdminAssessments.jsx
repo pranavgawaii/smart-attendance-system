@@ -62,7 +62,7 @@ export default function AdminAssessments() {
             </div>
 
             {loading ? (
-                <div className="p-12 text-center text-slate-400">Loading assessments...</div>
+                <div className="p-12 text-center text-zinc-400">Loading assessments...</div>
             ) : assessments.length === 0 ? (
                 <EmptyState
                     title="No Assessments Yet"
@@ -72,11 +72,11 @@ export default function AdminAssessments() {
                     icon={Beaker}
                 />
             ) : (
-                <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                <div className="bg-white border border-zinc-200 rounded-xl shadow-sm overflow-hidden text-zinc-900">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                <tr className="bg-zinc-50 border-b border-zinc-200 text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                                     <th className="px-6 py-4">Title</th>
                                     <th className="px-6 py-4">Date</th>
                                     <th className="px-6 py-4">Time</th>
@@ -84,21 +84,21 @@ export default function AdminAssessments() {
                                     <th className="px-6 py-4 text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100">
+                            <tbody className="divide-y divide-zinc-100">
                                 {assessments.map(a => (
-                                    <tr key={a.id} className="hover:bg-slate-50 transition-colors group">
+                                    <tr key={a.id} className="hover:bg-zinc-50 transition-colors group">
                                         <td className="px-6 py-4">
-                                            <div className="font-semibold text-slate-900">{a.title}</div>
+                                            <div className="font-semibold text-zinc-900">{a.title}</div>
                                         </td>
-                                        <td className="px-6 py-4 text-slate-600 text-sm">
+                                        <td className="px-6 py-4 text-zinc-600 text-sm">
                                             <div className="flex items-center gap-2">
-                                                <Calendar size={14} className="text-slate-400" strokeWidth={1.5} />
+                                                <Calendar size={14} className="text-zinc-400" strokeWidth={1.5} />
                                                 {new Date(a.date).toLocaleDateString()}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-slate-600 font-mono text-xs">
+                                        <td className="px-6 py-4 text-zinc-600 font-mono text-xs">
                                             <div className="flex items-center gap-2">
-                                                <Clock size={14} className="text-slate-400" strokeWidth={1.5} />
+                                                <Clock size={14} className="text-zinc-400" strokeWidth={1.5} />
                                                 {a.start_time.slice(0, 5)} - {a.end_time.slice(0, 5)}
                                             </div>
                                         </td>
@@ -107,7 +107,7 @@ export default function AdminAssessments() {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <Link to={`/admin/assessments/${a.id}`}>
-                                                <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-zinc-600 text-xs font-semibold hover:bg-zinc-50 hover:text-zinc-900 transition-colors">
+                                                <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-zinc-200 bg-white text-zinc-600 text-xs font-semibold hover:bg-zinc-50 hover:text-zinc-900 transition-colors">
                                                     <Edit size={14} strokeWidth={1.5} /> Manage
                                                 </button>
                                             </Link>

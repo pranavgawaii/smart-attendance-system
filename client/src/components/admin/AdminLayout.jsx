@@ -1,17 +1,42 @@
-
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Sidebar from '../Sidebar';
 import { Search, Bell, Menu, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { getAdminMenu } from '../../config/adminMenu';
 
 export default function AdminLayout({ children, title, actions }) {
     const { user } = useAuth();
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const location = useLocation();
 
-    // Mapping titles for breadcrumbs if needed, or just using the prop
-    const pathSegments = location.pathname.split('/').filter(Boolean);
+    // Calculate Breadcrumbs based on current path
+    const breadcrumbs = useMemo(() => {
+        const menuSections = getAdminMenu(user?.role);
+
+        let bestMatch = null;
+
+        // Find the most specific active menu item (longest path match)
+        for (const section of menuSections) {
+            for (const item of section.items) {
+                const isMatch = item.path === '/admin'
+                    ? location.pathname === '/admin'
+                    : location.pathname === item.path || location.pathname.startsWith(item.path + '/');
+
+                if (isMatch) {
+                    if (!bestMatch || item.path.length > bestMatch.item.path.length) {
+                        bestMatch = { section, item };
+                    }
+                }
+            }
+        }
+
+        // Return components for breadcrumbs
+        return {
+            category: bestMatch?.section?.title || 'Dashboard',
+            page: bestMatch?.item?.label || title || 'Overview'
+        };
+    }, [location.pathname, user?.role, title]);
 
     return (
         <div className="bg-zinc-50 min-h-screen font-sans flex text-sm">
@@ -38,9 +63,9 @@ export default function AdminLayout({ children, title, actions }) {
                         </button>
 
                         <nav className="hidden md:flex items-center text-xs text-zinc-500">
-                            <span className="hover:text-zinc-900 cursor-pointer transition-colors">Academic</span>
+                            <span className="hover:text-zinc-900 cursor-pointer transition-colors font-medium">{breadcrumbs.category}</span>
                             <ChevronRight size={12} className="mx-2 text-zinc-300" />
-                            <span className="text-zinc-900 font-medium">{title}</span>
+                            <span className="text-zinc-900 font-bold tracking-tight">{breadcrumbs.page}</span>
                         </nav>
                     </div>
 
@@ -75,27 +100,12 @@ export default function AdminLayout({ children, title, actions }) {
                 {/* Main Scrollable Area */}
                 <main className="flex-1 overflow-y-auto bg-zinc-50 p-6 md:p-8">
                     <div className="max-w-6xl mx-auto space-y-8">
-
-                        {/* Page Title & Actions (Only if distinct from dashboard layout) */}
-                        {title !== 'Overview' && (
-                            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
-                                <div>
-                                    <h1 className="text-2xl font-medium tracking-tight text-zinc-900">{title}</h1>
-                                </div>
-                                {actions && (
-                                    <div className="flex items-center gap-3">
-                                        {actions}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
                         {children}
                     </div>
 
                     {/* Footer */}
                     <footer className="mt-12 mb-6 text-center">
-                        <p className="text-[10px] text-zinc-400">© 2026 Academic Platform Inc. • <a href="#" className="hover:text-zinc-600">Privacy</a> • <a href="#" className="hover:text-zinc-600">Terms</a></p>
+                        <p className="text-[10px] text-zinc-400">© 2026 MIT ADT University • <a href="#" className="hover:text-zinc-600">Privacy</a> • <a href="#" className="hover:text-zinc-600">Terms</a></p>
                     </footer>
                 </main>
 

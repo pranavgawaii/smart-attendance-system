@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Search, Shield, Trash2, Power, UserCheck, UserX } from 'lucide-react';
 import api from '../../services/api';
 import AdminLayout from '../../components/admin/AdminLayout';
+import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 export default function AdminManagement() {
     const [admins, setAdmins] = useState([]);

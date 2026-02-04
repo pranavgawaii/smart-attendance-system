@@ -6,7 +6,7 @@ import Step2AddStudents from './wizard/Step2AddStudents';
 import Step3SeatingMode from './wizard/Step3SeatingMode';
 import Step4SelectLabs from './wizard/Step4SelectLabs';
 import Step5Review from './wizard/Step5Review';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Check } from 'lucide-react';
 
 export default function CreateAllocation() {
     const navigate = useNavigate();
@@ -55,49 +55,82 @@ export default function CreateAllocation() {
         }
     };
 
-    const getStepTitle = () => {
-        switch (currentStep) {
-            case 1: return 'Basic Details';
-            case 2: return 'Add Students';
-            case 3: return 'Seating Mode';
-            case 4: return 'Select Labs';
-            case 5: return 'Review & Allocate';
-            default: return '';
-        }
-    };
+    const steps = [
+        { id: 1, label: 'Basic Details' },
+        { id: 2, label: 'Add Students' },
+        { id: 3, label: 'Seating Mode' },
+        { id: 4, label: 'Select Labs' },
+        { id: 5, label: 'Review' }
+    ];
 
     return (
         <AdminLayout title="Create Allocation">
-            <div className="max-w-4xl mx-auto">
-                {/* Header */}
-                <button
-                    onClick={() => navigate('/admin/allocations')}
-                    className="flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-6 transition-colors"
-                >
-                    <ArrowLeft size={18} strokeWidth={1.5} /> Back to Allocations
-                </button>
-
-                {/* Progress Indicator */}
-                <div className="bg-white border border-slate-200 rounded-xl p-6 mb-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xl font-bold text-slate-900">Create New Allocation</h2>
-                        <span className="text-sm text-slate-500">Step {currentStep} of 5</span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        {[1, 2, 3, 4, 5].map(step => (
-                            <div key={step} className="flex-1 flex items-center gap-2">
-                                <div className={`flex-1 h-2 rounded-full transition-all ${step <= currentStep ? 'bg-zinc-900' : 'bg-slate-200'
-                                    }`} />
-                            </div>
-                        ))}
-                    </div>
-
-                    <p className="text-sm text-slate-600 mt-3">{getStepTitle()}</p>
+            <div className="max-w-5xl mx-auto pb-20">
+                {/* Header Navigation */}
+                <div className="mb-8">
+                    <button
+                        onClick={() => navigate('/admin/allocations')}
+                        className="group flex items-center gap-2 text-zinc-500 hover:text-zinc-900 transition-colors text-sm font-medium"
+                    >
+                        <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                        Back to Allocations
+                    </button>
+                    <h1 className="mt-4 text-3xl font-bold text-zinc-900 tracking-tight">Create New Allocation</h1>
+                    <p className="text-zinc-500 mt-1">Configure assessment details, students, and seating arrangements.</p>
                 </div>
 
-                {/* Step Content */}
-                {renderStep()}
+                {/* Premium Stepper */}
+                <div className="mb-8 overflow-x-auto px-8 pb-8">
+                    <div className="flex items-center justify-between min-w-[600px]">
+                        {steps.map((step, index) => {
+                            const isCompleted = currentStep > step.id;
+                            const isActive = currentStep === step.id;
+
+                            return (
+                                <div key={step.id} className="flex-1 flex items-center">
+                                    <div className="flex flex-col items-center relative z-10">
+                                        <div
+                                            className={`
+                                                w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all duration-300
+                                                ${isActive
+                                                    ? 'bg-zinc-900 border-zinc-900 text-white shadow-lg scale-110'
+                                                    : isCompleted
+                                                        ? 'bg-green-500 border-green-500 text-white'
+                                                        : 'bg-white border-zinc-200 text-zinc-400'
+                                                }
+                                            `}
+                                        >
+                                            {isCompleted ? <Check size={20} strokeWidth={2.5} /> : <span className="font-bold text-sm">{step.id}</span>}
+                                        </div>
+                                        <span
+                                            className={`
+                                                absolute top-12 whitespace-nowrap text-xs font-semibold tracking-wide transition-colors duration-300
+                                                ${isActive ? 'text-zinc-900' : isCompleted ? 'text-zinc-700' : 'text-zinc-400'}
+                                            `}
+                                        >
+                                            {step.label}
+                                        </span>
+                                    </div>
+
+                                    {/* Connector Line */}
+                                    {index < steps.length - 1 && (
+                                        <div className="flex-1 h-[2px] mx-4 bg-zinc-100 relative -top-3">
+                                            <div
+                                                className="h-full bg-zinc-900 transition-all duration-500 ease-out"
+                                                style={{ width: isCompleted ? '100%' : '0%' }}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Step Content Container */}
+                <div className="bg-white border border-zinc-200 rounded-2xl shadow-sm min-h-[400px]">
+                    {renderStep()}
+                </div>
             </div>
         </AdminLayout>
     );

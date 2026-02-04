@@ -219,3 +219,33 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* GLOBAL INPUT OVERRIDE to fix invisible text */
+input,
+textarea,
+select,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+  color: #000000 !important;
+  /* Force Pure Black Text */
+  background-color: #ffffff !important;
+  /* Force Pure White Background */
+  border-color: #e4e4e7 !important;
+  /* Force Light Border */
+  -webkit-text-fill-color: #000000 !important;
+  opacity: 1 !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #71717a !important;
+  /* Zinc-500 */
+  opacity: 1 !important;
+  -webkit-text-fill-color: #71717a !important;
+}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Users, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { MapPin, Users, CheckCircle, XCircle, AlertCircle, Laptop, Server, Check } from 'lucide-react';
 import api from '../../../services/api';
 
 export default function Step4SelectLabs({ formData, updateFormData, nextStep, prevStep }) {
@@ -48,6 +48,10 @@ export default function Step4SelectLabs({ formData, updateFormData, nextStep, pr
     const totalCapacity = selectedLabs.reduce((sum, lab) => sum + getEffectiveCapacity(lab.capacity), 0);
     const isSufficient = totalCapacity >= totalStudents;
     const fillPercentage = totalStudents > 0 ? Math.min((totalStudents / totalCapacity) * 100, 100) : 0;
+    const needed = Math.max(0, totalStudents - totalCapacity);
+
+    // Filter out labs with 0 capacity if any (sanity check)
+    const availableLabs = labs.filter(l => l.capacity > 0);
 
     const handleNext = () => {
         if (isSufficient && selectedLabs.length > 0) {
@@ -56,153 +60,151 @@ export default function Step4SelectLabs({ formData, updateFormData, nextStep, pr
     };
 
     return (
-        <div className="bg-white border border-slate-200 rounded-xl p-6">
-            <h3 className="text-lg font-bold text-slate-900 mb-2">Select Labs</h3>
-            <p className="text-sm text-slate-500 mb-6">Choose labs for the assessment</p>
+        <div className="p-8">
+            <div className="flex items-center gap-3 mb-8 pb-4 border-b border-zinc-100">
+                <div className="w-10 h-10 rounded-full bg-zinc-900 flex items-center justify-center text-white shadow-sm">
+                    <Laptop size={20} strokeWidth={1.5} />
+                </div>
+                <div>
+                    <h3 className="text-xl font-bold text-zinc-900">Select Labs</h3>
+                    <p className="text-sm text-zinc-500">Choose the laboratories where the assessment will take place.</p>
+                </div>
+            </div>
 
-            {/* Capacity Dashboard */}
-            <div className="bg-zinc-50 border border-zinc-200 rounded-xl p-6 mb-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div>
-                        <p className="text-sm text-slate-600 mb-1">Students to Allocate</p>
-                        <p className="text-2xl font-bold text-slate-900">{totalStudents}</p>
+            {/* dashboard stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-zinc-50 rounded-2xl p-6 border border-zinc-200/60">
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="p-2 bg-white rounded-lg border border-zinc-200 text-zinc-500"><Users size={18} /></div>
+                        <span className="text-sm font-semibold text-zinc-500">Total Candidates</span>
                     </div>
-                    <div>
-                        <p className="text-sm text-slate-600 mb-1">Selected Labs</p>
-                        <p className="text-2xl font-bold text-slate-900">{selectedLabs.length}</p>
-                    </div>
-                    <div>
-                        <p className="text-sm text-slate-600 mb-1">Available Capacity</p>
-                        <p className="text-2xl font-bold text-slate-900">{totalCapacity}</p>
-                    </div>
+                    <p className="text-3xl font-bold text-zinc-900">{totalStudents}</p>
                 </div>
 
-                {/* Status */}
-                <div className={`flex items-center gap-2 p-3 rounded-lg ${isSufficient && selectedLabs.length > 0
-                    ? 'bg-emerald-100 text-emerald-800'
-                    : 'bg-red-100 text-red-800'
+                <div className="bg-zinc-50 rounded-2xl p-6 border border-zinc-200/60">
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="p-2 bg-white rounded-lg border border-zinc-200 text-zinc-500"><Server size={18} /></div>
+                        <span className="text-sm font-semibold text-zinc-500">Labs Selected</span>
+                    </div>
+                    <p className="text-3xl font-bold text-zinc-900">{selectedLabs.length}</p>
+                </div>
+
+                <div className={`rounded-2xl p-6 border transition-colors ${isSufficient ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'
                     }`}>
-                    {isSufficient && selectedLabs.length > 0 ? (
-                        <>
-                            <CheckCircle size={18} strokeWidth={1.5} />
-                            <span className="text-sm font-semibold">Sufficient capacity for all students</span>
-                        </>
-                    ) : (
-                        <>
-                            <XCircle size={18} strokeWidth={1.5} />
-                            <span className="text-sm font-semibold">
-                                {selectedLabs.length === 0
-                                    ? 'Please select at least one lab'
-                                    : `Need ${totalStudents - totalCapacity} more seats`
-                                }
-                            </span>
-                        </>
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className={`p-2 bg-white rounded-lg border ${isSufficient ? 'text-emerald-600 border-emerald-200' : 'text-amber-600 border-amber-200'
+                            }`}>
+                            {isSufficient ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+                        </div>
+                        <span className={`text-sm font-semibold ${isSufficient ? 'text-emerald-700' : 'text-amber-700'
+                            }`}>Capacity Status</span>
+                    </div>
+                    <p className={`text-3xl font-bold ${isSufficient ? 'text-emerald-900' : 'text-amber-900'
+                        }`}>
+                        {totalCapacity} <span className="text-base font-medium opacity-60">seats</span>
+                    </p>
+                    {!isSufficient && (
+                        <p className="text-xs font-bold text-amber-700 mt-2">Need {needed} more seats</p>
+                    )}
+                </div>
+            </div>
+
+            {/* Labs Grid */}
+            <div className="mb-8">
+                <div className="flex justify-between items-end mb-4">
+                    <h4 className="text-sm font-bold text-zinc-900 uppercase tracking-wide">Available Laboratories</h4>
+                    {selectedLabs.length > 0 && (
+                        <span className="text-xs font-medium text-zinc-500">
+                            {selectedLabs.length} labs selected
+                        </span>
                     )}
                 </div>
 
-                {/* Progress Bar */}
-                {selectedLabs.length > 0 && (
-                    <div className="mt-4">
-                        <div className="flex justify-between text-xs text-slate-600 mb-1">
-                            <span>Capacity Utilization</span>
-                            <span>{fillPercentage.toFixed(0)}%</span>
-                        </div>
-                        <div className="h-2 bg-white rounded-full overflow-hidden">
-                            <div
-                                className={`h-full transition-all ${fillPercentage > 100 ? 'bg-red-500' : fillPercentage > 80 ? 'bg-yellow-500' : 'bg-emerald-500'
-                                    }`}
-                                style={{ width: `${Math.min(fillPercentage, 100)}%` }}
-                            />
-                        </div>
+                {loading ? (
+                    <div className="py-12 text-center text-zinc-400 bg-zinc-50 rounded-2xl border border-zinc-100 border-dashed">
+                        Loading available labs...
+                    </div>
+                ) : availableLabs.length === 0 ? (
+                    <div className="py-12 text-center bg-zinc-50 rounded-2xl border border-zinc-200 border-dashed">
+                        <AlertCircle className="mx-auto text-zinc-400 mb-2" size={32} strokeWidth={1} />
+                        <p className="text-zinc-900 font-bold">No Available Labs</p>
+                        <p className="text-sm text-zinc-500">Please enable labs in the Lab Management section.</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {availableLabs.map(lab => {
+                            const isSelected = selectedLabs.some(l => l.id === lab.id);
+                            const effectiveCap = getEffectiveCapacity(lab.capacity);
+
+                            return (
+                                <button
+                                    key={lab.id}
+                                    onClick={() => toggleLab(lab)}
+                                    className={`relative p-5 rounded-xl border-2 text-left transition-all duration-300 group ${isSelected
+                                        ? 'border-zinc-900 bg-zinc-900 text-white shadow-lg transform -translate-y-1'
+                                        : 'border-zinc-100 bg-white hover:border-zinc-300 hover:shadow-md'
+                                        }`}
+                                >
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className={`p-2.5 rounded-lg ${isSelected ? 'bg-zinc-800 text-zinc-300' : 'bg-zinc-100 text-zinc-500'
+                                            }`}>
+                                            <Laptop size={20} strokeWidth={1.5} />
+                                        </div>
+                                        {isSelected && (
+                                            <div className="bg-white text-zinc-900 rounded-full p-1">
+                                                <Check size={14} strokeWidth={3} />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <h5 className={`font-bold text-lg mb-1 ${isSelected ? 'text-white' : 'text-zinc-900'
+                                        }`}>{lab.lab_name}</h5>
+
+                                    <div className={`flex items-center gap-2 text-sm ${isSelected ? 'text-zinc-400' : 'text-zinc-500'
+                                        }`}>
+                                        <MapPin size={14} />
+                                        <span>{lab.location || 'Main Block'}</span>
+                                    </div>
+
+                                    <div className={`mt-4 pt-4 border-t flex justify-between items-center ${isSelected ? 'border-zinc-800' : 'border-zinc-100'
+                                        }`}>
+                                        <div>
+                                            <span className={`text-xs uppercase tracking-wider font-bold block ${isSelected ? 'text-zinc-500' : 'text-zinc-400'
+                                                }`}>Capacity</span>
+                                            <span className={`font-mono text-lg font-bold ${isSelected ? 'text-white' : 'text-zinc-900'
+                                                }`}>{effectiveCap}</span>
+                                        </div>
+                                        {formData.seating_mode !== 'normal' && (
+                                            <div className="text-right">
+                                                <span className={`text-xs block ${isSelected ? 'text-zinc-500' : 'text-zinc-400'
+                                                    }`}>Raw Seats</span>
+                                                <span className={`font-mono text-sm ${isSelected ? 'text-zinc-400' : 'text-zinc-500'
+                                                    }`}>{lab.capacity}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </button>
+                            );
+                        })}
                     </div>
                 )}
             </div>
 
-            {/* Labs List */}
-            {loading ? (
-                <div className="p-8 text-center text-slate-400">Loading labs...</div>
-            ) : labs.length === 0 ? (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
-                    <AlertCircle size={20} strokeWidth={1.5} className="text-yellow-600 mb-2" />
-                    <p className="text-yellow-900 font-semibold">No labs available</p>
-                    <p className="text-sm text-yellow-700 mt-1">Please create labs first before creating allocations.</p>
-                </div>
-            ) : (
-                <div className="space-y-3">
-                    {labs.map(lab => {
-                        const isSelected = selectedLabs.some(l => l.id === lab.id);
-                        const effectiveCapacity = getEffectiveCapacity(lab.capacity);
-                        const expectedStudents = isSelected
-                            ? Math.ceil(totalStudents / selectedLabs.length)
-                            : 0;
-                        const fillPct = expectedStudents > 0 ? (expectedStudents / effectiveCapacity) * 100 : 0;
-
-                        return (
-                            <button
-                                key={lab.id}
-                                onClick={() => toggleLab(lab)}
-                                className={`w-full p-4 rounded-xl border-2 text-left transition-all ${isSelected
-                                    ? 'border-zinc-900 bg-zinc-50'
-                                    : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                                    }`}
-                            >
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${isSelected ? 'border-zinc-900 bg-zinc-900' : 'border-slate-300'
-                                            }`}>
-                                            {isSelected && <CheckCircle size={14} strokeWidth={2} className="text-white" />}
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-slate-900">{lab.lab_name}</p>
-                                            <p className="text-sm text-slate-500">
-                                                Physical: {lab.capacity} seats • Effective: {effectiveCapacity} seats
-                                            </p>
-                                        </div>
-                                    </div>
-                                    {isSelected && (
-                                        <div className="text-right">
-                                            <p className="text-sm font-semibold text-zinc-600">
-                                                ~{expectedStudents} students
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {isSelected && (
-                                    <div>
-                                        <div className="flex justify-between text-xs text-slate-600 mb-1">
-                                            <span>Expected Fill</span>
-                                            <span>{fillPct.toFixed(0)}%</span>
-                                        </div>
-                                        <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                                            <div
-                                                className={`h-full transition-all ${fillPct > 100 ? 'bg-red-500' : fillPct > 80 ? 'bg-yellow-500' : 'bg-emerald-500'
-                                                    }`}
-                                                style={{ width: `${Math.min(fillPct, 100)}%` }}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                            </button>
-                        );
-                    })}
-                </div>
-            )}
-
-            {/* Navigation */}
-            <div className="flex justify-between pt-6 mt-6 border-t border-slate-100">
+            {/* Footer */}
+            <div className="flex justify-between mt-8 pt-6 border-t border-zinc-100">
                 <button
                     onClick={prevStep}
-                    className="px-6 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-lg font-semibold text-sm hover:bg-slate-50 transition-colors"
+                    className="px-6 py-2.5 bg-white border border-zinc-200 text-zinc-600 rounded-xl font-bold text-sm hover:bg-zinc-50 transition-colors"
                 >
                     ← Back
                 </button>
                 <button
                     onClick={handleNext}
                     disabled={!isSufficient || selectedLabs.length === 0}
-                    className="px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg font-semibold text-sm transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 px-8 py-3 bg-zinc-900 hover:bg-black text-white rounded-xl font-bold text-sm transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
                 >
-                    Next: Review →
+                    Review & Create
+                    <span className="text-zinc-400">→</span>
                 </button>
             </div>
         </div>

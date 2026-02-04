@@ -3,155 +3,111 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
-import { QrCode, ScanLine, X, ArrowLeft, Home } from 'lucide-react';
-import { Html5Qrcode } from "html5-qrcode";
+import { QrCode, ArrowLeft, Home, X } from 'lucide-react';
+import FingerprintJS from '@fingerprintjs/fingerprintjs';
 
 export default function StudentAttendance() {
     const { user } = useAuth();
     const navigate = useNavigate();
 
     // Data State
-    const [activeEvent, setActiveEvent] = useState(null);
     const [manualCode, setManualCode] = useState('');
     const [manualEventId, setManualEventId] = useState('');
     const [scanResult, setScanResult] = useState(null);
     const [isScanning, setIsScanning] = useState(false);
-    const [isDetected, setIsDetected] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const [activeEvent, setActiveEvent] = useState(null);
 
     // Scanner Refs
     const videoRef = useRef(null);
     const requestRef = useRef(null);
-    const lastCodeRef = useRef(null);
-    const lastTimeRef = useRef(0);
     const cleanupRef = useRef(null);
     const isSubmittingRef = useRef(false);
 
-    useEffect(() => {
-        fetchActiveEvent();
-        return () => {
-            stopScanner(); // safety cleanup
-        };
-    }, []);
+    // Load Fingerprint
+    const fpPromise = FingerprintJS.load();
 
-    useEffect(() => {
-        if (activeEvent) {
-            setManualEventId(activeEvent.id);
-        }
-    }, [activeEvent]);
-
-    const fetchActiveEvent = async () => {
-        try {
-            const eventsRes = await api.get('/events?active=true');
-            const now = new Date();
-            const currentEvent = eventsRes.data.find(e => {
-                const start = new Date(`${e.date}T${e.start_time}`);
-                const end = new Date(`${e.date}T${e.end_time}`);
-                return now >= start && now <= end;
-            });
-            setActiveEvent(currentEvent || null);
-        } catch (error) {
-            console.error(error);
-        }
+    const getFingerprint = async () => {
+        const fp = await fpPromise;
+        const result = await fp.get();
+        return result.visitorId;
     };
+
+    useEffect(() => {
+        // Optional: Auto-fetch active event context if needed
+        return () => stopScanner();
+    }, []);
 
     const startScanner = async () => {
         setScanResult(null);
         setIsScanning(true);
-        setIsDetected(false);
-
         if (cleanupRef.current) cleanupRef.current();
 
-        const constraints = { video: { facingMode: "environment" } };
-
         try {
-            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
             const readerDiv = document.getElementById("reader");
             if (!readerDiv) return;
 
             readerDiv.innerHTML = '';
             const video = document.createElement("video");
-            video.style.width = "100%";
-            video.style.height = "100%";
-            video.style.objectFit = "cover";
-            video.autoplay = true;
-            video.playsInline = true;
-            video.muted = true;
-            readerDiv.appendChild(video);
-            video.srcObject = stream;
-            videoRef.current = video;
 
-            await new Promise((resolve) => {
-                video.onloadedmetadata = () => video.play().then(resolve);
+            // UI Styles
+            Object.assign(video.style, {
+                width: "100%", height: "100%", objectFit: "cover"
             });
 
-            // Fallback scanner (Html5Qrcode) setup removed for brevity unless requested, focusing on canvas method
+            video.autoplay = true;
+            video.playsInline = true;
+            video.srcObject = stream;
+            readerDiv.appendChild(video);
+            videoRef.current = video;
+
+            await new Promise(r => video.onloadedmetadata = () => video.play().then(r));
+
             const canvas = document.createElement("canvas");
             const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
             const scanLoop = async () => {
                 if (!videoRef.current || videoRef.current.paused || videoRef.current.ended) return;
 
-                const vWidth = videoRef.current.videoWidth;
-                const vHeight = videoRef.current.videoHeight;
-
-                canvas.width = vWidth;
-                canvas.height = vHeight;
-                ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-
-                let detectedCode = null;
-                let validationStatus = 'NONE';
+                canvas.width = videoRef.current.videoWidth;
+                canvas.height = videoRef.current.videoHeight;
+                ctx.drawImage(videoRef.current, 0, 0);
 
                 try {
                     if ("BarcodeDetector" in window) {
-                        const barcodeDetector = new window.BarcodeDetector({ formats: ['qr_code'] });
-                        const barcodes = await barcodeDetector.detect(canvas);
+                        const detector = new window.BarcodeDetector({ formats: ['qr_code'] });
+                        const barcodes = await detector.detect(canvas);
                         if (barcodes.length > 0) {
-                            detectedCode = barcodes[0].rawValue;
-                            validationStatus = 'VALID';
-                        }
-                    }
-                } catch (e) { console.error(e); }
-
-                if (validationStatus === 'VALID' && detectedCode) {
-                    setIsDetected(true);
-                    const now = Date.now();
-                    if (detectedCode === lastCodeRef.current) {
-                        if (now - lastTimeRef.current > 400) {
+                            const raw = barcodes[0].rawValue;
                             stopScanner();
-                            if (navigator.vibrate) navigator.vibrate([100]);
-                            handleScan(detectedCode);
+                            handleScan(raw);
                             return;
                         }
-                    } else {
-                        lastCodeRef.current = detectedCode;
-                        lastTimeRef.current = now;
                     }
-                } else {
-                    setIsDetected(false);
-                    if (Date.now() - lastTimeRef.current > 200) lastCodeRef.current = null;
-                }
+                } catch (e) { /* ignore */ }
+
                 requestRef.current = requestAnimationFrame(scanLoop);
             };
+
             requestRef.current = requestAnimationFrame(scanLoop);
 
             cleanupRef.current = () => {
                 if (requestRef.current) cancelAnimationFrame(requestRef.current);
-                if (video.srcObject) video.srcObject.getTracks().forEach(track => track.stop());
-                if (readerDiv) readerDiv.innerHTML = '';
+                if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
             };
 
         } catch (err) {
             console.error(err);
             setIsScanning(false);
-            alert("Camera access denied or error.");
+            alert("Camera access denied.");
         }
     };
 
     const stopScanner = () => {
         setIsScanning(false);
-        if (cleanupRef.current) { cleanupRef.current(); cleanupRef.current = null; }
-        if (requestRef.current) { cancelAnimationFrame(requestRef.current); requestRef.current = null; }
+        if (cleanupRef.current) cleanupRef.current();
     };
 
     const handleScan = async (qrData) => {
@@ -161,164 +117,174 @@ export default function StudentAttendance() {
 
         try {
             if (navigator.vibrate) navigator.vibrate(200);
+
+            // Parse QR
+            // Format 1: URL?event_id=X&token=Y
+            // Format 2: JSON { event_id, token }
             let eventId, token;
-            const eventIdMatch = qrData.match(/[?&]event_id=([^&]+)/);
-            const tokenMatch = qrData.match(/[?&]token=([^&]+)/);
 
-            if (eventIdMatch && tokenMatch) {
-                eventId = eventIdMatch[1];
-                token = tokenMatch[1];
-            } else if (qrData.startsWith('EVENT')) {
-                const parts = qrData.split(':');
-                if (parts.length === 3) { eventId = parts[1]; token = parts[2]; }
+            try {
+                const urlObj = new URL(qrData);
+                eventId = urlObj.searchParams.get('event_id');
+                token = urlObj.searchParams.get('token');
+            } catch (e) {
+                // Not a URL, try JSON
+                try {
+                    const json = JSON.parse(qrData);
+                    eventId = json.event_id || json.id; // handle variation
+                    token = json.token;
+                } catch (e2) {
+                    // Try regex fallback
+                    const m = qrData.match(/[?&]event_id=([^&]+)/);
+                    eventId = m ? m[1] : null;
+                    const m2 = qrData.match(/[?&]token=([^&]+)/);
+                    token = m2 ? m2[1] : null;
+                }
             }
 
-            if (!eventId || !token) throw new Error("Invalid QR Code.");
+            if (!eventId || !token) throw new Error("Invalid QR format");
 
-            await api.post('/attendance', { event_id: eventId, token });
-            setScanResult({ status: 'success', title: 'Marked Present!', message: 'Attendance recorded.' });
+            const fingerprint = await getFingerprint();
+
+            await api.post('/attendance', {
+                event_id: eventId,
+                token: token,
+                fingerprint: fingerprint,
+                device_info: navigator.userAgent
+            });
+
+            setScanResult({ status: 'success', title: 'Marked Present', message: 'Attendance recorded successfully.' });
+
         } catch (error) {
+            console.error(error);
             const msg = error.response?.data?.error || error.message;
-            if (msg.includes('already marked')) {
-                setScanResult({ status: 'success', title: 'Already Present', message: 'You have already marked attendance.' });
-            } else {
-                setScanResult({ status: 'error', title: 'Failed', message: msg });
-            }
+            setScanResult({
+                status: 'error',
+                title: msg.includes('Proxy') ? 'Proxy Blocked' : 'Error',
+                message: msg
+            });
         } finally {
-            setTimeout(() => { isSubmittingRef.current = false; setIsSubmitting(false); }, 2000);
+            isSubmittingRef.current = false;
+            setIsSubmitting(false);
         }
     };
 
     const handleManualSubmit = async (e) => {
         e.preventDefault();
-        if (!manualCode || manualCode.length < 6) return alert('Enter valid code');
-        if (isSubmittingRef.current) return;
+        if (!manualCode || !manualEventId) return;
 
-        isSubmittingRef.current = true;
         setIsSubmitting(true);
-        const targetEventId = manualEventId || activeEvent?.id;
-
-        if (!targetEventId) {
-            alert("Event ID required");
-            isSubmittingRef.current = false;
-            setIsSubmitting(false);
-            return;
-        }
-
         try {
-            if (navigator.vibrate) navigator.vibrate(200);
-            await api.post('/attendance', { event_id: targetEventId, token: manualCode });
-            setScanResult({ status: 'success', title: 'Marked Present!', message: 'Manual entry successful.' });
+            const fingerprint = await getFingerprint();
+
+            await api.post('/attendance', {
+                event_id: manualEventId, // User must type event ID
+                token: manualCode, // 6 digit code
+                fingerprint: fingerprint,
+                device_info: navigator.userAgent
+            });
+
+            setScanResult({ status: 'success', title: 'Marked Present', message: 'Manual entry accepted.' });
             setManualCode('');
         } catch (error) {
-            const msg = error.response?.data?.error || 'Entry failed';
-            alert(msg);
+            const msg = error.response?.data?.error || error.message;
+            setScanResult({
+                status: 'error',
+                title: 'Error',
+                message: msg
+            });
         } finally {
-            setTimeout(() => { isSubmittingRef.current = false; setIsSubmitting(false); }, 1000);
+            setIsSubmitting(false);
         }
     };
 
     return (
-        <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
+        <div className="min-h-screen bg-slate-50">
             {/* Header */}
-            <div style={{ background: 'white', padding: '1rem', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <button onClick={() => navigate('/student')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+            <div className="bg-white p-4 border-b border-slate-200 flex items-center justify-between sticky top-0 z-50">
+                <div className="flex items-center gap-4">
+                    <button onClick={() => navigate('/student')} className="text-slate-500">
                         <ArrowLeft size={24} />
                     </button>
-                    <div style={{ fontWeight: '700', color: '#0f172a', fontSize: '1.1rem' }}>Mark Attendance</div>
+                    <h1 className="font-bold text-slate-800 text-lg">Mark Attendance</h1>
                 </div>
-                <button onClick={() => navigate('/student')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                <button onClick={() => navigate('/student')} className="text-slate-500">
                     <Home size={24} />
                 </button>
             </div>
 
-            <div style={{ padding: '1.5rem', maxWidth: '640px', margin: '0 auto' }}>
+            <div className="max-w-md mx-auto p-6">
 
                 {scanResult && (
-                    <div style={{
-                        marginBottom: '1.5rem', padding: '1rem', borderRadius: '12px',
-                        background: scanResult.status === 'success' ? '#dcfce7' : '#fee2e2',
-                        color: scanResult.status === 'success' ? '#166534' : '#991b1b',
-                        border: `1px solid ${scanResult.status === 'success' ? '#bbf7d0' : '#fecaca'}`
-                    }}>
-                        <div style={{ fontWeight: '700' }}>{scanResult.title}</div>
-                        <div style={{ fontSize: '0.9rem' }}>{scanResult.message}</div>
-                        <button onClick={() => setScanResult(null)} style={{ marginTop: '0.5rem', fontSize: '0.85rem', textDecoration: 'underline', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}>Dismiss</button>
+                    <div className={`mb-6 p-4 rounded-xl border ${scanResult.status === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
+                        <h3 className="font-bold text-lg">{scanResult.title}</h3>
+                        <p className="text-sm mt-1">{scanResult.message}</p>
+                        <button onClick={() => setScanResult(null)} className="mt-2 text-sm underline opacity-80">Dismiss</button>
                     </div>
                 )}
 
                 {isScanning ? (
-                    <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '700' }}>Scanning...</h3>
-                            <button onClick={stopScanner} style={{ background: '#f1f5f9', border: 'none', padding: '0.5rem', borderRadius: '8px' }}><X size={20} /></button>
+                    <div className="bg-black rounded-2xl overflow-hidden relative h-[400px]">
+                        <div id="reader" className="w-full h-full"></div>
+                        <button onClick={stopScanner} className="absolute top-4 right-4 bg-white/20 p-2 rounded-full text-white backdrop-blur-sm">
+                            <X size={24} />
+                        </button>
+                        <div className="absolute bottom-6 left-0 right-0 text-center text-white/80 text-sm">
+                            Point camera at the QR code
                         </div>
-                        <div style={{ position: 'relative', borderRadius: '16px', overflow: 'hidden', height: '400px', background: 'black' }}>
-                            <div id="reader" style={{ width: '100%', height: '100%' }}></div>
-
-
-                        </div>
-                        <p style={{ textAlign: 'center', fontSize: '0.85rem', color: '#64748b', marginTop: '1rem' }}>
-                            Point camera at the QR code.
-                        </p>
                     </div>
                 ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                    <div className="space-y-8">
+                        <button
+                            onClick={startScanner}
+                            className="w-full py-10 rounded-3xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-xl shadow-indigo-200 flex flex-col items-center gap-4 active:scale-95 transition-transform"
+                        >
+                            <div className="p-4 bg-white/20 rounded-full backdrop-blur-sm">
+                                <QrCode size={48} />
+                            </div>
+                            <div className="text-center">
+                                <span className="block text-xl font-bold">Scan QR Code</span>
+                                <span className="text-white/80 text-sm">Tap to open camera</span>
+                            </div>
+                        </button>
 
-                        {/* Scan Button */}
-                        <div style={{ textAlign: 'center' }}>
-                            <button
-                                onClick={startScanner}
-                                style={{
-                                    width: '100%', padding: '2rem', borderRadius: '24px',
-                                    background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
-                                    color: 'white', border: 'none', cursor: 'pointer',
-                                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem',
-                                    boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.4)'
-                                }}
-                            >
-                                <div style={{ background: 'rgba(255,255,255,0.2)', padding: '16px', borderRadius: '50%' }}>
-                                    <QrCode size={48} />
-                                </div>
-                                <div style={{ fontSize: '1.25rem', fontWeight: '700' }}>Scan QR Code</div>
-                                <div style={{ fontSize: '0.9rem', opacity: 0.9 }}>Tap here to open camera</div>
-                            </button>
+                        <div className="flex items-center gap-4">
+                            <div className="h-px bg-slate-200 flex-1"></div>
+                            <span className="text-xs font-bold text-slate-400 uppercase">Or Enter Manually</span>
+                            <div className="h-px bg-slate-200 flex-1"></div>
                         </div>
 
-                        {/* Divider */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                            <div style={{ height: '1px', flex: 1, background: '#e2e8f0' }}></div>
-                            <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#94a3b8' }}>OR ENTER MANUALLY</span>
-                            <div style={{ height: '1px', flex: 1, background: '#e2e8f0' }}></div>
-                        </div>
-
-                        {/* Manual Entry */}
-                        <form onSubmit={handleManualSubmit} style={{ background: 'white', padding: '1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                        <form onSubmit={handleManualSubmit} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                            <div className="grid grid-cols-2 gap-4 mb-4">
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '700', color: '#64748b', marginBottom: '0.5rem' }}>EVENT ID</label>
+                                    <label className="block text-xs font-bold text-slate-500 mb-2">EVENT ID</label>
                                     <input
-                                        type="text" value={manualEventId} onChange={e => setManualEventId(e.target.value)} placeholder="000"
-                                        style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', textAlign: 'center', fontWeight: '600' }}
+                                        type="text"
+                                        value={manualEventId}
+                                        onChange={e => setManualEventId(e.target.value)}
+                                        placeholder="e.g. 12"
+                                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-center font-mono text-lg font-bold"
                                     />
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '700', color: '#64748b', marginBottom: '0.5rem' }}>CODE</label>
+                                    <label className="block text-xs font-bold text-slate-500 mb-2">CODE</label>
                                     <input
-                                        type="text" value={manualCode} onChange={e => setManualCode(e.target.value)} placeholder="XXXXXX" maxLength={6}
-                                        style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', textAlign: 'center', fontWeight: '600', letterSpacing: '2px' }}
+                                        type="text"
+                                        value={manualCode}
+                                        onChange={e => setManualCode(e.target.value)}
+                                        placeholder="XXXXXX"
+                                        maxLength={6}
+                                        className="w-full p-3 bg-slate-50 border border-slate-200 rounded-lg text-center font-mono text-lg tracking-widest font-bold"
                                     />
                                 </div>
                             </div>
                             <button
-                                type="submit" disabled={!manualCode}
-                                style={{ width: '100%', padding: '1rem', borderRadius: '12px', background: manualCode ? '#0f172a' : '#e2e8f0', color: manualCode ? 'white' : '#94a3b8', border: 'none', fontWeight: '700', cursor: manualCode ? 'pointer' : 'not-allowed' }}
+                                disabled={isSubmitting || !manualCode}
+                                className="w-full py-3 bg-slate-900 text-white rounded-xl font-bold text-sm disabled:opacity-50"
                             >
-                                Submit Code
+                                {isSubmitting ? 'Verifying...' : 'Submit Code'}
                             </button>
                         </form>
-
                     </div>
                 )}
             </div>
