@@ -1,16 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import AdminLayout from '../../components/admin/AdminLayout';
 import PageHeader from '../../components/PageHeader';
-import { Upload, FileText, CheckCircle, AlertCircle, Download, Key, ArrowRight, RefreshCw, X } from 'lucide-react';
+import { Upload, FileText, CheckCircle, AlertCircle, Download, Key, ArrowRight, RefreshCw, X, UserPlus, Trash2, PenTool } from 'lucide-react';
 import Papa from 'papaparse';
 import api from '../../services/api';
 
 export default function BulkStudentUpload() {
+    const [activeTab, setActiveTab] = useState('quick'); // 'quick' or 'csv'
+
+    // CSV Workflow State
     const [step, setStep] = useState(1);
     const [file, setFile] = useState(null);
     const [parsedData, setParsedData] = useState([]);
     const [validationResults, setValidationResults] = useState({ valid: [], invalid: [], duplicates: [] });
+
+    // Quick Add Workflow State
+    const [quickStudents, setQuickStudents] = useState([
+        { id: 1, enrollment_no: '', name: '', email: '', mobile: '', department: 'Computer Science', year: '3', passwordPreview: '' }
+    ]);
+    const [quickErrors, setQuickErrors] = useState({}); // { 0: { email: 'Invalid' } }
+
+    // Shared State
     const [processing, setProcessing] = useState(false);
     const [uploadResults, setUploadResults] = useState(null);
 
@@ -22,7 +33,117 @@ export default function BulkStudentUpload() {
         { num: 5, label: 'Finish' }
     ];
 
-    // Step 1: Download Template
+    // --- QUICK ADD LOGIC ---
+
+    const DEPARTMENTS = ['Computer Science', 'Information Technology', 'Electronics', 'Mechanical', 'Civil', 'Robotics'];
+    const YEARS = ['1', '2', '3', '4'];
+
+    const getPasswordPreview = (dept, enroll, mobile) => {
+        if (!dept || !enroll || !mobile || mobile.length < 4 || enroll.length < 4) return '---';
+
+        const deptPrefix = {
+            'Computer Science': 'CSE',
+            'Information Technology': 'IT',
+            'Electronics': 'ENTC',
+            'Mechanical': 'MECH',
+            'Civil': 'CIVIL',
+            'Robotics': 'R&A'
+        }[dept] || dept.substring(0, 3).toUpperCase();
+
+        const last4Enroll = enroll.slice(-4);
+        const last4Mobile = mobile.slice(-4);
+
+        return `${deptPrefix}${last4Enroll}&${last4Mobile}`;
+    };
+
+    const handleQuickChange = (id, field, value) => {
+        setQuickStudents(prev => prev.map(s => {
+            if (s.id !== id) return s;
+
+            const updated = { ...s, [field]: value };
+
+            // Auto-update password preview
+            if (['department', 'enrollment_no', 'mobile'].includes(field)) {
+                updated.passwordPreview = getPasswordPreview(updated.department, updated.enrollment_no, updated.mobile);
+            }
+            // Auto uppercase enrollment
+            if (field === 'enrollment_no') updated.enrollment_no = value.toUpperCase();
+
+            return updated;
+        }));
+
+        // Clear error for this field
+        if (quickErrors[id]?.[field]) {
+            setQuickErrors(prev => {
+                const newErrors = { ...prev };
+                if (newErrors[id]) delete newErrors[id][field];
+                return newErrors;
+            });
+        }
+    };
+
+    const addQuickRow = () => {
+        if (quickStudents.length >= 5) return;
+        const newId = Math.max(...quickStudents.map(s => s.id)) + 1;
+        setQuickStudents([...quickStudents, { id: newId, enrollment_no: '', name: '', email: '', mobile: '', department: 'Computer Science', year: '3', passwordPreview: '' }]);
+    };
+
+    const removeQuickRow = (id) => {
+        if (quickStudents.length <= 1) return;
+        setQuickStudents(prev => prev.filter(s => s.id !== id));
+        setQuickErrors(prev => {
+            const newErrors = { ...prev };
+            delete newErrors[id];
+            return newErrors;
+        });
+    };
+
+    const validateQuickForm = () => {
+        const errors = {};
+        let isValid = true;
+        const seenEnrollments = new Set();
+        const seenEmails = new Set();
+
+        quickStudents.forEach(student => {
+            const studentErrors = {};
+
+            if (!student.enrollment_no) studentErrors.enrollment_no = "Required";
+            else if (seenEnrollments.has(student.enrollment_no)) studentErrors.enrollment_no = "Duplicate";
+            else seenEnrollments.add(student.enrollment_no);
+
+            if (!student.name) studentErrors.name = "Required";
+
+            if (!student.email) studentErrors.email = "Required";
+            else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(student.email)) studentErrors.email = "Invalid format";
+            else if (seenEmails.has(student.email)) studentErrors.email = "Duplicate";
+            else seenEmails.add(student.email);
+
+            if (!student.mobile) studentErrors.mobile = "Required";
+            else if (!/^\d{10}$/.test(student.mobile)) studentErrors.mobile = "Must be 10 digits";
+
+            if (Object.keys(studentErrors).length > 0) {
+                errors[student.id] = studentErrors;
+                isValid = false;
+            }
+        });
+
+        setQuickErrors(errors);
+        return isValid;
+    };
+
+    const handleQuickSubmit = () => {
+        if (!validateQuickForm()) return;
+
+        // Prepare data for upload (matching validationResults.valid structure)
+        const validData = quickStudents.map(({ id, passwordPreview, ...rest }) => rest);
+
+        setValidationResults({ valid: validData, invalid: [], duplicates: [] });
+        handleGenerateAndUpload(validData);
+    };
+
+
+    // --- CSV LOGIC ---
+
     const downloadTemplate = () => {
         const csvContent = "data:text/csv;charset=utf-8,enrollment_no,name,email,mobile,department,year\nADT23SOCB0001,John Doe,john.doe@example.com,9876543210,Computer Science,3";
         const encodedUri = encodeURI(csvContent);
@@ -34,7 +155,6 @@ export default function BulkStudentUpload() {
         document.body.removeChild(link);
     };
 
-    // Step 2: Handle File Upload
     const handleFileUpload = (e) => {
         const uploadedFile = e.target.files[0];
         if (uploadedFile) {
@@ -59,7 +179,6 @@ export default function BulkStudentUpload() {
         });
     };
 
-    // Step 3: Validate Data (Mock implementation for now)
     const validateData = (data) => {
         const valid = [];
         const invalid = [];
@@ -68,31 +187,20 @@ export default function BulkStudentUpload() {
         const seenEnrollments = new Set();
 
         data.forEach((row, index) => {
-            const rowNum = index + 2; // 1-based + header
+            const rowNum = index + 2;
             let reasons = [];
 
-            // Basic checks
             if (!row.enrollment_no || !row.name || !row.email || !row.mobile || !row.department) {
                 reasons.push("Missing required fields");
             }
-
-            // Email format
             if (row.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)) {
                 reasons.push("Invalid email format");
             }
-
-            // Mobile format (simple 10 digit check)
             if (row.mobile && !/^\d{10}$/.test(row.mobile.toString().replace(/\D/g, ''))) {
                 reasons.push("Mobile must be 10 digits");
             }
-
-            // Duplicates within file
-            if (seenEmails.has(row.email)) {
-                reasons.push("Duplicate email in file");
-            }
-            if (seenEnrollments.has(row.enrollment_no)) {
-                reasons.push("Duplicate enrollment in file");
-            }
+            if (seenEmails.has(row.email)) reasons.push("Duplicate email in file");
+            if (seenEnrollments.has(row.enrollment_no)) reasons.push("Duplicate enrollment in file");
 
             seenEmails.add(row.email);
             seenEnrollments.add(row.enrollment_no);
@@ -107,43 +215,28 @@ export default function BulkStudentUpload() {
         setValidationResults({ valid, invalid, duplicates });
     };
 
-    // Step 4: Generate Credentials & Upload
-    const handleGenerateAndUpload = async () => {
+    // --- SHARED UPLOAD LOGIC ---
+
+    const handleGenerateAndUpload = async (dataOverride = null) => {
         setProcessing(true);
-        setStep(4);
+        setStep(4); // Switches UI to processing state
+
+        const dataToUpload = dataOverride || validationResults.valid;
 
         try {
-            // Simulate API logic for now with the structure we plan to implement
-            // In reality, this will call api.post('/users/create-bulk', { users: validationResults.valid })
-
-            // Temporary Fake API Call
-            const res = await api.post('/users/create-bulk', { users: validationResults.valid });
+            const res = await api.post('/users/create-bulk', { users: dataToUpload });
             setUploadResults(res.data);
-
-            // Mock Success
-            // setTimeout(() => {
-            //    setUploadResults({
-            //        success: validationResults.valid.length,
-            //        failed: 0,
-            //        errors: [],
-            //        credentials: validationResults.valid.map(u => ({ ...u, password: 'generated-pass' })) // Backend should return this
-            //    });
-            //    setStep(5);
-            //    setProcessing(false);
-            // }, 2000);
-
             setStep(5);
         } catch (error) {
             console.error("Bulk Upload Error:", error);
             alert("Failed to upload students. See console for details.");
-            // Proceed to step 5 even on partial failure to show results if backend handles it?
-            // For now stay on step 4 or show error
+            setStep(5); // Show errors in step 5 even if caught content
+            setUploadResults({ success: 0, failed: dataToUpload.length, errors: [{ enrollment: 'ALL', error: error.message }] });
         } finally {
             setProcessing(false);
         }
     };
 
-    // Step 5: Export Credentials
     const downloadCredentials = () => {
         if (!uploadResults || !uploadResults.credentials) return;
 
@@ -163,18 +256,7 @@ export default function BulkStudentUpload() {
     };
 
     const copyEmailTemplate = () => {
-        const template = `Dear Student,
-
-Your MIT ADT Placement Portal credentials have been generated.
-
-Login URL: https://portal.mitadt.edu.in/login
-
-Please refer to the attached sheet for your specific credentials.
-Keep your password secure and do not share it.
-
-Regards,
-Training & Placement Cell`;
-
+        const template = `Dear Student,\n\nYour MIT ADT Placement Portal credentials have been generated.\n\nLogin URL: https://portal.mitadt.edu.in/login\n\nPlease refer to the attached sheet for your specific credentials.\nKeep your password secure and do not share it.\n\nRegards,\nTraining & Placement Cell`;
         navigator.clipboard.writeText(template);
         alert("Email template copied to clipboard!");
     };
@@ -184,41 +266,202 @@ Training & Placement Cell`;
         <AdminLayout title="Bulk Upload">
             <PageHeader
                 title="Bulk Student Upload"
-                description="Upload multiple student records at once and auto-generate credentials."
+                description="Upload multiple student records or use Quick Add."
             />
 
-            {/* Wizard Progress */}
-            <div className="mb-8">
-                <div className="flex items-center justify-between relative max-w-3xl mx-auto">
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-zinc-200 -z-10 rounded-full"></div>
-                    <div
-                        className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-zinc-900 -z-10 transition-all duration-500 rounded-full"
-                        style={{ width: `${((step - 1) / (steps.length - 1)) * 100}%` }}
-                    ></div>
-
-                    {steps.map((s) => (
-                        <div key={s.num} className="flex flex-col items-center gap-2 bg-zinc-50 px-2">
-                            <div className={`
-                                w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all
-                                ${step >= s.num
-                                    ? 'bg-zinc-900 border-zinc-900 text-white'
-                                    : 'bg-white border-zinc-300 text-zinc-400'}
-                            `}>
-                                {step > s.num ? <CheckCircle size={16} /> : s.num}
-                            </div>
-                            <span className={`text-xs font-semibold ${step >= s.num ? 'text-zinc-900' : 'text-zinc-400'}`}>
-                                {s.label}
-                            </span>
-                        </div>
-                    ))}
+            {/* TABS HEADER */}
+            {step !== 4 && step !== 5 && (
+                <div className="flex border-b border-zinc-200 mb-8 w-full max-w-3xl mx-auto">
+                    <button
+                        onClick={() => setActiveTab('quick')}
+                        className={`flex-1 py-4 text-sm font-medium text-center border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === 'quick'
+                            ? 'border-zinc-900 text-zinc-900'
+                            : 'border-transparent text-zinc-500 hover:text-zinc-700'
+                            }`}
+                    >
+                        <PenTool size={16} /> Quick Add
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('csv')}
+                        className={`flex-1 py-4 text-sm font-medium text-center border-b-2 transition-colors flex items-center justify-center gap-2 ${activeTab === 'csv'
+                            ? 'border-zinc-900 text-zinc-900'
+                            : 'border-transparent text-zinc-500 hover:text-zinc-700'
+                            }`}
+                    >
+                        <FileText size={16} /> CSV Upload
+                    </button>
                 </div>
-            </div>
+            )}
 
-            {/* Step Content */}
-            <div className="max-w-3xl mx-auto bg-white border border-zinc-200/60 rounded-xl shadow-card overflow-hidden min-h-[400px]">
+            {/* CSV WIZARD PROGRESS (Only visible in CSV mode) */}
+            {activeTab === 'csv' && (
+                <div className="mb-8">
+                    <div className="flex items-center justify-between relative max-w-3xl mx-auto">
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-zinc-200 -z-10 rounded-full"></div>
+                        <div
+                            className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-zinc-900 -z-10 transition-all duration-500 rounded-full"
+                            style={{ width: `${((step - 1) / (steps.length - 1)) * 100}%` }}
+                        ></div>
+
+                        {steps.map((s) => (
+                            <div key={s.num} className="flex flex-col items-center gap-2 bg-zinc-50 px-2">
+                                <div className={`
+                                    w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all
+                                    ${step >= s.num ? 'bg-zinc-900 border-zinc-900 text-white' : 'bg-white border-zinc-300 text-zinc-400'}
+                                `}>
+                                    {step > s.num ? <CheckCircle size={16} /> : s.num}
+                                </div>
+                                <span className={`text-xs font-semibold ${step >= s.num ? 'text-zinc-900' : 'text-zinc-400'}`}>
+                                    {s.label}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* MAIN CONTENT AREA */}
+            <div className="max-w-4xl mx-auto bg-white border border-zinc-200/60 rounded-xl shadow-card overflow-hidden min-h-[400px]">
+
+                {/* ---------------- QUICK ADD TAB CONTENT ---------------- */}
+                {activeTab === 'quick' && step !== 4 && step !== 5 && (
+                    <div className="p-6">
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h2 className="text-lg font-bold text-zinc-900">Manually Add Students</h2>
+                                    <p className="text-sm text-zinc-500">Add up to 5 students at once. Credentials will be auto-generated.</p>
+                                </div>
+                                <span className="text-xs font-mono bg-zinc-100 px-2 py-1 rounded text-zinc-600">
+                                    {quickStudents.length}/5 Entries
+                                </span>
+                            </div>
+
+                            <div className="space-y-4">
+                                {quickStudents.map((student, index) => (
+                                    <div key={student.id} className="p-5 bg-zinc-50/50 border border-zinc-200 rounded-xl relative group transition-colors hover:bg-zinc-50 hover:border-zinc-300">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Student #{index + 1}</span>
+                                            {quickStudents.length > 1 && (
+                                                <button
+                                                    onClick={() => removeQuickRow(student.id)}
+                                                    className="text-zinc-400 hover:text-red-600 transition-colors p-1"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            <div>
+                                                <label className="text-xs font-semibold text-zinc-500 mb-1 block">Enrollment No <span className="text-red-500">*</span></label>
+                                                <input
+                                                    type="text"
+                                                    className={`w-full px-3 py-2 bg-white border rounded-lg text-sm focus:ring-2 focus:ring-zinc-900/10 outline-none uppercase placeholder:normal-case font-mono ${quickErrors[student.id]?.enrollment_no ? 'border-red-500' : 'border-zinc-200'}`}
+                                                    placeholder="ADT23SOC0001"
+                                                    value={student.enrollment_no}
+                                                    onChange={e => handleQuickChange(student.id, 'enrollment_no', e.target.value)}
+                                                />
+                                                {quickErrors[student.id]?.enrollment_no && <p className="text-[10px] text-red-500 mt-1 font-medium">{quickErrors[student.id].enrollment_no}</p>}
+                                            </div>
+
+                                            <div>
+                                                <label className="text-xs font-semibold text-zinc-500 mb-1 block">Full Name <span className="text-red-500">*</span></label>
+                                                <input
+                                                    type="text"
+                                                    className={`w-full px-3 py-2 bg-white border rounded-lg text-sm focus:ring-2 focus:ring-zinc-900/10 outline-none ${quickErrors[student.id]?.name ? 'border-red-500' : 'border-zinc-200'}`}
+                                                    placeholder=""
+                                                    value={student.name}
+                                                    onChange={e => handleQuickChange(student.id, 'name', e.target.value)}
+                                                />
+                                                {quickErrors[student.id]?.name && <p className="text-[10px] text-red-500 mt-1 font-medium">{quickErrors[student.id].name}</p>}
+                                            </div>
+
+                                            <div>
+                                                <label className="text-xs font-semibold text-zinc-500 mb-1 block">Email Address <span className="text-red-500">*</span></label>
+                                                <input
+                                                    type="email"
+                                                    className={`w-full px-3 py-2 bg-white border rounded-lg text-sm focus:ring-2 focus:ring-zinc-900/10 outline-none ${quickErrors[student.id]?.email ? 'border-red-500' : 'border-zinc-200'}`}
+                                                    placeholder="Enter your email ID"
+                                                    value={student.email}
+                                                    onChange={e => handleQuickChange(student.id, 'email', e.target.value)}
+                                                />
+                                                {quickErrors[student.id]?.email && <p className="text-[10px] text-red-500 mt-1 font-medium">{quickErrors[student.id].email}</p>}
+                                            </div>
+
+                                            <div>
+                                                <label className="text-xs font-semibold text-zinc-500 mb-1 block">Mobile (10 Digits) <span className="text-red-500">*</span></label>
+                                                <input
+                                                    type="text"
+                                                    maxLength="10"
+                                                    className={`w-full px-3 py-2 bg-white border rounded-lg text-sm focus:ring-2 focus:ring-zinc-900/10 outline-none font-mono ${quickErrors[student.id]?.mobile ? 'border-red-500' : 'border-zinc-200'}`}
+                                                    placeholder="9876543210"
+                                                    value={student.mobile}
+                                                    onChange={e => handleQuickChange(student.id, 'mobile', e.target.value.replace(/\D/g, ''))}
+                                                />
+                                                {quickErrors[student.id]?.mobile && <p className="text-[10px] text-red-500 mt-1 font-medium">{quickErrors[student.id].mobile}</p>}
+                                            </div>
+
+                                            <div>
+                                                <label className="text-xs font-semibold text-zinc-500 mb-1 block">Department</label>
+                                                <select
+                                                    className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-sm focus:ring-2 focus:ring-zinc-900/10 outline-none appearance-none"
+                                                    value={student.department}
+                                                    onChange={e => handleQuickChange(student.id, 'department', e.target.value)}
+                                                >
+                                                    {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                                                </select>
+                                            </div>
+
+                                            <div>
+                                                <label className="text-xs font-semibold text-zinc-500 mb-1 block">Year</label>
+                                                <select
+                                                    className="w-full px-3 py-2 bg-white border border-zinc-200 rounded-lg text-sm focus:ring-2 focus:ring-zinc-900/10 outline-none appearance-none"
+                                                    value={student.year}
+                                                    onChange={e => handleQuickChange(student.id, 'year', e.target.value)}
+                                                >
+                                                    {YEARS.map(y => <option key={y} value={y}>Year {y}</option>)}
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        {/* Password Preview */}
+                                        <div className="mt-3 pt-3 border-t border-zinc-200/50 flex items-center justify-between text-xs">
+                                            <span className="text-zinc-400">Autogenerated Password:</span>
+                                            <div className="flex items-center gap-1 font-mono text-zinc-600 bg-zinc-200/50 px-2 py-0.5 rounded">
+                                                <Key size={10} />
+                                                {student.passwordPreview || 'Enter details to preview'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="flex items-center justify-between pt-4 border-t border-zinc-100">
+                                <button
+                                    onClick={addQuickRow}
+                                    disabled={quickStudents.length >= 5}
+                                    className="flex items-center gap-2 px-4 py-2 bg-white border border-zinc-200 text-zinc-700 rounded-lg text-sm font-medium hover:bg-zinc-50 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <UserPlus size={16} /> Add Another Student
+                                </button>
+
+                                <button
+                                    onClick={handleQuickSubmit}
+                                    className="flex items-center gap-2 px-6 py-2.5 bg-zinc-900 text-white rounded-lg text-sm font-medium hover:bg-zinc-800 transition-colors shadow-lg shadow-zinc-900/10"
+                                >
+                                    <Key size={16} /> Create {quickStudents.length} Account{quickStudents.length > 1 ? 's' : ''}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+
+                {/* ---------------- CSV TAB CONTENT (WIZARD) ---------------- */}
 
                 {/* Step 1: Template */}
-                {step === 1 && (
+                {activeTab === 'csv' && step === 1 && (
                     <div className="p-8 text-center flex flex-col items-center justify-center h-full min-h-[400px]">
                         <div className="w-16 h-16 bg-zinc-100 rounded-2xl flex items-center justify-center mb-6 text-zinc-900">
                             <FileText size={32} strokeWidth={1.5} />
@@ -257,7 +500,7 @@ Training & Placement Cell`;
                 )}
 
                 {/* Step 2: Upload */}
-                {step === 2 && (
+                {activeTab === 'csv' && step === 2 && (
                     <div className="p-8 text-center flex flex-col items-center justify-center h-full min-h-[400px]">
                         <h2 className="text-xl font-bold text-zinc-900 mb-2">Upload Filled CSV</h2>
                         <p className="text-zinc-500 max-w-md mb-8">
@@ -287,7 +530,7 @@ Training & Placement Cell`;
                 )}
 
                 {/* Step 3: Validate */}
-                {step === 3 && (
+                {activeTab === 'csv' && step === 3 && (
                     <div className="flex flex-col h-[600px]">
                         <div className="p-6 border-b border-zinc-100 flex items-center justify-between">
                             <div>
@@ -376,7 +619,7 @@ Training & Placement Cell`;
                         <div className="p-6 border-t border-zinc-200 bg-white flex justify-between items-center">
                             <button onClick={() => setStep(2)} className="text-zinc-500 hover:text-zinc-900 font-medium text-xs">Cancel</button>
                             <button
-                                onClick={handleGenerateAndUpload}
+                                onClick={() => handleGenerateAndUpload(null)}
                                 disabled={validationResults.valid.length === 0}
                                 className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-lg text-xs font-medium hover:bg-zinc-800 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                             >
@@ -385,6 +628,8 @@ Training & Placement Cell`;
                         </div>
                     </div>
                 )}
+
+                {/* ---------------- SHARED STEPS (4 & 5) ---------------- */}
 
                 {/* Step 4: Loading/Processing */}
                 {step === 4 && (
@@ -406,7 +651,7 @@ Training & Placement Cell`;
                         </div>
                         <h2 className="text-xl font-bold text-zinc-900 mb-2">Upload Complete!</h2>
                         <p className="text-zinc-500 max-w-md mb-8">
-                            Successfully processed the uploaded file. You can now download the credentials list.
+                            Successfully processed the records. You can now download the credentials list.
                         </p>
 
                         <div className="grid grid-cols-2 gap-4 w-full max-w-lg mb-8">
@@ -446,9 +691,12 @@ Training & Placement Cell`;
                                 Copy Email Template
                             </button>
 
-                            <Link to="/admin/users" className="text-sm text-zinc-500 hover:text-zinc-900 mt-4">
-                                Return to Student List
-                            </Link>
+                            <button
+                                onClick={() => { setStep(1); setQuickStudents([{ id: 1, enrollment_no: '', name: '', email: '', mobile: '', department: 'Computer Science', year: '3', passwordPreview: '' }]); }}
+                                className="text-sm text-zinc-500 hover:text-zinc-900 mt-4"
+                            >
+                                Add More Students
+                            </button>
                         </div>
                     </div>
                 )}

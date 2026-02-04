@@ -198,32 +198,65 @@ export default function EventDetails() {
                 </div>
             </button>
 
+            {/* Premium Control Dock - Bottom Left */}
+            <div className="fixed bottom-8 left-8 z-50 flex items-center gap-3">
+                {/* Help Toggle */}
+                <button
+                    onClick={() => setShowHelp(!showHelp)}
+                    className={`h-12 w-12 rounded-full flex items-center justify-center transition-all duration-300 shadow-xl border backdrop-blur-md ${showHelp
+                        ? 'bg-zinc-900 border-zinc-800 text-white shadow-zinc-900/40 ring-4 ring-zinc-900/10 scale-110'
+                        : 'bg-white/80 border-white/60 text-zinc-500 hover:text-zinc-900 hover:bg-white hover:border-white hover:scale-105 shadow-lg shadow-zinc-200/50'
+                        }`}
+                >
+                    <span className="font-black text-xl leading-none font-serif italic">i</span>
+                </button>
+            </div>
+
             {/* HELP OVERLAY - REFACTORED: NO BACKGROUND, SIDE PANELS ONLY */}
             {showHelp && (
                 <div className="absolute inset-0 z-40 pointer-events-none overflow-hidden">
-                    {/* Left: How to Mark (Premium Glass Card) */}
-                    <div className="absolute top-1/2 left-12 -translate-y-1/2 w-80 animate-in slide-in-from-left-10 duration-700 ease-out pointer-events-auto">
-                        <div className="bg-white/90 backdrop-blur-xl border border-white/50 p-6 rounded-[2rem] shadow-[0_20px_40px_-10px_rgba(0,0,0,0.1)]">
-                            <h2 className="text-2xl font-black text-zinc-900 mb-6 leading-tight tracking-tight">
-                                Attendance<br />Guide
+                    {/* Left Center: How to Mark (Premium Glass Card) */}
+                    <div className="absolute top-1/2 left-8 -translate-y-1/2 w-80 animate-in slide-in-from-left-10 duration-700 ease-out pointer-events-auto">
+                        <div className="bg-white/80 backdrop-blur-2xl border border-white/50 p-8 rounded-[2rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.1)] ring-1 ring-white/60 relative overflow-hidden group">
+
+                            {/* Subtle Gradient Glow */}
+                            <div className="absolute -top-10 -right-10 w-32 h-32 bg-indigo-50/50 rounded-full blur-3xl pointer-events-none group-hover:bg-indigo-100/50 transition-colors duration-1000"></div>
+
+                            <h2 className="text-3xl font-black text-zinc-900 mb-8 leading-none tracking-tighter relative z-10">
+                                Attendance<br />
+                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-zinc-400 to-zinc-200">Guide</span>
                             </h2>
-                            <div className="space-y-6">
-                                <div className="flex gap-4 group">
-                                    <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-black border border-indigo-100 group-hover:scale-110 transition-transform shadow-sm">1</div>
+
+                            <div className="space-y-8 relative z-10">
+                                {/* Step 1 */}
+                                <div className="flex gap-5 group/item">
+                                    <div className="shrink-0 w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center font-bold shadow-lg shadow-zinc-900/20 group-hover/item:scale-110 group-hover/item:rotate-[-5deg] transition-all duration-300">
+                                        1
+                                    </div>
                                     <div>
-                                        <h3 className="font-bold text-zinc-900 text-sm uppercase tracking-wide">Scan QR</h3>
-                                        <p className="text-xs text-zinc-500 mt-1 leading-relaxed font-medium">Use the student app to scan. Code refreshes every 10s.</p>
+                                        <h3 className="font-bold text-zinc-900 text-sm uppercase tracking-widest mb-1.5">Scan QR</h3>
+                                        <p className="text-[11px] text-zinc-500 font-medium leading-relaxed">
+                                            Use the student app to scan. Code refreshes every 10s.
+                                        </p>
                                     </div>
                                 </div>
-                                <div className="relative flex items-center justify-center">
-                                    <span className="bg-white px-3 text-[10px] font-black uppercase text-zinc-300 tracking-widest relative z-10">OR</span>
-                                    <div className="absolute w-full h-px bg-zinc-100 top-1/2"></div>
+
+                                {/* Divider */}
+                                <div className="relative flex items-center justify-center py-1 opacity-60">
+                                    <div className="absolute w-full h-px bg-gradient-to-r from-transparent via-zinc-200 to-transparent"></div>
+                                    <span className="bg-white/50 backdrop-blur-md px-3 text-[10px] font-black uppercase text-zinc-400 tracking-[0.3em] relative z-10 rounded-full border border-white/50">OR</span>
                                 </div>
-                                <div className="flex gap-4 group">
-                                    <div className="w-12 h-12 rounded-2xl bg-pink-50 flex items-center justify-center text-pink-600 font-black border border-pink-100 group-hover:scale-110 transition-transform shadow-sm">2</div>
+
+                                {/* Step 2 */}
+                                <div className="flex gap-5 group/item">
+                                    <div className="shrink-0 w-10 h-10 rounded-xl bg-white border border-zinc-200 text-zinc-900 flex items-center justify-center font-bold shadow-sm group-hover/item:scale-110 group-hover/item:rotate-[5deg] transition-all duration-300">
+                                        2
+                                    </div>
                                     <div>
-                                        <h3 className="font-bold text-zinc-900 text-sm uppercase tracking-wide">Enter Code</h3>
-                                        <p className="text-xs text-zinc-500 mt-1 leading-relaxed font-medium">Type the 6-digit rolling manual code below.</p>
+                                        <h3 className="font-bold text-zinc-900 text-sm uppercase tracking-widest mb-1.5">Enter Code</h3>
+                                        <p className="text-[11px] text-zinc-500 font-medium leading-relaxed">
+                                            Type the 6-digit rolling manual code below.
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -255,21 +288,14 @@ export default function EventDetails() {
                 </div>
             )}
 
-            {/* Minimal Header (Info Only) */}
+            {/* Minimal Header (Time Only) */}
             {!isFullscreen && (
-                <header className="h-16 border-b border-zinc-100 flex items-center justify-between px-8 bg-white/90 backdrop-blur-md sticky top-0 z-40">
-                    <div className="flex items-center gap-6">
-                        <div className="flex items-center gap-3">
-                            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]"></span>
-                            <h1 className="text-sm font-bold tracking-tight text-zinc-900 uppercase">
-                                {event.name}
-                            </h1>
-                        </div>
-                        <div className="h-4 w-px bg-zinc-200"></div>
-                        <div className="flex items-center gap-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
-                            <span className="flex items-center gap-1.5"><MapPin size={10} className="text-zinc-400" /> {event.venue}</span>
-                            <span className="flex items-center gap-1.5"><Clock size={10} className="text-zinc-400" /> {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
+                <header className="h-16 border-b border-zinc-100 flex items-center justify-end px-8 bg-white/90 backdrop-blur-md sticky top-0 z-40">
+                    <div className="flex items-center gap-3 text-sm font-bold text-zinc-400 uppercase tracking-widest bg-zinc-50 px-4 py-2 rounded-lg border border-zinc-100">
+                        <Clock size={16} className="text-zinc-900" />
+                        <span className="text-zinc-900 tabular-nums">
+                            {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
                     </div>
                 </header>
             )}
@@ -282,6 +308,24 @@ export default function EventDetails() {
 
                 {/* MAIN CONTENT - CENTERED & REDUCED SIZE */}
                 <main className={`flex-1 flex flex-col items-center justify-center p-8 relative z-10 transition-all duration-500 ease-in-out ${showSidebar ? 'w-[70%]' : 'w-full'}`}>
+
+                    {/* NEW: Top-Left Branding & Info Section */}
+                    <div className="absolute top-10 left-12 z-30 flex flex-col gap-3 animate-in fade-in slide-in-from-left-4 duration-700">
+                        {/* Logo | Event Name */}
+                        <div className="flex items-center gap-6">
+                            <img src="/mitadtlogo.png" alt="MIT Logo" className="h-14 w-auto object-contain drop-shadow-sm" />
+                            <div className="h-10 w-px bg-zinc-200"></div>
+                            <div>
+                                <h1 className="text-2xl font-black text-zinc-900 uppercase tracking-tight leading-none">
+                                    {event.name}
+                                </h1>
+                                <div className="flex items-center gap-2 mt-1.5">
+                                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                                    <span className="text-[10px] font-bold text-green-600 uppercase tracking-widest">Live Session</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     {/* TOP CENTER: EVENT DISPLAY ID (Little Bigger) */}
                     <div className="relative flex flex-col items-center mb-8 animate-in slide-in-from-top-4 duration-700 fade-in">
@@ -332,10 +376,7 @@ export default function EventDetails() {
                                         includeMargin={false}
                                         marginSize={2}
                                     />
-                                    {/* Custom Logo Overlay - INTEGRATED LOOK (No shadow/border) */}
-                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-full p-1 flex items-center justify-center" style={{ width: isFullscreen ? 110 : 90, height: isFullscreen ? 110 : 90 }}>
-                                        <img src="/mitadtlogo.png" alt="MIT Logo" className="w-full h-full object-contain" />
-                                    </div>
+                                    {/* Logo Removed from here */}
                                 </div>
                             ) : (
                                 <div className="flex flex-col items-center justify-center bg-zinc-50 rounded-[2rem]" style={{ width: isFullscreen ? 480 : 380, height: isFullscreen ? 480 : 380 }}>
@@ -399,26 +440,19 @@ export default function EventDetails() {
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={handleToggleFullscreen}
-                                className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-50 hover:bg-zinc-100 text-zinc-400 hover:text-zinc-900 transition-all border border-zinc-100 hover:border-zinc-200"
+                                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-zinc-200 text-zinc-400 hover:text-zinc-900 hover:border-zinc-900 hover:shadow-lg transition-all shadow-sm group"
                                 title="Fullscreen"
                             >
-                                <Maximize size={18} />
-                            </button>
-                            <button
-                                onClick={() => setShowHelp(!showHelp)}
-                                className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all border ${showHelp ? 'bg-indigo-600 text-white border-indigo-500 shadow-lg shadow-indigo-200' : 'bg-zinc-50 hover:bg-zinc-100 text-zinc-400 hover:text-indigo-600 border-zinc-100 hover:border-zinc-200'}`}
-                                title="Show Guide"
-                            >
-                                <span className="font-bold text-lg leading-none">?</span>
+                                <Maximize size={18} className="group-hover:scale-110 transition-transform" />
                             </button>
                         </div>
 
                         <button
                             onClick={() => setShowSidebar(false)}
-                            className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-red-50 text-zinc-400 hover:text-red-500 transition-colors"
+                            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-zinc-100 text-zinc-400 hover:text-zinc-900 transition-colors"
                             title="Close Sidebar"
                         >
-                            <PanelRightClose size={20} />
+                            <PanelRightClose size={18} />
                         </button>
                     </div>
 
