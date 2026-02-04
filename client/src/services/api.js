@@ -17,15 +17,26 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-            // Token expired or invalid - thorough cleanup
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            localStorage.removeItem('session');
-            localStorage.removeItem('role');
+        // Only logout on actual authentication failures (401 with specific messages)
+        // Don't logout on permission errors (403) or other API failures
+        if (error.response && error.response.status === 401) {
+            const errorMessage = error.response.data?.error || '';
 
-            if (!window.location.pathname.includes('/login')) {
-                window.location.href = '/login';
+            // Only logout if it's a token-related error
+            if (errorMessage.includes('token') ||
+                errorMessage.includes('expired') ||
+                errorMessage.includes('invalid') ||
+                errorMessage.includes('unauthorized')) {
+
+                // Token expired or invalid - thorough cleanup
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                localStorage.removeItem('session');
+                localStorage.removeItem('role');
+
+                if (!window.location.pathname.includes('/login')) {
+                    window.location.href = '/login';
+                }
             }
         }
         return Promise.reject(error);

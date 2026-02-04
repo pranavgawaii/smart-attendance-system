@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import api from '../services/api';
@@ -85,36 +85,47 @@ export default function EventDetails() {
         return () => { isMounted = false; };
     }, [fetchEvent, fetchQrData, fetchLiveStats]);
 
-    // Unified Timer Logic to prevent drift
+    // Timer Logic
     useEffect(() => {
         if (!event || (event.session_state !== 'ACTIVE' && event.session_state !== 'LIVE')) return;
 
-        // Ensure we have data immediately if properly mounted
-        if (!qrData.token) {
-            fetchQrData();
-        }
-
-        // Set initial time for countdown
-        setTimeLeft(10); // Assuming 10 seconds refresh interval
-
+        // Decrease timer every second
         const timer = setInterval(() => {
-            setTimeLeft((prev) => {
-                if (prev <= 1) {
-                    fetchQrData(); // Fetch when hitting 0 (actually 1->0 transition)
-                    return 10; // Reset immediately
-                }
-                return prev - 1;
-            });
+            setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
         }, 1000);
 
-        // Also set up an interval for live stats, independent of QR refresh
-        const statsInterval = setInterval(fetchLiveStats, 5000);
+        return () => clearInterval(timer);
+    }, [event]);
 
-        return () => {
-            clearInterval(timer);
-            clearInterval(statsInterval);
-        };
-    }, [event, fetchQrData, fetchLiveStats]);
+    // Fetch QR when timer hits 0
+    useEffect(() => {
+        if (!event || (event.session_state !== 'ACTIVE' && event.session_state !== 'LIVE')) return;
+
+        if (timeLeft === 0) {
+            fetchQrData().then(() => {
+                // Reset timer matching server interval or fallback to 10s
+                setTimeLeft(event.qr_refresh_interval || 10);
+            });
+        }
+    }, [timeLeft, event, fetchQrData]);
+
+    // Initial Fetch
+    useEffect(() => {
+        if (event && (event.session_state === 'ACTIVE' || event.session_state === 'LIVE')) {
+            if (!qrData.token) {
+                fetchQrData();
+                setTimeLeft(event.qr_refresh_interval || 10);
+            }
+        }
+    }, [event, fetchQrData]); // Removed qrData.token from dep array to avoid loops
+
+    // Live Stats Poller
+    useEffect(() => {
+        if (!event || (event.session_state !== 'ACTIVE' && event.session_state !== 'LIVE')) return;
+
+        const statsInterval = setInterval(fetchLiveStats, 5000);
+        return () => clearInterval(statsInterval);
+    }, [event, fetchLiveStats]);
 
     const handleToggleFullscreen = () => {
         if (!document.fullscreenElement) {
@@ -127,6 +138,19 @@ export default function EventDetails() {
             }
         }
     };
+
+    // Memoize QR Data to prevent flickering every second (due to timer re-renders)
+    const qrPayload = useMemo(() => {
+        if (!qrData.token) return '';
+        return JSON.stringify({
+            session_id: event?.id,
+            event_id: event.name || event.event_display_id || 'UNKNOWN',
+            token: qrData.token,
+            code: qrData.code,
+            timestamp: new Date().toISOString(), // Fixed at generation time
+            expires_at: new Date(Date.now() + 15000).toISOString() // Fixed 15s validity window
+        });
+    }, [qrData.token, qrData.code, event?.id, event?.name, event?.event_display_id]);
 
     if (loading) return (
         <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-6">
@@ -369,8 +393,9 @@ export default function EventDetails() {
                         <div className="relative bg-white p-3 rounded-[2.5rem] shadow-[0_20px_50px_-20px_rgba(0,0,0,0.1)] transition-all duration-700 hover:scale-[1.02] hover:shadow-[0_30px_60px_-20px_rgba(0,0,0,0.15)] border-4 border-zinc-900 flex items-center justify-center">
                             {qrData.token ? (
                                 <div className="animate-in fade-in zoom-in-95 duration-500 bg-white rounded-[2rem] overflow-hidden relative">
+
                                     <QRCodeSVG
-                                        value={qrData.token}
+                                        value={qrPayload}
                                         size={isFullscreen ? 480 : 380}
                                         level="H"
                                         includeMargin={false}

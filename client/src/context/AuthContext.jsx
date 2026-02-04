@@ -36,16 +36,17 @@ export const AuthProvider = ({ children }) => {
                         }
                     }
 
-                    // Optional: Check expiration if jwtDecode is available and token is JWT
-                    try {
-                        const decoded = jwtDecode(storedToken);
-                        if (decoded && decoded.exp && decoded.exp * 1000 < Date.now()) {
-                            console.warn("Token expired, logging out");
-                            logout();
-                        }
-                    } catch (e) {
-                        // Not a JWT or decode failed, ignore
-                    }
+                    // Token expiration check disabled - let API handle expired tokens gracefully
+                    // This prevents premature logout on page refresh
+                    // try {
+                    //     const decoded = jwtDecode(storedToken);
+                    //     if (decoded && decoded.exp && decoded.exp * 1000 < Date.now()) {
+                    //         console.warn("Token expired, logging out");
+                    //         logout();
+                    //     }
+                    // } catch (e) {
+                    //     // Not a JWT or decode failed, ignore
+                    // }
                 }
             } catch (error) {
                 console.error("Auth initialization error:", error);

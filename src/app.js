@@ -26,8 +26,18 @@ app.use((req, res, next) => {
 });
 
 // Middleware
-app.use(cors());
+// Middleware
+app.use(cors({
+    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:3000'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+}));
 app.use(express.json());
+
+// Public Test Route (No Auth)
+app.get('/api/test', (req, res) => {
+    res.json({ status: 'ok', message: 'Backend is accessible', timestamp: new Date() });
+});
 
 // Debug & Health Check - Absolute Last Resort Diagnostic
 app.get('/api/test', async (req, res) => {

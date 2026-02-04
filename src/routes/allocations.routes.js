@@ -122,6 +122,7 @@ router.get('/student/:studentId', authenticateToken, async (req, res) => {
                 *,
                 lab:labs(lab_name, capacity),
                 placement_assessment:placement_assessments(
+                    id,
                     company_name,
                     position,
                     assessment_date,
@@ -131,12 +132,21 @@ router.get('/student/:studentId', authenticateToken, async (req, res) => {
                 )
             `)
             .eq('student_id', req.params.studentId)
-            .gte('placement_assessment.assessment_date', new Date().toISOString().split('T')[0])
-            .order('placement_assessment.assessment_date', { ascending: true });
+            .order('created_at', { ascending: false });
 
         if (error) throw error;
 
-        res.json(data || []);
+        // Client-side filter for future/today assessments and sort by date
+        const today = new Date().toISOString().split('T')[0];
+        const filtered = (data || [])
+            .filter(a => a.placement_assessment?.assessment_date >= today)
+            .sort((a, b) => {
+                const dateA = a.placement_assessment?.assessment_date || '';
+                const dateB = b.placement_assessment?.assessment_date || '';
+                return dateA.localeCompare(dateB);
+            });
+
+        res.json(filtered);
     } catch (error) {
         console.error('Error fetching student allocation:', error);
         res.status(500).json({ error: 'Failed to fetch student allocation' });

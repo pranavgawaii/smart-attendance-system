@@ -8,6 +8,8 @@ import StudentPlacements from './pages/student/StudentPlacements';
 
 import StudentJobDetails from './pages/student/StudentJobDetails';
 import StudentAttendance from './pages/student/StudentAttendance';
+import StudentScan from './pages/student/StudentScan';
+import ManualEntry from './pages/student/ManualEntry';
 // import AdminDashboard from './pages/AdminDashboard'; // Deprecated
 import EventDetails from './pages/EventDetails';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -83,6 +85,18 @@ function App() {
             <Route path="/student/attendance" element={
               <ProtectedRoute role="student">
                 <StudentAttendance />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/student/scan" element={
+              <ProtectedRoute role="student">
+                <StudentScan />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/student/manual-entry" element={
+              <ProtectedRoute role="student">
+                <ManualEntry />
               </ProtectedRoute>
             } />
 

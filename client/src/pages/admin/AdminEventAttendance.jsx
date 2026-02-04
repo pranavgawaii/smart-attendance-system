@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../../services/api';
 import AdminLayout from '../../components/admin/AdminLayout';
+import PageHeader from '../../components/PageHeader';
 import { Download, RefreshCw, Search, ArrowLeft } from 'lucide-react';
 
 export default function AdminEventAttendance() {
@@ -95,8 +96,8 @@ export default function AdminEventAttendance() {
     };
 
     const filteredData = attendance.filter(record => {
-        const matchesSearch = record.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            record.enrollment_no?.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = (record.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+            (record.enrollment_no?.toLowerCase() || '').includes(searchTerm.toLowerCase());
         const matchesFilter = filter === 'ALL' || record.status === filter;
         return matchesSearch && matchesFilter;
     });

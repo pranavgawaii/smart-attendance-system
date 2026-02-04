@@ -146,14 +146,29 @@ export default function StudentAttendance() {
 
             const fingerprint = await getFingerprint();
 
-            await api.post('/attendance', {
+            const response = await api.post('/attendance', {
                 event_id: eventId,
                 token: token,
                 fingerprint: fingerprint,
                 device_info: navigator.userAgent
             });
 
-            setScanResult({ status: 'success', title: 'Marked Present', message: 'Attendance recorded successfully.' });
+            const data = response.data;
+
+            // Check if already marked (has marked_at but no success: true)
+            if (data.marked_at && !data.success) {
+                setScanResult({
+                    status: 'info',
+                    title: 'Already Marked',
+                    message: 'Your attendance was already recorded for this session.'
+                });
+            } else {
+                setScanResult({
+                    status: 'success',
+                    title: 'Marked Present',
+                    message: 'Attendance recorded successfully.'
+                });
+            }
 
         } catch (error) {
             console.error(error);
@@ -216,7 +231,12 @@ export default function StudentAttendance() {
             <div className="max-w-md mx-auto p-6">
 
                 {scanResult && (
-                    <div className={`mb-6 p-4 rounded-xl border ${scanResult.status === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'}`}>
+                    <div className={`mb-6 p-4 rounded-xl border ${scanResult.status === 'success'
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                            : scanResult.status === 'info'
+                                ? 'bg-blue-50 border-blue-200 text-blue-800'
+                                : 'bg-red-50 border-red-200 text-red-800'
+                        }`}>
                         <h3 className="font-bold text-lg">{scanResult.title}</h3>
                         <p className="text-sm mt-1">{scanResult.message}</p>
                         <button onClick={() => setScanResult(null)} className="mt-2 text-sm underline opacity-80">Dismiss</button>
