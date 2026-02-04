@@ -65,14 +65,17 @@ app.use('/api', (req, res) => {
 });
 
 // Serve Frontend in Production
-// On Vercel, we use vercel.json rewrites for faster native serving
-if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
+if (process.env.NODE_ENV === 'production') {
     const path = require('path');
     const fs = require('fs');
 
-    const distPath = path.resolve(__dirname, '../client/dist');
+    // In Vercel, __dirname is the function directory. client/dist is one level up.
+    const distPath = path.join(__dirname, '../client/dist');
+
+    console.log(`[Static] Production mode detected. Using dist path: ${distPath}`);
 
     if (fs.existsSync(distPath)) {
+        console.log('✅ Found client/dist, enabling static serving');
         app.use(express.static(distPath));
 
         app.get('*', (req, res) => {
@@ -81,12 +84,15 @@ if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
                 if (fs.existsSync(indexPath)) {
                     res.sendFile(indexPath);
                 } else {
-                    res.status(404).send('Frontend index.html not found');
+                    console.error('❌ index.html not found even though dist exists');
+                    res.status(404).send('Frontend index.html missing');
                 }
             } else {
                 res.status(404).json({ error: 'API Endpoint Not Found' });
             }
         });
+    } else {
+        console.warn(`⚠️ Warning: client/dist not found at ${distPath}. Build might have failed or path is wrong.`);
     }
 }
 
