@@ -26,7 +26,7 @@ const login = async (req, res) => {
 
         // Get user profile with role
         const { data: profile, error: profileError } = await supabase
-            .from('user_profiles')
+            .from('users')
             .select('*')
             .eq('email', email)
             .single();
@@ -83,7 +83,7 @@ const getCurrentUser = async (req, res) => {
 
         // Get profile
         const { data: profile } = await supabase
-            .from('user_profiles')
+            .from('users')
             .select('*')
             .eq('email', user.email)
             .single();
