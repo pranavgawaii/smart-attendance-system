@@ -2,30 +2,26 @@
     "version": 2,
     "builds": [
         {
-            "src": "src/app.js",
-            "use": "@vercel/node"
+            "src": "src/server.js",
+            "use": "@vercel/node",
+            "config": {
+                "includeFiles": [
+                    "client/dist/**"
+                ]
+            }
         }
     ],
     "routes": [
         {
-            "src": "/api/(.*)",
-            "dest": "src/app.js"
-        },
-        {
             "handle": "filesystem"
         },
         {
-            "src": "/assets/(.*)",
-            "dest": "/client/dist/assets/$1"
+            "src": "/api/(.*)",
+            "dest": "/src/server.js"
         },
         {
             "src": "/(.*)",
-            "dest": "/client/dist/$1",
-            "check": true
-        },
-        {
-            "src": "/(.*)",
-            "dest": "/client/dist/index.html"
+            "dest": "/src/server.js"
         }
     ]
 }

@@ -1,7 +1,7 @@
 {
   "name": "smart-attendance-system",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "build": "cd client && npm install && npm run build",
