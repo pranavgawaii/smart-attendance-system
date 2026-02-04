@@ -34,10 +34,12 @@ app.get('/api/test', async (req, res) => {
     const { supabase } = require('./config/db');
     let dbStatus = 'Unknown';
     let dbError = null;
+    let profileExists = 'Checking...';
+    let userCount = 0;
 
     if (supabase) {
         try {
-            // Test actual connectivity by counting rows in a public-ish table
+            // 1. Check if ANY users exist
             const { count, error } = await supabase
                 .from('user_profiles')
                 .select('*', { count: 'exact', head: true });
@@ -47,7 +49,17 @@ app.get('/api/test', async (req, res) => {
                 dbError = error.message;
             } else {
                 dbStatus = 'Connected and Healthy';
+                userCount = count || 0;
             }
+
+            // 2. specifically check if admin@test.com is there
+            const { data: adminUser } = await supabase
+                .from('user_profiles')
+                .select('email, role')
+                .ilike('email', 'admin@test.com')
+                .maybeSingle();
+
+            profileExists = adminUser ? `YES (${adminUser.role})` : 'NO - Profile missing from database';
         } catch (e) {
             dbStatus = 'Failed to Connect';
             dbError = e.message;
@@ -57,17 +69,18 @@ app.get('/api/test', async (req, res) => {
     res.json({
         status: 'ok',
         message: 'Backend Service Alive',
-        diagnostics: {
+        forensics: {
+            nodeVersion: process.version,
             environment: process.env.NODE_ENV,
             isVercel: !!process.env.VERCEL,
-            supabaseInitialized: !!supabase,
-            databaseConnectivity: dbStatus,
-            databaseDetail: dbError,
-            // Only show first/last characters for security
-            keysLoaded: {
-                url: process.env.SUPABASE_URL ? `${process.env.SUPABASE_URL.substring(0, 12)}...` : 'MISSING',
-                key: process.env.SUPABASE_SERVICE_ROLE_KEY ? `...${process.env.SUPABASE_SERVICE_ROLE_KEY.substring(process.env.SUPABASE_SERVICE_ROLE_KEY.length - 4)}` : 'MISSING',
-            }
+            databaseHealthy: dbStatus === 'Connected and Healthy',
+            totalRegisteredUsers: userCount,
+            adminProfileStatus: profileExists,
+            supabaseError: dbError
+        },
+        keysMasked: {
+            url: process.env.SUPABASE_URL ? `${process.env.SUPABASE_URL.substring(0, 15)}...` : 'MISSING',
+            key: process.env.SUPABASE_SERVICE_ROLE_KEY ? `...${process.env.SUPABASE_SERVICE_ROLE_KEY.substring(process.env.SUPABASE_SERVICE_ROLE_KEY.length - 4)}` : 'MISSING'
         }
     });
 });
