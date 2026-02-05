@@ -85,7 +85,7 @@ const deleteCoordinator = async (req, res) => {
     }
 };
 
-// Generate attendance PDF - Professional Clean Design
+// Generate attendance PDF - Professional Clean Design (Serverless-compatible)
 const generateAttendancePDF = async (req, res) => {
     try {
         const { event_title, event_date, time_from, time_to, coordinator_ids } = req.body;
@@ -120,25 +120,17 @@ const generateAttendancePDF = async (req, res) => {
             margins: { top: 50, bottom: 50, left: 60, right: 60 }
         });
 
-        // Use process.cwd() for reliable path resolution
-        const tempDir = path.join(process.cwd(), 'temp');
-        if (!fs.existsSync(tempDir)) {
-            try {
-                fs.mkdirSync(tempDir, { recursive: true });
-            } catch (err) {
-                console.error('[Coordinators] Failed to create temp directory:', err);
-                return res.status(500).json({ error: 'Server configuration error' });
-            }
-        }
+        // Set response headers
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="Attendance_Letter_${event_date}.pdf"`);
 
-        const tempPath = path.join(tempDir, `attendance_${Date.now()}.pdf`);
-        const writeStream = fs.createWriteStream(tempPath);
-        doc.pipe(writeStream);
+        // Pipe PDF directly to response (no filesystem writes)
+        doc.pipe(res);
 
         const pageWidth = doc.page.width;
         const contentWidth = pageWidth - 120; // margins
 
-        // Logo path - try multiple common locations
+        // Logo path - try to load from project root
         const rootLogoPath = path.join(process.cwd(), 'mitadtlogo.png');
 
         // ===== HEADER WITH LOGO ON LEFT =====
@@ -279,27 +271,14 @@ const generateAttendancePDF = async (req, res) => {
         doc.moveDown(0.5);
         doc.font(bodyFontBold).fontSize(fontSize).text('CN-CRTP', 60);
 
+        // Finalize PDF and end the stream
         doc.end();
-
-        // Wait for PDF to finish writing
-        writeStream.on('finish', () => {
-            res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', `attachment; filename="Attendance_Letter_${event_date}.pdf"`);
-
-            const fileStream = fs.createReadStream(tempPath);
-            fileStream.pipe(res);
-
-            fileStream.on('end', () => {
-                // Delete temp file after sending
-                fs.unlink(tempPath, (err) => {
-                    if (err) console.error('Failed to delete temp PDF:', err);
-                });
-            });
-        });
 
     } catch (error) {
         console.error('[Coordinators] PDF Error:', error);
-        res.status(500).json({ error: 'Failed to generate PDF' });
+        if (!res.headersSent) {
+            res.status(500).json({ error: 'Failed to generate PDF' });
+        }
     }
 };
 
