@@ -1,163 +1,423 @@
-# Smart Attendance & Placement Portal
+# 🎓 Smart Attendance & Placement Portal
 
-A comprehensive digital solution for university placement cells to manage attendance, assessments, and seat allocations efficiently.
+<div align="center">
 
-## Problem Statement
+![MIT ADT University](https://img.shields.io/badge/MIT%20ADT-University-blue?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Production-success?style=for-the-badge)
+![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
+
+**A comprehensive digital solution for university placement cells to manage attendance, assessments, coordinator activities, and seat allocations efficiently.**
+
+[Features](#-key-features) • [Tech Stack](#-tech-stack) • [Installation](#-installation) • [Documentation](#-documentation)
+
+</div>
+
+---
+
+## 📋 Table of Contents
+
+- [Problem Statement](#-problem-statement)
+- [Solution Overview](#-solution-overview)
+- [Key Features](#-key-features)
+- [Tech Stack](#-tech-stack)
+- [System Architecture](#-system-architecture)
+- [Installation](#-installation)
+- [Deployment](#-deployment)
+- [Security](#-security)
+- [Contributing](#-contributing)
+- [License](#-license)
+
+---
+
+## 🎯 Problem Statement
 
 University placement processes often suffer from significant inefficiencies:
-*   **Manual Attendance**: Passing physical sheets is time-consuming and prone to loss.
-*   **Proxy Attendance**: Students signing for absent peers compromises data integrity.
-*   **Poor Visibility**: Administrators lack real-time data on student participation.
-*   **Manual Shortlisting**: Filtering eligible students for drives is tedious and error-prone.
-*   **Allocation Chaos**: Manually assigning labs and seats for assessments is logistically complex.
 
-## Solution Overview
+- **Manual Attendance**: Passing physical sheets is time-consuming and prone to loss
+- **Proxy Attendance**: Students signing for absent peers compromises data integrity
+- **Poor Visibility**: Administrators lack real-time data on student participation
+- **Manual Shortlisting**: Filtering eligible students for drives is tedious and error-prone
+- **Allocation Chaos**: Manually assigning labs and seats for assessments is logistically complex
+- **Coordinator Management**: Tracking placement coordinators and generating attendance letters manually
 
-This portal digitizes the entire placement workflow. It enables administrators to create live sessions, projects dynamic QR codes for secure attendance, and manages the end-to-end flow of assessments from eligibility to seat allocation. Designed for scalability, it handles high-concurrency scans and provides role-based dashboards for clear visibility.
+---
 
-## Key Features
+## 💡 Solution Overview
 
-### Admin Features
-*   **Session Management**: Create, start, pause, and stop attendance events.
-*   **Real-time Monitoring**: View live attendance counts and student lists as they scan.
-*   **Assessment Control**: Create assessments, manage eligibility, and upload candidate lists via CSV.
-*   **Automated Allocation**: One-click shuffling and seat allocation for lab exams to prevent dishonesty.
-*   **Data Export**: Download attendance and allocation reports in CSV/PDF formats.
+This portal **digitizes the entire placement workflow** with a modern, scalable architecture. It enables administrators to:
 
-### Student Features
-*   **Secure Dashboard**: View profile status and upcoming drives.
-*   **QR Scanner**: Integrated scanner with deep-linking support for quick attendance marking.
-*   **History & Logs**: Access personal attendance history and verify participation.
-*   **Seat Allocation**: View assigned lab and seat number immediately upon allocation.
+- Create live sessions with **dynamic QR codes** for secure attendance
+- Manage end-to-end assessment flows from eligibility to seat allocation
+- Track and manage **placement coordinators** with automated letter generation
+- Handle **high-concurrency scans** with real-time updates
+- Provide **role-based dashboards** for clear visibility across all stakeholders
 
-### Projector View Features
-*   **Dynamic QR Code**: Rotating logic (every 10s) to prevent static photo-based proxy attendance.
-*   **Live Counter**: Displays total present count in real-time to motivate punctuality.
-*   **Status Indicators**: Visual cues for session state (Active/Paused/Stopped).
+Designed for **scalability, security, and user experience**, this system transforms manual processes into seamless digital workflows.
 
-## Tech Stack
+---
+
+## ✨ Key Features
+
+### 👨‍💼 Admin Features
+
+#### **Session Management**
+- Create, start, pause, and stop attendance events
+- Real-time monitoring with live attendance counts
+- View student lists as they scan
+- Export attendance reports in CSV/PDF formats
+
+#### **Assessment Control**
+- Create assessments with custom eligibility rules
+- Upload candidate lists via CSV
+- Automated seat allocation with one-click shuffling
+- Prevent dishonesty with randomized lab assignments
+
+#### **Placement Coordinators Module** 🆕
+- **CRUD Operations**: Add, view, edit, and delete placement coordinators
+- **Professional UI**: Clean, monochromatic design matching admin panel theme
+- **Search & Filter**: Find coordinators by name, enrollment number, or department
+- **Attendance Letters**: Generate professional PDF letters with:
+  - University logo and official formatting
+  - Event details and coordinator information
+  - Professional table layout with Times font
+  - Preview before download functionality
+
+#### **Data Management**
+- Download attendance and allocation reports
+- CSV import/export for bulk operations
+- Real-time data synchronization
+
+### 👨‍🎓 Student Features
+
+- **Secure Dashboard**: View profile status and upcoming drives
+- **QR Scanner**: Integrated scanner with deep-linking support
+- **History & Logs**: Access personal attendance history
+- **Seat Allocation**: View assigned lab and seat number instantly
+- **Manual Entry**: Fallback option for QR code scanning issues
+
+### 📺 Projector View Features
+
+- **Dynamic QR Code**: Rotating every 10 seconds to prevent proxy attendance
+- **Live Counter**: Real-time present count to motivate punctuality
+- **Status Indicators**: Visual cues for session state (Active/Paused/Stopped)
+- **High Contrast**: Optimized for visibility from a distance
+
+---
+
+## 🛠️ Tech Stack
 
 ### Frontend
 ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
 ![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+
+- **React 18**: Component-based UI with hooks
+- **Vite**: Ultra-fast build times and HMR
+- **TailwindCSS**: Utility-first styling
+- **React Router**: Client-side routing
+- **Axios**: HTTP client with interceptors
 
 ### Backend
 ![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
 ![Express.js](https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white)
+![PDFKit](https://img.shields.io/badge/PDFKit-FF6B6B?style=for-the-badge)
+
+- **Node.js**: Non-blocking, event-driven runtime
+- **Express.js**: Minimal and flexible web framework
+- **PDFKit**: Professional PDF generation
+- **JWT**: Secure authentication
+- **Nodemailer**: Email notifications (optional)
 
 ### Database
+![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
 
-### Authentication
-![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)
+- **Supabase**: Backend-as-a-Service with PostgreSQL
+- **Row Level Security (RLS)**: Database-level authorization
+- **Real-time subscriptions**: Live data updates
+- **Automatic token refresh**: Seamless session management
 
-### Hosting & Deployment
+### Deployment
 ![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
-![Railway](https://img.shields.io/badge/Railway-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)
 
-*   **Frontend**: React for component-based UI, Vite for ultra-fast build times.
-*   **Backend**: Node.js & Express for scalable, non-blocking API handling.
-*   **Database**: PostgreSQL for robust relational data integrity.
-*   **Auth**: JWT for secure, stateless session management.
-*   **Deployment**: Vercel (Client) & Railway (Server) for reliable CI/CD pipelines.
+- **Vercel**: Frontend hosting with edge network
+- **Supabase Cloud**: Managed PostgreSQL database
+- **CI/CD**: Automatic deployments on push
 
-## System Architecture
+---
 
-The application checks for robustness and integrity using a monolithic architecture with separated concerns:
+## 🏗️ System Architecture
 
-*   **Frontend**: React.js (Vite) for a responsive and interactive user interface.
-*   **Backend**: Node.js with Express.js REST API for business logic.
-*   **Database**: PostgreSQL for relational data integrity (User, Events, Attendance, Assessments).
-*   **Deployment**: 
-    *   Frontend hosted on **Vercel** for global edge delivery.
-    *   Backend and Database hosted on **Railway** for reliable containerization and managed SQL.
+```
+┌─────────────────────────────────────────────────────────┐
+│                    CLIENT (React + Vite)                │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │
+│  │   Admin      │  │   Student    │  │  Projector   │ │
+│  │  Dashboard   │  │  Dashboard   │  │     View     │ │
+│  └──────────────┘  └──────────────┘  └──────────────┘ │
+└─────────────────────────────────────────────────────────┘
+                          │
+                          │ HTTPS/REST API
+                          ▼
+┌─────────────────────────────────────────────────────────┐
+│              BACKEND (Node.js + Express)                │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │
+│  │     Auth     │  │  Attendance  │  │ Coordinators │ │
+│  │  Middleware  │  │  Controller  │  │  Controller  │ │
+│  └──────────────┘  └──────────────┘  └──────────────┘ │
+└─────────────────────────────────────────────────────────┘
+                          │
+                          │ SQL Queries
+                          ▼
+┌─────────────────────────────────────────────────────────┐
+│            DATABASE (Supabase PostgreSQL)               │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │
+│  │    Users     │  │  Attendance  │  │ Coordinators │ │
+│  │   Profiles   │  │    Events    │  │  Assessments │ │
+│  └──────────────┘  └──────────────┘  └──────────────┘ │
+└─────────────────────────────────────────────────────────┘
+```
 
-## Authentication & Authorization
+### Key Design Principles
 
-*   **OTP-Based Login**: Passwordless entry using email and one-time passwords via Nodemailer.
-*   **Session Security**: JWT (JSON Web Tokens) used for stateless authentication.
-*   **Role-Based Access Control (RBAC)**: Strict separation between `admin` and `student` routes. Middleware verifies roles before granting access to sensitive endpoints.
+- **Separation of Concerns**: Clear boundaries between frontend, backend, and database
+- **Stateless Authentication**: JWT tokens with automatic refresh
+- **Real-time Updates**: Supabase subscriptions for live data
+- **Scalability**: Horizontal scaling with serverless architecture
+- **Security**: Row-level security, CORS policies, input validation
 
-## Attendance Workflow
+---
 
-1.  **Creation**: Admin creates an event (e.g., "TCS Pre-placement Talk").
-2.  **Projection**: Admin launches the "Projector View". A unique, rotating QR code appears.
-3.  **Scanning**: Students scan the code using the portal's built-in scanner.
-4.  **Verification**: The backend validates the token, user location (optional), and prevents duplicate entries.
-5.  **Confirmation**: Success message appears on the student's device; Admin counter increments instantly.
-
-## Assessment & Allocation Workflow
-
-1.  **Setup**: Admin defines an assessment (e.g., "Coding Round 1").
-2.  **Shortlisting**: Admin uploads a CSV of eligible enrollment numbers.
-3.  **Lab Setup**: Admin defines available labs and capacity (e.g., "Lab A: 60 seats").
-4.  **Allocation**: The system randomly assigns eligible students to available seats, ensuring no two adjacent students have the same set if applicable (future scope).
-5.  **Publication**: Admin publishes the allocation. Students see their specific Lab and System Number on their dashboard.
-
-
-
-## Environment Setup (Local)
+## 📦 Installation
 
 ### Prerequisites
-*   Node.js (v18+)
-*   PostgreSQL installed locally or a remote connection string.
+
+- **Node.js** v18 or higher
+- **npm** or **yarn**
+- **Supabase Account** (free tier available)
 
 ### Backend Setup
-1.  Navigate to root directory.
-2.  Install dependencies: `npm install`
-3.  Create `.env` file:
-    ```
-    PORT=5000
-    DATABASE_URL=postgresql://user:pass@localhost:5432/smart_attendance
-    JWT_SECRET=your_secure_secret
-    EMAIL_USER=your_email@gmail.com
-    EMAIL_PASS=your_app_password
-    ```
-4.  Initialize Database: `npm run migrate` (or run `database/init.sql`).
-5.  Start Server: `npm run dev`
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/pranavgawaii/smart-attendance-system.git
+   cd smart-attendance-system
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Configure environment variables**
+   
+   Create a `.env` file in the root directory:
+   ```env
+   PORT=5001
+   JWT_SECRET=your_secure_secret_key
+   ADMIN_EMAIL=admin@example.com
+   
+   SUPABASE_URL=https://your-project.supabase.co
+   SUPABASE_ANON_KEY=your_anon_key
+   SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+   ```
+
+4. **Set up database**
+   
+   Run the SQL migration in your Supabase SQL Editor:
+   ```sql
+   -- Create placement_coordinators table
+   CREATE TABLE placement_coordinators (
+       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+       name VARCHAR(255) NOT NULL,
+       enrollment_no VARCHAR(50) NOT NULL UNIQUE,
+       email VARCHAR(255) NOT NULL,
+       department VARCHAR(50) NOT NULL,
+       year VARCHAR(10) NOT NULL,
+       created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+   );
+   ```
+
+5. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+   
+   Server will run on `http://localhost:5001`
 
 ### Frontend Setup
-1.  Navigate to `client/` directory.
-2.  Install dependencies: `npm install`
-3.  Start Dev Server: `npm run dev`
 
-## Deployment
+1. **Navigate to client directory**
+   ```bash
+   cd client
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Configure environment variables**
+   
+   Create a `.env` file in the `client` directory:
+   ```env
+   VITE_API_BASE_URL=/api
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_ANON_KEY=your_anon_key
+   ```
+
+4. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+   
+   Client will run on `http://localhost:5175`
+
+---
+
+## 🚀 Deployment
 
 ### Frontend (Vercel)
-*   Connect GitHub repository.
-*   Set Root Directory to `client`.
-*   Build Command: `npm run build`
-*   Output Directory: `dist`
-*   Add environment variable: `VITE_API_URL` pointing to the backend production URL.
 
-### Backend (Railway)
-*   Connect GitHub repository.
-*   Add generic service.
-*   Set Start Command: `node src/index.js` (or `npm start`).
-*   Add PostgreSQL plugin.
-*   Railway automatically injects `DATABASE_URL`.
-*   Set other variables (`JWT_SECRET`, `EMAIL_USER`, etc.) in Railway dashboard.
+1. **Connect GitHub repository** to Vercel
+2. **Configure build settings**:
+   - Root Directory: `client`
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
+3. **Add environment variables**:
+   - `VITE_API_BASE_URL`
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+4. **Deploy**: Automatic on every push to `main`
 
-## Security Considerations
+### Backend (Vercel Serverless)
 
-*   **Role Enforcement**: API endpoints explicitly check `req.user.role`.
-*   **Duplicate Prevention**: Database constraints prevent multiple attendance records for the same event.
-*   **Input Validation**: Inputs are sanitized to prevent SQL injection (via parameterized queries).
-*   **Cors Policy**: Restricted to allowed domains in production.
+1. **Use the included `vercel.json`** configuration
+2. **Add environment variables** in Vercel dashboard:
+   - `JWT_SECRET`
+   - `ADMIN_EMAIL`
+   - `SUPABASE_URL`
+   - `SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+3. **Deploy**: Automatic on every push to `main`
 
-## Limitations & Future Improvements
+### Database (Supabase)
 
-*   **Current Limitation**: The QR rotation relies on client-server time synchronization. Significant drift may cause token invalidation.
-*   **Current Limitation**: Manual CSV upload is required for shortlisting; direct integration with university ERP is not yet implemented.
-*   **Future**: Implementation of WebSockets for sub-second attendance updates (currently polling).
-*   **Future**: Geofencing support to restrict scanning to specific physical coordinates.
+- Already hosted on Supabase Cloud
+- Automatic backups and scaling
+- Connection pooling enabled
+- Row Level Security (RLS) configured
 
-## Screens / Flow Overview
+---
 
-*   **Admin Flow**: Login -> Dashboard (Overview) -> Create Event -> Launch Projector View -> Monitor.
-*   **Student Flow**: Login (OTP) -> Dashboard (Status) -> Scan QR -> innovative Success/Failure Feedback -> View History.
-*   **Projector Flow**: Large, high-contrast display purely for QR projection and live stats, designed for readability from a distance.
+## 🔐 Security
 
-## Author
+### Authentication & Authorization
 
-Developed by **Pranav** for University Placement Cell automation architecture.
+- **JWT Tokens**: Stateless authentication with automatic refresh
+- **Supabase Auth**: Built-in user management and session handling
+- **Role-Based Access Control (RBAC)**: Strict separation between admin and student routes
+- **Token Expiration**: Automatic refresh on 401/403 errors
+
+### Data Protection
+
+- **Row Level Security (RLS)**: Database-level authorization
+- **Input Validation**: All inputs sanitized to prevent SQL injection
+- **CORS Policy**: Restricted to allowed domains in production
+- **HTTPS Only**: All traffic encrypted in transit
+
+### Attendance Security
+
+- **Dynamic QR Codes**: Rotating every 10 seconds to prevent screenshots
+- **Duplicate Prevention**: Database constraints prevent multiple scans
+- **Session Validation**: Server-side verification of all attendance marks
+- **Device Fingerprinting**: Optional tracking to prevent proxy attendance
+
+---
+
+## 📚 Documentation
+
+### API Endpoints
+
+#### Authentication
+- `POST /api/auth/login` - User login
+- `POST /api/auth/logout` - User logout
+- `GET /api/auth/verify` - Verify token
+
+#### Attendance
+- `GET /api/events` - Get all events
+- `POST /api/events` - Create new event
+- `POST /api/attendance/mark` - Mark attendance
+- `GET /api/attendance/history` - Get attendance history
+
+#### Coordinators
+- `GET /api/coordinators` - Get all coordinators
+- `POST /api/coordinators` - Add new coordinator
+- `DELETE /api/coordinators/:id` - Delete coordinator
+- `POST /api/coordinators/attendance-pdf` - Generate attendance letter PDF
+
+#### Assessments
+- `GET /api/assessments` - Get all assessments
+- `POST /api/assessments` - Create assessment
+- `POST /api/assessments/allocate` - Allocate seats
+
+### Workflows
+
+#### Attendance Workflow
+1. Admin creates an event
+2. Admin launches projector view with dynamic QR code
+3. Students scan QR code using built-in scanner
+4. Backend validates token and prevents duplicates
+5. Success message appears; admin counter updates in real-time
+
+#### Coordinator Letter Generation
+1. Admin navigates to Coordinators → Generate Letter
+2. Fills in event details (title, date, time)
+3. Selects coordinators from the list
+4. Clicks "Preview Letter" to review PDF
+5. Downloads professional attendance letter
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 👨‍💻 Author
+
+**Pranav Gawai**
+
+- GitHub: [@pranavgawaii](https://github.com/pranavgawaii)
+- Email: pranavgawai1518@gmail.com
+
+---
+
+## 🙏 Acknowledgments
+
+- MIT ADT University Training & Placement Cell
+- All contributors and testers
+- Open source community for amazing tools and libraries
+
+---
+
+<div align="center">
+
+**Made with ❤️ for MIT ADT University**
+
+⭐ Star this repo if you find it helpful!
+
+</div>
