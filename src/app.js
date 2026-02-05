@@ -15,6 +15,7 @@ const placementRoutes = require('./routes/placement.routes');
 const placementAssessmentsRoutes = require('./routes/placement-assessments.routes');
 const allocationsRoutes = require('./routes/allocations.routes');
 const adminManagementRoutes = require('./routes/admin-management.routes');
+const coordinatorsRoutes = require('./routes/coordinators.routes');
 const { authenticateToken, verifySuperAdmin } = require('./middlewares/auth.middleware');
 
 const app = express();
@@ -122,6 +123,7 @@ apiRouter.use('/student', authenticateToken, studentRoutes);
 apiRouter.use('/placement', authenticateToken, placementRoutes);
 apiRouter.use('/placement-assessments', authenticateToken, placementAssessmentsRoutes);
 apiRouter.use('/allocations', authenticateToken, allocationsRoutes);
+apiRouter.use('/coordinators', authenticateToken, coordinatorsRoutes);
 apiRouter.use('/admin-management', authenticateToken, verifySuperAdmin, adminManagementRoutes);
 
 app.use('/api', apiRouter);

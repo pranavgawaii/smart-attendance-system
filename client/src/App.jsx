@@ -41,6 +41,8 @@ import AdminSettings from './pages/admin/AdminSettings';
 import AdminManagement from './pages/admin/AdminManagement';
 import StudentProfile from './pages/admin/StudentProfile';
 import BulkStudentUpload from './pages/admin/BulkStudentUpload';
+import Coordinators from './pages/admin/Coordinators';
+import CoordinatorAttendance from './pages/admin/CoordinatorAttendance';
 
 import ProfileSetup from './pages/ProfileSetup';
 
@@ -141,6 +143,8 @@ function App() {
               <Route path="settings" element={<AdminSettings />} />
               <Route path="manage-admins" element={<AdminManagement />} />
               <Route path="students/:id" element={<StudentProfile />} />
+              <Route path="coordinators" element={<Coordinators />} />
+              <Route path="coordinators/attendance" element={<CoordinatorAttendance />} />
             </Route>
 
             {/* Projector View (Standalone Layout) */}

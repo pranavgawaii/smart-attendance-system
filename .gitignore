@@ -7,10 +7,8 @@ build/
 .DS_Store
 coverage/
 
-# Supabase secrets (redundant but safe)
-.env
+# Supabase secrets
 .env.local
-
 
 # Railway (deprecated)
 railway.json
@@ -21,3 +19,17 @@ debug_*.js
 *.txt
 diag.txt
 get_logo_base64.js
+cleanup.sh
+
+# Database & SQL files
+database/
+*.sql
+
+# Temporary files
+temp/
+api/
+scripts/
+
+# Test outputs
+test_output.pdf
+api_*.json

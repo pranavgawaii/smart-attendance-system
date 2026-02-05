@@ -1,44 +1,83 @@
 import axios from 'axios';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ixbitxgrqvlferwiuica.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml4Yml0eGdycXZsZmVyd2l1aWNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk4NjM0ODAsImV4cCI6MjA4NTQzOTQ4MH0.fUzgYMSFuuZl59dm1WC-bjPyhigXPna2cef1BUo0pjQ';
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const api = axios.create({
-    // Use window.location.origin for same-origin requests (Vercel/Vite Proxy)
-    // Fallback to localhost:3000 only if explicitly needed during local debugging
     baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
 });
 
-api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+// Request interceptor - attach token
+api.interceptors.request.use(async (config) => {
+    // Try to get fresh session from Supabase
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (session?.access_token) {
+        // Use Supabase token if available
+        config.headers.Authorization = `Bearer ${session.access_token}`;
+        // Also update localStorage for consistency
+        localStorage.setItem('token', session.access_token);
+    } else {
+        // Fallback to localStorage token
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
     }
+
     return config;
 });
 
+// Response interceptor - handle token refresh
 api.interceptors.response.use(
     (response) => response,
-    (error) => {
-        // Only logout on actual authentication failures (401 with specific messages)
-        // Don't logout on permission errors (403) or other API failures
-        if (error.response && error.response.status === 401) {
-            const errorMessage = error.response.data?.error || '';
+    async (error) => {
+        const originalRequest = error.config;
 
-            // Only logout if it's a token-related error
-            if (errorMessage.includes('token') ||
-                errorMessage.includes('expired') ||
-                errorMessage.includes('invalid') ||
-                errorMessage.includes('unauthorized')) {
+        // If 401/403 and we haven't retried yet
+        if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
+            originalRequest._retry = true;
 
-                // Token expired or invalid - thorough cleanup
+            try {
+                // Attempt to refresh the session
+                const { data: { session }, error: refreshError } = await supabase.auth.refreshSession();
+
+                if (refreshError || !session) {
+                    throw new Error('Session refresh failed');
+                }
+
+                // Update token in localStorage
+                localStorage.setItem('token', session.access_token);
+
+                // Retry the original request with new token
+                originalRequest.headers.Authorization = `Bearer ${session.access_token}`;
+                return api(originalRequest);
+
+            } catch (refreshError) {
+                // Refresh failed - logout user
+                console.error('Token refresh failed:', refreshError);
+
+                // Clear all auth data
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
                 localStorage.removeItem('session');
                 localStorage.removeItem('role');
 
+                // Sign out from Supabase
+                await supabase.auth.signOut();
+
+                // Redirect to login
                 if (!window.location.pathname.includes('/login')) {
                     window.location.href = '/login';
                 }
+
+                return Promise.reject(refreshError);
             }
         }
+
         return Promise.reject(error);
     }
 );

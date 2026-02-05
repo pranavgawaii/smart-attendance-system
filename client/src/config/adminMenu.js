@@ -12,7 +12,8 @@ import {
     MapPin,
     Grid,
     ClipboardList,
-    BarChart3
+    BarChart3,
+    Users2
 } from 'lucide-react';
 
 export const getAdminMenu = (role) => {
@@ -47,6 +48,7 @@ export const getAdminMenu = (role) => {
                 { icon: Building2, label: 'Placement Drives', path: '/admin/placements' },
                 { icon: ClipboardList, label: 'Applications', path: '/admin/placements/applications' },
                 { icon: Target, label: 'Eligibility Rules', path: '/admin/placements/eligibility' },
+                { icon: Users2, label: 'Coordinators', path: '/admin/coordinators' },
                 { icon: PieChart, label: 'Placement Stats', path: '/admin/placements/stats' },
             ]
         },
