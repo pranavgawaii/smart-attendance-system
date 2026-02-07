@@ -220,24 +220,68 @@ export default function CoordinatorAttendance() {
                                     <div>
                                         <label className="block text-xs font-medium text-zinc-700 mb-1.5">Start Time</label>
                                         <div className="relative">
-                                            <input
-                                                type="time"
+                                            <select
                                                 value={eventDetails.time_from}
                                                 onChange={(e) => setEventDetails({ ...eventDetails, time_from: e.target.value })}
-                                                className="w-full pl-9 pr-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-400 transition-all cursor-pointer"
-                                            />
+                                                className="w-full pl-9 pr-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-400 transition-all cursor-pointer appearance-none"
+                                            >
+                                                <option value="">Select</option>
+                                                <option value="08:00">08:00 AM</option>
+                                                <option value="08:30">08:30 AM</option>
+                                                <option value="09:00">09:00 AM</option>
+                                                <option value="09:30">09:30 AM</option>
+                                                <option value="10:00">10:00 AM</option>
+                                                <option value="10:30">10:30 AM</option>
+                                                <option value="11:00">11:00 AM</option>
+                                                <option value="11:30">11:30 AM</option>
+                                                <option value="12:00">12:00 PM</option>
+                                                <option value="12:30">12:30 PM</option>
+                                                <option value="13:00">01:00 PM</option>
+                                                <option value="13:30">01:30 PM</option>
+                                                <option value="14:00">02:00 PM</option>
+                                                <option value="14:30">02:30 PM</option>
+                                                <option value="15:00">03:00 PM</option>
+                                                <option value="15:30">03:30 PM</option>
+                                                <option value="16:00">04:00 PM</option>
+                                                <option value="16:30">04:30 PM</option>
+                                                <option value="17:00">05:00 PM</option>
+                                                <option value="17:30">05:30 PM</option>
+                                                <option value="18:00">06:00 PM</option>
+                                            </select>
                                             <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" size={16} />
                                         </div>
                                     </div>
                                     <div>
                                         <label className="block text-xs font-medium text-zinc-700 mb-1.5">End Time</label>
                                         <div className="relative">
-                                            <input
-                                                type="time"
+                                            <select
                                                 value={eventDetails.time_to}
                                                 onChange={(e) => setEventDetails({ ...eventDetails, time_to: e.target.value })}
-                                                className="w-full pl-9 pr-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-400 transition-all cursor-pointer"
-                                            />
+                                                className="w-full pl-9 pr-3 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-400 transition-all cursor-pointer appearance-none"
+                                            >
+                                                <option value="">Select</option>
+                                                <option value="08:00">08:00 AM</option>
+                                                <option value="08:30">08:30 AM</option>
+                                                <option value="09:00">09:00 AM</option>
+                                                <option value="09:30">09:30 AM</option>
+                                                <option value="10:00">10:00 AM</option>
+                                                <option value="10:30">10:30 AM</option>
+                                                <option value="11:00">11:00 AM</option>
+                                                <option value="11:30">11:30 AM</option>
+                                                <option value="12:00">12:00 PM</option>
+                                                <option value="12:30">12:30 PM</option>
+                                                <option value="13:00">01:00 PM</option>
+                                                <option value="13:30">01:30 PM</option>
+                                                <option value="14:00">02:00 PM</option>
+                                                <option value="14:30">02:30 PM</option>
+                                                <option value="15:00">03:00 PM</option>
+                                                <option value="15:30">03:30 PM</option>
+                                                <option value="16:00">04:00 PM</option>
+                                                <option value="16:30">04:30 PM</option>
+                                                <option value="17:00">05:00 PM</option>
+                                                <option value="17:30">05:30 PM</option>
+                                                <option value="18:00">06:00 PM</option>
+                                            </select>
                                             <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" size={16} />
                                         </div>
                                     </div>
@@ -307,8 +351,8 @@ export default function CoordinatorAttendance() {
                                                     key={coord.id}
                                                     onClick={() => toggleSelection(coord.id)}
                                                     className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${isSelected
-                                                            ? 'bg-zinc-50 border-zinc-900 shadow-sm'
-                                                            : 'bg-white border-zinc-100 hover:border-zinc-300 hover:bg-zinc-50'
+                                                        ? 'bg-zinc-50 border-zinc-900 shadow-sm'
+                                                        : 'bg-white border-zinc-100 hover:border-zinc-300 hover:bg-zinc-50'
                                                         }`}
                                                 >
                                                     <div className="pt-0.5 shrink-0">
