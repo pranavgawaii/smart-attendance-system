@@ -24,6 +24,8 @@ export default function Login() {
 
             if (user.role === 'admin' || user.role === 'super_admin') {
                 navigate('/admin');
+            } else if (user.role === 'coordinator_admin') {
+                navigate('/admin/coordinators');
             } else if (!user.enrollment_no) {
                 navigate('/profile-setup');
             } else {

@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const coordinatorsController = require('../controllers/coordinators.controller');
-const { authenticateToken } = require('../middlewares/auth.middleware');
+const { authenticateToken, authorizeRole } = require('../middlewares/auth.middleware');
 
-// All routes require authentication
+// All routes require authentication and admin/coordinator_admin role
 router.use(authenticateToken);
+router.use(authorizeRole(['admin', 'super_admin', 'coordinator_admin']));
 
 // GET /api/coordinators - Get all coordinators
 router.get('/', coordinatorsController.getAllCoordinators);
@@ -19,3 +20,4 @@ router.delete('/:id', coordinatorsController.deleteCoordinator);
 router.post('/attendance-pdf', coordinatorsController.generateAttendancePDF);
 
 module.exports = router;
+

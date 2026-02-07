@@ -4,6 +4,7 @@ import {
     LogOut,
     PanelLeftClose,
     ChevronRight,
+    Lock,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getAdminMenu } from '../config/adminMenu';
@@ -63,6 +64,31 @@ export default function Sidebar({ isCollapsed, toggleSidebar }) {
                                         location.pathname.startsWith(item.path + '/') &&
                                         !allMenuPaths.some(p => p !== item.path && location.pathname.startsWith(p) && p.length > item.path.length)
                                     );
+
+                                const isLocked = item.locked === true;
+
+                                // Locked items render as div (not clickable)
+                                if (isLocked) {
+                                    return (
+                                        <div
+                                            key={item.label}
+                                            className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-not-allowed opacity-50"
+                                            title={isCollapsed ? `${item.label} (Locked)` : 'Access restricted'}
+                                        >
+                                            <item.icon
+                                                size={18}
+                                                strokeWidth={1.5}
+                                                className="text-zinc-400"
+                                            />
+                                            {!isCollapsed && (
+                                                <>
+                                                    <span className="text-sm text-zinc-400 flex-1">{item.label}</span>
+                                                    <Lock size={12} className="text-zinc-400" />
+                                                </>
+                                            )}
+                                        </div>
+                                    );
+                                }
 
                                 return (
                                     <Link

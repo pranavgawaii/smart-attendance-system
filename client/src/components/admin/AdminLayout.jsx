@@ -85,7 +85,8 @@ export default function AdminLayout({ children, title, actions }) {
                         {/* User Role Badge */}
                         <div className="hidden md:flex items-center px-3 py-1 rounded-full bg-zinc-100 border border-zinc-200">
                             <span className="text-xs font-semibold text-zinc-600">
-                                {user?.role === 'super_admin' ? 'Super Admin' : 'Admin'}
+                                {user?.role === 'super_admin' ? 'Super Admin' :
+                                    user?.role === 'coordinator_admin' ? 'Coordinator Admin' : 'Admin'}
                             </span>
                         </div>
 
