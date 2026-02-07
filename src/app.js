@@ -27,9 +27,8 @@ app.use((req, res, next) => {
 });
 
 // Middleware
-// Middleware
 app.use(cors({
-    origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://localhost:3000'],
+    origin: true,  // Allow all origins (including production Vercel domain)
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 }));
