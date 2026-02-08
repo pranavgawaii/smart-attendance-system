@@ -82,4 +82,5 @@ api.interceptors.response.use(
     }
 );
 
+export { supabase };
 export default api;

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminLayout from '../../components/admin/AdminLayout';
 import api from '../../services/api';
-import { Plus, Search, Trash2, FileCheck, X, Loader2, Filter, ChevronDown, UserPlus } from 'lucide-react';
+import { Plus, Search, Trash2, FileCheck, X, Loader2, Filter, ChevronDown, UserPlus, FileText } from 'lucide-react';
 
 export default function Coordinators() {
     const navigate = useNavigate();
@@ -116,6 +116,13 @@ export default function Coordinators() {
                         >
                             <FileCheck size={16} />
                             Generate Letter
+                        </button>
+                        <button
+                            onClick={() => navigate('/admin/coordinator-forms')}
+                            className="flex items-center gap-2 px-4 py-2 bg-white border border-zinc-300 text-zinc-700 rounded-lg text-sm font-medium hover:bg-zinc-50 hover:text-zinc-900 transition-all shadow-sm"
+                        >
+                            <FileText size={16} />
+                            PlacePro Forms
                         </button>
                         <button
                             onClick={() => setShowAddModal(true)}

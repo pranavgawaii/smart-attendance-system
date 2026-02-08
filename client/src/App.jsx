@@ -43,6 +43,10 @@ import StudentProfile from './pages/admin/StudentProfile';
 import BulkStudentUpload from './pages/admin/BulkStudentUpload';
 import Coordinators from './pages/admin/Coordinators';
 import CoordinatorAttendance from './pages/admin/CoordinatorAttendance';
+import CoordinatorFormsHome from './pages/admin/forms/CoordinatorFormsHome';
+import FormBuilder from './pages/admin/forms/FormBuilder';
+import FormResponses from './pages/admin/forms/FormResponses';
+import PublicFormPage from './pages/public/PublicFormPage';
 
 import ProfileSetup from './pages/ProfileSetup';
 
@@ -145,7 +149,14 @@ function App() {
               <Route path="students/:id" element={<StudentProfile />} />
               <Route path="coordinators" element={<Coordinators />} />
               <Route path="coordinators/attendance" element={<CoordinatorAttendance />} />
+              <Route path="coordinator-forms" element={<CoordinatorFormsHome />} />
+              <Route path="coordinator-forms/new" element={<FormBuilder />} />
+              <Route path="coordinator-forms/:id/edit" element={<FormBuilder />} />
+              <Route path="coordinator-forms/:id/responses" element={<FormResponses />} />
             </Route>
+
+            {/* Public Form Page (No Auth Required) */}
+            <Route path="/forms/:slug" element={<PublicFormPage />} />
 
             {/* Projector View (Standalone Layout) */}
             <Route element={

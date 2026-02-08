@@ -13,7 +13,8 @@ import {
     Grid,
     ClipboardList,
     BarChart3,
-    Users2
+    Users2,
+    FileText
 } from 'lucide-react';
 
 export const getAdminMenu = (role) => {
@@ -21,13 +22,13 @@ export const getAdminMenu = (role) => {
     const isCoordinatorAdmin = role === 'coordinator_admin';
 
     // Allowed paths for coordinator_admin
-    const coordinatorAllowedPaths = ['/admin/coordinators', '/admin/coordinators/attendance'];
+    const coordinatorAllowedPaths = ['/admin/coordinators', '/admin/coordinators/attendance', '/admin/coordinator-forms'];
 
     // Helper function to mark items as locked for coordinator_admin
     const markLocked = (item) => {
         if (!isCoordinatorAdmin) return item;
         const isAllowed = coordinatorAllowedPaths.some(p =>
-            item.path === p || item.path.startsWith('/admin/coordinators')
+            item.path === p || item.path.startsWith('/admin/coordinators') || item.path.startsWith('/admin/coordinator-forms')
         );
         return { ...item, locked: !isAllowed };
     };
@@ -45,6 +46,7 @@ export const getAdminMenu = (role) => {
                 markLocked({ icon: Users, label: 'All Students', path: '/admin/users' }),
                 markLocked({ icon: UserPlus, label: 'Bulk Upload', path: '/admin/users/bulk-upload' }),
                 markLocked({ icon: Grid, label: 'Allocations', path: '/admin/allocations' }),
+                markLocked({ icon: Users2, label: 'Coordinators', path: '/admin/coordinators' }),
             ]
         },
         {
@@ -61,7 +63,6 @@ export const getAdminMenu = (role) => {
                 markLocked({ icon: Building2, label: 'Placement Drives', path: '/admin/placements' }),
                 markLocked({ icon: ClipboardList, label: 'Applications', path: '/admin/placements/applications' }),
                 markLocked({ icon: Target, label: 'Eligibility Rules', path: '/admin/placements/eligibility' }),
-                markLocked({ icon: Users2, label: 'Coordinators', path: '/admin/coordinators' }),
                 markLocked({ icon: PieChart, label: 'Placement Stats', path: '/admin/placements/stats' }),
             ]
         },
