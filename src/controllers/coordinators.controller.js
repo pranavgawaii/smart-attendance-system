@@ -130,45 +130,39 @@ const generateAttendancePDF = async (req, res) => {
         const pageWidth = doc.page.width;
         const contentWidth = pageWidth - 120; // margins
 
-        // Logo path - try to load from project root
-        const rootLogoPath = path.join(process.cwd(), 'mitadtlogo.png');
+        // Logo path - use the CN-CRTP logo
+        const rootLogoPath = path.join(process.cwd(), 'mitadtcncrtp.png');
 
-        // ===== HEADER WITH LOGO ON LEFT =====
-        const headerY = 45;
-        const logoSize = 50;
-        let logoAdded = false;
+        // ===== HEADER: TITLE LEFT, LOGO RIGHT, LINE BELOW =====
+        const headerY = 40;
+        const logoWidth = 100;
+        const logoHeight = 35;
 
+        // Title on LEFT side - using Helvetica-Bold for clean professional look
+        doc.fontSize(13).font('Helvetica-Bold')
+            .text('Central Corporate Relations, Training', 60, headerY);
+        doc.fontSize(13).font('Helvetica-Bold')
+            .text('and Placement Cell (CN-CRTP)', 60, headerY + 16);
+
+        // Vertical separator line "|" between title and logo
+        const separatorX = pageWidth - 60 - logoWidth - 15;
+        doc.strokeColor('#333333').lineWidth(1)
+            .moveTo(separatorX, headerY - 5).lineTo(separatorX, headerY + 35).stroke();
+
+        // Logo on RIGHT side - vertically centered with title
         try {
             if (fs.existsSync(rootLogoPath)) {
-                doc.image(rootLogoPath, 60, headerY, { width: logoSize });
-                logoAdded = true;
+                doc.image(rootLogoPath, pageWidth - 60 - logoWidth, headerY - 5, { width: logoWidth });
             }
         } catch (imgError) {
             console.warn('[Coordinators] Failed to load logo image:', imgError);
-            // Continue without logo
         }
 
-        if (logoAdded) {
-            // University Name - Next to logo
-            doc.fontSize(16).font('Times-Bold')
-                .text('MIT ADT UNIVERSITY', 120, headerY + 8);
-
-            // Sub-header
-            doc.fontSize(12).font('Times-Roman')
-                .text('Training & Placement Cell', 120, headerY + 28);
-        } else {
-            // Fallback without logo - Centered
-            doc.fontSize(16).font('Times-Bold')
-                .text('MIT ADT UNIVERSITY', 60, headerY, { align: 'center', width: contentWidth });
-            doc.fontSize(12).font('Times-Roman')
-                .text('Training & Placement Cell', 60, doc.y + 5, { align: 'center', width: contentWidth });
-        }
-
-        // Elegant divider line
-        const lineY = headerY + logoSize + 15;
-        doc.strokeColor('#333333').lineWidth(0.5)
+        // Divider line - right below header content
+        const lineY = headerY + 40;
+        doc.strokeColor('#333333').lineWidth(0.8)
             .moveTo(60, lineY).lineTo(pageWidth - 60, lineY).stroke();
-        doc.y = lineY + 25;
+        doc.y = lineY + 20;
 
         // ===== LETTER CONTENT =====
         const bodyFont = 'Times-Roman';
@@ -265,7 +259,7 @@ const generateAttendancePDF = async (req, res) => {
         });
 
         // ===== SIGNATURE SECTION =====
-        doc.y = rowY + 50;
+        doc.y = rowY + 100;
         doc.fillColor('#333333');
         doc.font(bodyFont).fontSize(fontSize).text('Regards,', 60);
         doc.moveDown(0.5);

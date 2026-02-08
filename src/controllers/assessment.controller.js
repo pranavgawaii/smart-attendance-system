@@ -2,6 +2,8 @@ const assessmentModel = require('../models/assessment.model');
 const userModel = require('../models/user.model');
 const auditStore = require('../utils/auditStore');
 const PDFDocument = require('pdfkit');
+const fs = require('fs');
+const path = require('path');
 
 // Create Assessment
 const createAssessment = async (req, res) => {
@@ -269,7 +271,10 @@ const exportAllocationsPdf = async (req, res) => {
         const allocations = await assessmentModel.getAllocations(id);
         const assessment = await assessmentModel.findById(id);
 
-        const doc = new PDFDocument();
+        const doc = new PDFDocument({
+            size: 'A4',
+            margins: { top: 50, bottom: 50, left: 60, right: 60 }
+        });
         res.setHeader('Content-Type', 'application/pdf');
         // Rename file if specific lab
         const filename = labId ? `allocation-lab-${labId}.pdf` : `allocations-${id}.pdf`;
@@ -277,12 +282,41 @@ const exportAllocationsPdf = async (req, res) => {
 
         doc.pipe(res);
 
-        // Header
-        doc.fontSize(20).text('MIT ADT University', { align: 'center' });
-        doc.fontSize(14).text('Placement & Attendance Portal', { align: 'center' });
-        doc.moveDown();
-        doc.fontSize(16).text(`Assessment: ${assessment.title}`, { align: 'center' });
-        doc.fontSize(12).text(`Date: ${new Date(assessment.date).toDateString()}`, { align: 'center' });
+        // ===== HEADER: STANDARD CN-CRTP HEADER =====
+        const pageWidth = doc.page.width;
+        const rootLogoPath = path.join(process.cwd(), 'mitadtcncrtp.png');
+        const headerY = 40;
+        const logoWidth = 100;
+
+        // Title on LEFT side
+        doc.fontSize(13).font('Helvetica-Bold')
+            .text('Central Corporate Relations, Training', 60, headerY);
+        doc.fontSize(13).font('Helvetica-Bold')
+            .text('and Placement Cell (CN-CRTP)', 60, headerY + 16);
+
+        // Vertical separator line "|"
+        const separatorX = pageWidth - 60 - logoWidth - 15;
+        doc.strokeColor('#333333').lineWidth(1)
+            .moveTo(separatorX, headerY - 5).lineTo(separatorX, headerY + 35).stroke();
+
+        // Logo on RIGHT side
+        try {
+            if (fs.existsSync(rootLogoPath)) {
+                doc.image(rootLogoPath, pageWidth - 60 - logoWidth, headerY - 5, { width: logoWidth });
+            }
+        } catch (imgError) {
+            console.warn('[Assessment] Failed to load logo image:', imgError);
+        }
+
+        // Divider line
+        const lineY = headerY + 40;
+        doc.strokeColor('#333333').lineWidth(0.8)
+            .moveTo(60, lineY).lineTo(pageWidth - 60, lineY).stroke();
+        doc.y = lineY + 30;
+
+        // Document Title
+        doc.font('Helvetica-Bold').fontSize(16).text(`Assessment: ${assessment.title}`, { align: 'center' });
+        doc.fontSize(12).font('Helvetica').text(`Date: ${new Date(assessment.date).toDateString()}`, { align: 'center' });
         doc.moveDown();
 
         // Group by Lab

@@ -112,41 +112,53 @@ export default function SeatAllocation() {
                     if (index > 0) doc.addPage();
 
                     // ============================================
-                    // PREMIUM CLEAN LAYOUT
+                    // PREMIUM CLEAN LAYOUT (MATCHING BACKEND)
                     // ============================================
 
-                    // 1. HEADER (Letterhead Style)
+                    // 1. HEADER (Title Left, Logo Right, Line Below)
 
-                    // Logo (Top Left)
-                    if (MIT_LOGO_BASE64) {
-                        try {
-                            const logoData = MIT_LOGO_BASE64.startsWith('data:') ? MIT_LOGO_BASE64 : `data:image/png;base64,${MIT_LOGO_BASE64}`;
-                            doc.addImage(logoData, 'PNG', 14, 10, 24, 24);
-                        } catch (e) { console.error('Logo render failed:', e); }
+                    const pageWidth = doc.internal.pageSize.width;
+                    const headerY = 15;
+                    const logoWidth = 35; // Adjusted proportional width
+                    const logoHeight = 12; // Aspect ratio placeholder
+
+                    // Title on LEFT side
+                    doc.setTextColor(51, 51, 51);
+                    doc.setFontSize(13);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('Central Corporate Relations, Training', 14, headerY);
+                    doc.text('and Placement Cell (CN-CRTP)', 14, headerY + 6);
+
+                    // Logo on RIGHT side - Load from public folder
+                    try {
+                        const img = new Image();
+                        img.src = '/logo_header.png';
+                        // Synchronous hack not possible here, we assume it loads or we use the base64 fallback if needed.
+                        // Ideally we should pre-load. For now, we will try to use the pre-loaded image if available, 
+                        // or rely on doc.addImage taking a URL (might require CORS/security flags).
+                        // BETTER APPROACH: Use the MIT_LOGO_BASE64 if it matches, OR fetch and await before generating.
+                        // Given constraints and existing code structure, let's use addImage with URL but wrapped in try/catch.
+                        // NOTE: For client-side jsPDF with URL images to work, the image must be served Same-Origin or have CORS headers.
+                        // Since we moved it to public/, it is same origin.
+                        doc.addImage('/logo_header.png', 'PNG', pageWidth - 14 - logoWidth, headerY - 5, logoWidth, 12);
+                    } catch (e) {
+                        // Fallback to text if image fails
+                        console.warn('Logo render failed:', e);
+                        doc.setFontSize(10);
+                        doc.text('[CN-CRTP LOGO]', pageWidth - 14 - 20, headerY);
                     }
 
-                    // University Title (Right of Logo, in dark gray not black)
-                    doc.setTextColor(60, 60, 60);
-                    doc.setFontSize(16);
-                    doc.setFont('helvetica', 'bold');
-                    doc.text('MIT UNIVERSITY, PUNE', 45, 18);
+                    // Vertical Separator Line "|"
+                    // Positioned to the left of the logo
+                    const separatorX = pageWidth - 14 - logoWidth - 5;
+                    doc.setDrawColor(51, 51, 51);
+                    doc.setLineWidth(0.5);
+                    doc.line(separatorX, headerY - 5, separatorX, headerY + 10);
 
-                    doc.setFontSize(10);
-                    doc.setFont('helvetica', 'normal'); // Cleaner normal weight
-                    doc.setTextColor(100, 100, 100);
-                    doc.text('Examination & Evaluation Section', 45, 25);
-                    doc.text('Official Seating Plan', 45, 30);
-
-                    // Top Right (Generated Date)
-                    doc.setFontSize(8);
-                    doc.setTextColor(150, 150, 150);
-                    const genDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-                    doc.text(`Date: ${genDate}`, 196, 15, { align: 'right' });
-
-                    // Divider Line (Very subtle)
-                    doc.setDrawColor(220, 220, 220);
-                    doc.setLineWidth(0.2); // Thinner line for "clean" look
-                    doc.line(14, 38, 196, 38);
+                    // Divider Line (Very subtle) below everything
+                    doc.setDrawColor(200, 200, 200);
+                    doc.setLineWidth(0.2);
+                    doc.line(14, headerY + 15, pageWidth - 14, headerY + 15);
 
                     // 2. INFO SECTION (Clean, no boxes, just text)
                     const InfoTop = 48;
