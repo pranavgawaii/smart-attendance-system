@@ -33,6 +33,10 @@ export default function FormBuilder() {
         description: '',
         status: 'draft'
     });
+    const [themeSettings, setThemeSettings] = useState({
+        primaryColor: '#6366f1',
+        backgroundColor: '#f8fafc'
+    });
     const [fields, setFields] = useState([]);
     const [loading, setLoading] = useState(isEditMode);
     const [saving, setSaving] = useState(false);
@@ -49,6 +53,9 @@ export default function FormBuilder() {
             const res = await api.get(`/forms/${id}`);
             setForm(res.data.form);
             setFields(res.data.fields || []);
+            if (res.data.form.theme_settings) {
+                setThemeSettings(res.data.form.theme_settings);
+            }
         } catch (err) {
             console.error('Error fetching form:', err);
         } finally {
@@ -123,6 +130,7 @@ export default function FormBuilder() {
                     title: form.title,
                     description: form.description,
                     status: form.status,
+                    theme_settings: themeSettings,
                     fields
                 });
             } else {
@@ -130,11 +138,12 @@ export default function FormBuilder() {
                     title: form.title,
                     description: form.description,
                     status: form.status,
+                    theme_settings: themeSettings,
                     fields
                 });
             }
 
-            navigate('/admin/coordinator-forms');
+            navigate('/admin/coordinators/forms');
         } catch (err) {
             console.error('Error saving form:', err);
             alert('Error saving form: ' + (err.response?.data?.error || err.message));
@@ -160,7 +169,7 @@ export default function FormBuilder() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                         <button
-                            onClick={() => navigate('/admin/coordinator-forms')}
+                            onClick={() => navigate('/admin/coordinators/forms')}
                             className="p-2 hover:bg-zinc-100 rounded-lg text-zinc-600 transition-colors"
                         >
                             <ArrowLeft size={18} />
@@ -223,6 +232,37 @@ export default function FormBuilder() {
                                         <option value="active">Active (Public)</option>
                                         <option value="closed">Closed</option>
                                     </select>
+                                </div>
+
+                                <div className="pt-4 border-t border-zinc-100">
+                                    <h3 className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-3">Design & Theme</h3>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs font-medium text-zinc-700 mb-1.5">Header Color</label>
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="color"
+                                                    value={themeSettings.primaryColor}
+                                                    onChange={(e) => setThemeSettings({ ...themeSettings, primaryColor: e.target.value })}
+                                                    className="w-8 h-8 rounded border border-zinc-200 cursor-pointer overflow-hidden p-0 bg-transparent"
+                                                />
+                                                <span className="text-[10px] text-zinc-500 uppercase font-mono">{themeSettings.primaryColor}</span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-medium text-zinc-700 mb-1.5">Page Background</label>
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    type="color"
+                                                    value={themeSettings.backgroundColor}
+                                                    onChange={(e) => setThemeSettings({ ...themeSettings, backgroundColor: e.target.value })}
+                                                    className="w-8 h-8 rounded border border-zinc-200 cursor-pointer overflow-hidden p-0 bg-transparent"
+                                                />
+                                                <span className="text-[10px] text-zinc-500 uppercase font-mono">{themeSettings.backgroundColor}</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -353,6 +393,6 @@ export default function FormBuilder() {
                     </div>
                 </div>
             </div>
-        </AdminLayout>
+        </AdminLayout >
     );
 }

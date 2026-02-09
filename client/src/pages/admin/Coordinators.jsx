@@ -118,7 +118,7 @@ export default function Coordinators() {
                             Generate Letter
                         </button>
                         <button
-                            onClick={() => navigate('/admin/coordinator-forms')}
+                            onClick={() => navigate('/admin/coordinators/forms')}
                             className="flex items-center gap-2 px-4 py-2 bg-white border border-zinc-300 text-zinc-700 rounded-lg text-sm font-medium hover:bg-zinc-50 hover:text-zinc-900 transition-all shadow-sm"
                         >
                             <FileText size={16} />

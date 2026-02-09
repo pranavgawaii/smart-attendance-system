@@ -117,7 +117,7 @@ export default function FormResponses() {
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                         <button
-                            onClick={() => navigate('/admin/coordinator-forms')}
+                            onClick={() => navigate('/admin/coordinators/forms')}
                             className="p-2 hover:bg-zinc-100 rounded-lg text-zinc-600 transition-colors"
                         >
                             <ArrowLeft size={18} />
@@ -230,8 +230,8 @@ export default function FormResponses() {
                                             onClick={() => updateResponseStatus(selectedResponse.id, s.value, selectedResponse.notes)}
                                             disabled={saving}
                                             className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${selectedResponse.status === s.value
-                                                    ? s.color + ' ring-2 ring-offset-1 ring-zinc-400'
-                                                    : 'bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100'
+                                                ? s.color + ' ring-2 ring-offset-1 ring-zinc-400'
+                                                : 'bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100'
                                                 }`}
                                         >
                                             {s.label}

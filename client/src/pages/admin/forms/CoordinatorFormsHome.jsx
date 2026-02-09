@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Copy, Edit, Eye, ToggleLeft, ToggleRight, Loader2, FileText, Check, ExternalLink } from 'lucide-react';
+import { Plus, Copy, Edit, Eye, ToggleLeft, ToggleRight, Loader2, FileText, Check, ExternalLink, ArrowLeft } from 'lucide-react';
 import AdminLayout from '../../../components/admin/AdminLayout';
 import api from '../../../services/api';
 
@@ -61,12 +61,20 @@ export default function CoordinatorFormsHome() {
             <div className="space-y-6">
                 {/* Header */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-xl font-semibold text-zinc-900">PlacePro Forms</h1>
-                        <p className="text-sm text-zinc-500 mt-1">Create and manage application forms</p>
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => navigate('/admin/coordinators')}
+                            className="p-2 hover:bg-zinc-100 rounded-lg text-zinc-600 transition-colors"
+                        >
+                            <ArrowLeft size={18} />
+                        </button>
+                        <div>
+                            <h1 className="text-xl font-semibold text-zinc-900">PlacePro Forms</h1>
+                            <p className="text-sm text-zinc-500 mt-1">Create and manage application forms</p>
+                        </div>
                     </div>
                     <Link
-                        to="/admin/coordinator-forms/new"
+                        to="/admin/coordinators/forms/new"
                         className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-lg text-sm font-medium hover:bg-zinc-800 transition-all shadow-sm"
                     >
                         <Plus size={16} />
@@ -89,7 +97,7 @@ export default function CoordinatorFormsHome() {
                             <p className="text-sm font-medium text-zinc-600">No forms created yet</p>
                             <p className="text-xs text-zinc-400 mt-1">Create your first form to get started</p>
                             <Link
-                                to="/admin/coordinator-forms/new"
+                                to="/admin/coordinators/forms/new"
                                 className="inline-flex items-center gap-1 mt-4 text-sm text-zinc-900 hover:underline font-medium"
                             >
                                 Create form <ExternalLink size={12} />
@@ -136,14 +144,14 @@ export default function CoordinatorFormsHome() {
                                                             {copiedId === form.slug ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
                                                         </button>
                                                         <button
-                                                            onClick={() => navigate(`/admin/coordinator-forms/${form.id}/edit`)}
+                                                            onClick={() => navigate(`/admin/coordinators/forms/${form.id}/edit`)}
                                                             className="p-2 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors"
                                                             title="Edit form"
                                                         >
                                                             <Edit size={16} />
                                                         </button>
                                                         <button
-                                                            onClick={() => navigate(`/admin/coordinator-forms/${form.id}/responses`)}
+                                                            onClick={() => navigate(`/admin/coordinators/forms/${form.id}/responses`)}
                                                             className="p-2 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors"
                                                             title="View responses"
                                                         >

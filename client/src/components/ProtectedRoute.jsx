@@ -21,7 +21,8 @@ export default function ProtectedRoute({ children, role }) {
         if (role === 'admin' && user.role === 'coordinator_admin') {
             const allowedPaths = ['/admin/coordinators', '/admin'];
             const isAllowed = allowedPaths.some(path =>
-                location.pathname === path || location.pathname.startsWith('/admin/coordinators')
+                location.pathname === path ||
+                location.pathname.startsWith('/admin/coordinators')
             );
 
             if (isAllowed) {

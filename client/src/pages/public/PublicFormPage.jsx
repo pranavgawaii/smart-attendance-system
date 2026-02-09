@@ -191,35 +191,70 @@ export default function PublicFormPage() {
     }
 
     return (
-        <div className="min-h-screen bg-zinc-50 py-8 px-4">
-            <div className="max-w-2xl mx-auto">
-                {/* Header */}
-                <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden mb-6">
-                    <div className="bg-zinc-900 p-6">
-                        <h1 className="text-xl font-semibold text-white">{form.title}</h1>
+        <div
+            className="min-h-screen py-8 px-4 sm:px-6 lg:px-8 transition-colors duration-500"
+            style={{ backgroundColor: form.theme_settings?.backgroundColor || '#f0f2f5' }}
+        >
+            <div className="max-w-3xl mx-auto space-y-4">
+                {/* Google Forms Style Header Card */}
+                <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden relative">
+                    {/* Header Strip */}
+                    <div
+                        className="h-2.5 w-full"
+                        style={{ backgroundColor: form.theme_settings?.primaryColor || '#673ab7' }}
+                    />
+
+                    <div className="p-6 sm:p-8">
+                        <h1 className="text-3xl font-normal text-zinc-900 mb-2">
+                            {form.title}
+                        </h1>
                         {form.description && (
-                            <p className="text-zinc-400 mt-2 text-sm">{form.description}</p>
-                        )}
-                    </div>
-
-                    <form onSubmit={handleSubmit} className="p-6 space-y-5">
-                        {fields.map((field) => (
-                            <div key={field.id}>
-                                <label className="block text-sm font-medium text-zinc-700 mb-2">
-                                    {field.label}
-                                    {field.required && <span className="text-red-500 ml-1">*</span>}
-                                </label>
-                                {renderField(field)}
-                                {errors[field.id] && (
-                                    <p className="text-red-500 text-xs mt-1.5">{errors[field.id]}</p>
-                                )}
+                            <div className="text-base text-zinc-600 whitespace-pre-wrap border-t border-zinc-100 pt-4 mt-4 leading-relaxed">
+                                {form.description}
                             </div>
-                        ))}
+                        )}
+                        <div className="mt-6 pt-4 border-t border-zinc-100 flex items-center justify-between">
+                            <span className="text-xs font-medium text-red-500">* Indicates required question</span>
+                        </div>
+                    </div>
+                </div>
 
+                {/* Form Fields as separate cards (Google Forms Style) */}
+                <form onSubmit={handleSubmit} className="space-y-4 pb-12">
+                    {fields.map((field) => (
+                        <div
+                            key={field.id}
+                            className={`bg-white rounded-xl p-6 sm:p-8 shadow-sm border transition-all ${errors[field.id] ? 'border-red-300' : 'border-zinc-200 hover:border-zinc-300'}`}
+                        >
+                            <label className="block text-base font-medium text-zinc-900 mb-6">
+                                {field.label}
+                                {field.required && <span className="text-red-500 ml-1">*</span>}
+                            </label>
+
+                            <div className="relative group">
+                                {renderField(field)}
+                                {/* Decorative underline like Google Forms */}
+                                <div className="absolute bottom-0 left-0 h-0.5 bg-zinc-900 w-0 group-focus-within:w-full transition-all duration-300"
+                                    style={{ backgroundColor: form.theme_settings?.primaryColor || '#673ab7' }}
+                                />
+                            </div>
+
+                            {errors[field.id] && (
+                                <div className="mt-3 flex items-center gap-1.5 text-red-500">
+                                    <AlertCircle size={14} />
+                                    <p className="text-xs font-medium">{errors[field.id]}</p>
+                                </div>
+                            )}
+                        </div>
+                    ))}
+
+                    {/* Submit Section */}
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
                         <button
                             type="submit"
                             disabled={submitting}
-                            className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-zinc-900 text-white font-medium rounded-lg hover:bg-zinc-800 disabled:opacity-50 transition-all text-sm"
+                            className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-2.5 bg-zinc-900 text-white font-medium rounded-lg hover:shadow-lg disabled:opacity-50 transition-all text-sm active:scale-95"
+                            style={{ backgroundColor: form.theme_settings?.primaryColor || '#673ab7' }}
                         >
                             {submitting ? (
                                 <Loader2 className="animate-spin" size={18} />
@@ -230,12 +265,15 @@ export default function PublicFormPage() {
                                 </>
                             )}
                         </button>
-                    </form>
-                </div>
 
-                <p className="text-center text-xs text-zinc-400">
-                    Powered by MIT ADT PlacePro
-                </p>
+                        <div className="flex items-center gap-2 text-zinc-400">
+                            <div className="h-4 w-px bg-zinc-200 hidden sm:block" />
+                            <p className="text-[11px] font-medium uppercase tracking-wider">
+                                Powered by MIT ADT PlacePro
+                            </p>
+                        </div>
+                    </div>
+                </form>
             </div>
         </div>
     );

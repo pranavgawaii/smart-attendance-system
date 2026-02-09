@@ -57,7 +57,7 @@ router.get('/:id', authenticateToken, authorizeRole(['admin', 'super_admin', 'co
 // Create form (admin only)
 router.post('/', authenticateToken, authorizeRole(['admin', 'super_admin', 'coordinator_admin']), async (req, res) => {
     try {
-        const { title, description, status, fields } = req.body;
+        const { title, description, status, fields, theme_settings } = req.body;
 
         // Create form
         const { data: form, error: formError } = await supabase
@@ -68,6 +68,7 @@ router.post('/', authenticateToken, authorizeRole(['admin', 'super_admin', 'coor
                 slug: generateSlug(title),
                 status: status || 'draft',
                 is_public: true,
+                theme_settings: theme_settings || { primaryColor: '#6366f1', backgroundColor: '#f8fafc' },
                 created_by: req.user.id
             })
             .select()
@@ -103,12 +104,12 @@ router.post('/', authenticateToken, authorizeRole(['admin', 'super_admin', 'coor
 // Update form (admin only)
 router.put('/:id', authenticateToken, authorizeRole(['admin', 'super_admin', 'coordinator_admin']), async (req, res) => {
     try {
-        const { title, description, status, fields } = req.body;
+        const { title, description, status, fields, theme_settings } = req.body;
 
         // Update form
         const { error: formError } = await supabase
             .from('forms')
-            .update({ title, description, status })
+            .update({ title, description, status, theme_settings })
             .eq('id', req.params.id);
 
         if (formError) throw formError;

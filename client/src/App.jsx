@@ -149,10 +149,10 @@ function App() {
               <Route path="students/:id" element={<StudentProfile />} />
               <Route path="coordinators" element={<Coordinators />} />
               <Route path="coordinators/attendance" element={<CoordinatorAttendance />} />
-              <Route path="coordinator-forms" element={<CoordinatorFormsHome />} />
-              <Route path="coordinator-forms/new" element={<FormBuilder />} />
-              <Route path="coordinator-forms/:id/edit" element={<FormBuilder />} />
-              <Route path="coordinator-forms/:id/responses" element={<FormResponses />} />
+              <Route path="coordinators/forms" element={<CoordinatorFormsHome />} />
+              <Route path="coordinators/forms/new" element={<FormBuilder />} />
+              <Route path="coordinators/forms/:id/edit" element={<FormBuilder />} />
+              <Route path="coordinators/forms/:id/responses" element={<FormResponses />} />
             </Route>
 
             {/* Public Form Page (No Auth Required) */}
