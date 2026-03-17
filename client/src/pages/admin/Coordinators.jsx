@@ -101,13 +101,13 @@ export default function Coordinators() {
     };
 
     return (
-        <AdminLayout title="Placement student coordinator">
+        <AdminLayout title="Coordinator">
             <div className="space-y-6">
                 {/* Header Section */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-xl font-semibold text-zinc-900">Placement student coordinator</h1>
-                        <p className="text-sm text-zinc-500 mt-1">Manage student coordinators for placement activities</p>
+                        <h1 className="text-xl font-semibold text-zinc-900">Coordinator</h1>
+                        <p className="text-sm text-zinc-500 mt-1">Manage coordinators for placement activities</p>
                     </div>
                     <div className="flex gap-3">
                         <button

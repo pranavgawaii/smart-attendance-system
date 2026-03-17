@@ -58,7 +58,7 @@ export const getAdminMenu = (role) => {
                 markLocked({ icon: Users, label: 'All Students', path: '/admin/users' }),
                 markLocked({ icon: UserPlus, label: 'Bulk Upload', path: '/admin/users/bulk-upload' }),
                 markLocked({ icon: Grid, label: 'Allocations', path: '/admin/allocations' }),
-                markLocked({ icon: Users2, label: 'Placement student coordinator', path: '/admin/coordinators' }),
+                markLocked({ icon: Users2, label: 'Coordinator', path: '/admin/coordinators' }),
             ]
         },
         {
@@ -87,4 +87,3 @@ export const getAdminMenu = (role) => {
         }
     ];
 };
-

@@ -19,7 +19,7 @@ const COORDINATOR_TEMPLATE = [
     { label: 'Department', field_type: 'select', required: true, options: { choices: ['SOC', 'SOE', 'SODT', 'SOM'] } },
     { label: 'Year', field_type: 'select', required: true, options: { choices: ['FY', 'SY', 'TY', 'LY'] } },
     { label: 'CGPA', field_type: 'number', required: true },
-    { label: 'Why do you want to be a Placement student coordinator?', field_type: 'long_text', required: true },
+    { label: 'Why do you want to be a Coordinator?', field_type: 'long_text', required: true },
     { label: 'Any past experience in coordination/events?', field_type: 'long_text', required: false }
 ];
 
@@ -102,7 +102,7 @@ export default function FormBuilder() {
 
     const applyTemplate = () => {
         if (fields.length > 0 && !confirm('This will replace existing fields. Continue?')) return;
-        setForm({ ...form, title: 'Placement student coordinator Application', description: 'Apply to become a Placement student coordinator for the upcoming academic year.' });
+        setForm({ ...form, title: 'Coordinator Application', description: 'Apply to become a coordinator for the upcoming academic year.' });
         setFields(COORDINATOR_TEMPLATE.map((f, i) => ({
             ...f,
             id: `temp-${Date.now()}-${i}`,
