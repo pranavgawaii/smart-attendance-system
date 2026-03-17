@@ -13,6 +13,9 @@ router.get('/', coordinatorsController.getAllCoordinators);
 // POST /api/coordinators - Add new coordinator
 router.post('/', coordinatorsController.addCoordinator);
 
+// PUT /api/coordinators/:id - Update coordinator
+router.put('/:id', coordinatorsController.updateCoordinator);
+
 // DELETE /api/coordinators/:id - Delete coordinator
 router.delete('/:id', coordinatorsController.deleteCoordinator);
 
@@ -20,4 +23,3 @@ router.delete('/:id', coordinatorsController.deleteCoordinator);
 router.post('/attendance-pdf', coordinatorsController.generateAttendancePDF);
 
 module.exports = router;
-

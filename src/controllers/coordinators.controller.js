@@ -193,6 +193,57 @@ const addCoordinator = async (req, res) => {
     }
 };
 
+// Update coordinator
+const updateCoordinator = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, enrollment_no, email, department, year } = req.body;
+
+        if (!name || !enrollment_no || !department || !year) {
+            return res.status(400).json({ error: 'Name, enrollment number, department and year are required' });
+        }
+
+        const { data: existing, error: duplicateError } = await supabase
+            .from('placement_coordinators')
+            .select('id')
+            .eq('enrollment_no', enrollment_no)
+            .neq('id', id)
+            .maybeSingle();
+
+        if (duplicateError) {
+            console.error('[Coordinators] Duplicate check error:', duplicateError);
+            return res.status(500).json({ error: 'Failed to validate enrollment number' });
+        }
+
+        if (existing) {
+            return res.status(409).json({ error: 'Enrollment number already exists' });
+        }
+
+        const { data, error } = await supabase
+            .from('placement_coordinators')
+            .update({
+                name,
+                enrollment_no,
+                email: email || null,
+                department,
+                year
+            })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('[Coordinators] Update error:', error);
+            return res.status(500).json({ error: 'Failed to update coordinator' });
+        }
+
+        res.json(data);
+    } catch (error) {
+        console.error('[Coordinators] Error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
 // Delete coordinator
 const deleteCoordinator = async (req, res) => {
     try {
@@ -349,6 +400,7 @@ const generateAttendancePDF = async (req, res) => {
 module.exports = {
     getAllCoordinators,
     addCoordinator,
+    updateCoordinator,
     deleteCoordinator,
     generateAttendancePDF
 };

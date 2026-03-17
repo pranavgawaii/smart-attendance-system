@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminLayout from '../../components/admin/AdminLayout';
 import api from '../../services/api';
-import { Plus, Search, Trash2, FileCheck, X, Loader2, Filter, ChevronDown, UserPlus, FileText } from 'lucide-react';
+import { Plus, Search, Trash2, FileCheck, X, Loader2, Filter, ChevronDown, UserPlus, FileText, Edit2 } from 'lucide-react';
 
 export default function Coordinators() {
     const navigate = useNavigate();
@@ -10,6 +10,7 @@ export default function Coordinators() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [showAddModal, setShowAddModal] = useState(false);
+    const [editingCoordinator, setEditingCoordinator] = useState(null);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
@@ -23,6 +24,14 @@ export default function Coordinators() {
         department: '',
         year: ''
     });
+
+    const emptyForm = {
+        name: '',
+        enrollment_no: '',
+        email: '',
+        department: '',
+        year: ''
+    };
 
     useEffect(() => {
         fetchCoordinators();
@@ -46,20 +55,52 @@ export default function Coordinators() {
         }
     };
 
-    const handleAddCoordinator = async (e) => {
+    const closeModal = () => {
+        setShowAddModal(false);
+        setEditingCoordinator(null);
+        setFormData(emptyForm);
+        setError('');
+    };
+
+    const openAddModal = () => {
+        setEditingCoordinator(null);
+        setFormData(emptyForm);
+        setError('');
+        setShowAddModal(true);
+    };
+
+    const handleEdit = (coord) => {
+        setEditingCoordinator(coord);
+        setFormData({
+            name: coord.name || '',
+            enrollment_no: coord.enrollment_no || '',
+            email: coord.email || '',
+            department: coord.department || '',
+            year: coord.year || ''
+        });
+        setError('');
+        setShowAddModal(true);
+    };
+
+    const handleSaveCoordinator = async (e) => {
         e.preventDefault();
         setSubmitting(true);
         setError('');
 
         try {
-            await api.post('/coordinators', formData);
-            setSuccess('Coordinator added successfully');
-            setShowAddModal(false);
-            setFormData({ name: '', enrollment_no: '', email: '', department: '', year: '' });
-            fetchCoordinators();
+            if (editingCoordinator) {
+                await api.put(`/coordinators/${editingCoordinator.id}`, formData);
+                setSuccess('Coordinator updated successfully');
+            } else {
+                await api.post('/coordinators', formData);
+                setSuccess('Coordinator added successfully');
+            }
+
+            closeModal();
+            await fetchCoordinators();
             setTimeout(() => setSuccess(''), 3000);
         } catch (err) {
-            setError(err.response?.data?.error || 'Failed to add coordinator');
+            setError(err.response?.data?.error || `Failed to ${editingCoordinator ? 'update' : 'add'} coordinator`);
         } finally {
             setSubmitting(false);
         }
@@ -125,7 +166,7 @@ export default function Coordinators() {
                             PlacePro Forms
                         </button>
                         <button
-                            onClick={() => setShowAddModal(true)}
+                            onClick={openAddModal}
                             className="flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-lg text-sm font-medium hover:bg-zinc-800 transition-all shadow-sm"
                         >
                             <Plus size={16} />
@@ -187,15 +228,16 @@ export default function Coordinators() {
                                 <tr className="border-b border-zinc-100 bg-zinc-50/50">
                                     <th className="text-left py-3 px-6 text-xs font-semibold text-zinc-500 uppercase tracking-wider w-[30%]">Name / Email</th>
                                     <th className="text-left py-3 px-6 text-xs font-semibold text-zinc-500 uppercase tracking-wider w-[20%]">Enrollment No.</th>
-                                    <th className="text-left py-3 px-6 text-xs font-semibold text-zinc-500 uppercase tracking-wider w-[15%]">Year</th>
-                                    <th className="text-left py-3 px-6 text-xs font-semibold text-zinc-500 uppercase tracking-wider w-[20%]">Department</th>
-                                    <th className="text-right py-3 px-6 text-xs font-semibold text-zinc-500 uppercase tracking-wider w-[15%]">Actions</th>
+                                    <th className="text-left py-3 px-6 text-xs font-semibold text-zinc-500 uppercase tracking-wider w-[12%]">Year</th>
+                                    <th className="text-left py-3 px-6 text-xs font-semibold text-zinc-500 uppercase tracking-wider w-[18%]">Department</th>
+                                    <th className="text-center py-3 px-6 text-xs font-semibold text-zinc-500 uppercase tracking-wider w-[10%]">Edit</th>
+                                    <th className="text-right py-3 px-6 text-xs font-semibold text-zinc-500 uppercase tracking-wider w-[10%]">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-zinc-100">
                                 {loading ? (
                                     <tr>
-                                        <td colSpan={5} className="py-12 text-center text-zinc-500">
+                                        <td colSpan={6} className="py-12 text-center text-zinc-500">
                                             <div className="flex flex-col items-center gap-2">
                                                 <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
                                                 <span className="text-xs">Loading data...</span>
@@ -204,7 +246,7 @@ export default function Coordinators() {
                                     </tr>
                                 ) : filteredCoordinators.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} className="py-16 text-center text-zinc-500">
+                                        <td colSpan={6} className="py-16 text-center text-zinc-500">
                                             <div className="flex flex-col items-center gap-3">
                                                 <div className="w-10 h-10 rounded-full bg-zinc-50 flex items-center justify-center">
                                                     <UserPlus className="w-5 h-5 text-zinc-300" />
@@ -234,6 +276,15 @@ export default function Coordinators() {
                                                     {coord.department}
                                                 </span>
                                             </td>
+                                            <td className="py-4 px-6 text-center">
+                                                <button
+                                                    onClick={() => handleEdit(coord)}
+                                                    className="inline-flex items-center justify-center p-1.5 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-md transition-all"
+                                                    title="Edit Coordinator"
+                                                >
+                                                    <Edit2 size={16} strokeWidth={1.5} />
+                                                </button>
+                                            </td>
                                             <td className="py-4 px-6 text-right">
                                                 <button
                                                     onClick={() => handleDelete(coord.id, coord.name)}
@@ -261,16 +312,18 @@ export default function Coordinators() {
                 <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
                     <div className="bg-white rounded-xl w-full max-w-md shadow-2xl border border-zinc-100 transform transition-all scale-100">
                         <div className="flex items-center justify-between p-5 border-b border-zinc-100">
-                            <h2 className="text-base font-semibold text-zinc-900">Add Coordinator</h2>
+                            <h2 className="text-base font-semibold text-zinc-900">
+                                {editingCoordinator ? 'Edit Coordinator' : 'Add Coordinator'}
+                            </h2>
                             <button
-                                onClick={() => setShowAddModal(false)}
+                                onClick={closeModal}
                                 className="p-1.5 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors"
                             >
                                 <X size={18} />
                             </button>
                         </div>
 
-                        <form onSubmit={handleAddCoordinator} className="p-5 space-y-4">
+                        <form onSubmit={handleSaveCoordinator} className="p-5 space-y-4">
                             <div>
                                 <label className="block text-xs font-medium text-zinc-700 mb-1.5">Full Name</label>
                                 <input
@@ -352,7 +405,7 @@ export default function Coordinators() {
                             <div className="flex gap-3 pt-3 border-t border-zinc-50">
                                 <button
                                     type="button"
-                                    onClick={() => setShowAddModal(false)}
+                                    onClick={closeModal}
                                     className="flex-1 py-2.5 bg-white border border-zinc-300 rounded-lg text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-all"
                                 >
                                     Cancel
@@ -362,7 +415,11 @@ export default function Coordinators() {
                                     disabled={submitting}
                                     className="flex-1 py-2.5 bg-zinc-900 text-white rounded-lg text-sm font-medium hover:bg-zinc-800 transition-all disabled:opacity-70 flex items-center justify-center gap-2"
                                 >
-                                    {submitting ? <Loader2 size={16} className="animate-spin" /> : 'Add Member'}
+                                    {submitting ? (
+                                        <Loader2 size={16} className="animate-spin" />
+                                    ) : (
+                                        editingCoordinator ? 'Save Changes' : 'Add Coordinator'
+                                    )}
                                 </button>
                             </div>
                         </form>
