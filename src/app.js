@@ -154,32 +154,42 @@ if (process.env.NODE_ENV === 'production') {
     const path = require('path');
     const fs = require('fs');
 
-    // In Vercel, __dirname is the function directory. client/dist is one level up.
-    const distPath = path.join(__dirname, '../client/dist');
+    const distCandidates = [
+        path.join(process.cwd(), 'client/dist'),
+        path.join(__dirname, '../client/dist'),
+        path.join(__dirname, '../../client/dist'),
+        path.join(__dirname, 'client/dist'),
+        path.join(process.cwd(), 'dist')
+    ];
+    const distPath = distCandidates.find((candidate) => fs.existsSync(path.join(candidate, 'index.html')));
 
-    console.log(`[Static] Production mode detected. Using dist path: ${distPath}`);
+    console.log(`[Static] Production mode detected. Dist candidates: ${distCandidates.join(' | ')}`);
 
-    if (fs.existsSync(distPath)) {
-        console.log('✅ Found client/dist, enabling static serving');
-        app.use(express.static(distPath));
+    if (distPath) {
+        console.log(`✅ Found client build at ${distPath}, enabling static serving`);
+        app.use(express.static(distPath, { index: false }));
 
         app.get('*', (req, res) => {
             if (!req.url.startsWith('/api')) {
+                if (path.extname(req.path)) {
+                    return res.status(404).end();
+                }
+
                 const indexPath = path.join(distPath, 'index.html');
                 if (fs.existsSync(indexPath)) {
-                    res.sendFile(indexPath);
+                    return res.sendFile(indexPath);
                 } else {
                     console.error('❌ index.html not found even though dist exists');
-                    res.status(404).send('Frontend index.html missing');
+                    return res.status(404).send('Frontend index.html missing');
                 }
-            } else {
-                sendApiError(res, 404, 'API_NOT_FOUND', 'API Endpoint Not Found', {
-                    request_id: req.requestId
-                });
             }
+
+            return sendApiError(res, 404, 'API_NOT_FOUND', 'API Endpoint Not Found', {
+                request_id: req.requestId
+            });
         });
     } else {
-        console.warn(`⚠️ Warning: client/dist not found at ${distPath}. Build might have failed or path is wrong.`);
+        console.warn('⚠️ Warning: client/dist not found in any known production path.');
     }
 }
 
