@@ -11,7 +11,7 @@ const TABLE_HEADER_HEIGHT = 32;
 const TABLE_CELL_PADDING_X = 10;
 const TABLE_CELL_PADDING_Y = 8;
 const MIN_TABLE_ROW_HEIGHT = 28;
-const SIGNATURE_GAP = 24;
+const SIGNATURE_GAP = 64;
 const SIGNATURE_BLOCK_HEIGHT = 84;
 
 const resolveLetterheadPath = () => {
@@ -76,7 +76,7 @@ const drawTableHeader = (doc, startY, startX, colWidths) => {
     labels.forEach((label, index) => {
         doc.text(label, xPos + TABLE_CELL_PADDING_X, startY + 10, {
             width: colWidths[index] - TABLE_CELL_PADDING_X * 2,
-            align: index === 0 ? 'center' : 'left'
+            align: index === 0 || index >= 2 ? 'center' : 'left'
         });
 
         if (index < labels.length - 1) {
@@ -95,7 +95,7 @@ const getTableRowHeight = (doc, values, colWidths) => {
     const contentHeights = values.map((value, index) => (
         doc.heightOfString(String(value || ''), {
             width: colWidths[index] - TABLE_CELL_PADDING_X * 2,
-            align: index === 0 || index === 3 ? 'center' : 'left',
+            align: index === 0 || index >= 2 ? 'center' : 'left',
             lineGap: 1
         })
     ));
@@ -111,15 +111,15 @@ const drawTableRow = (doc, { rowY, startX, colWidths, values, rowHeight, rowInde
     doc.rect(startX, rowY, tableWidth, rowHeight).fillAndStroke(backgroundColor, '#9CA3AF');
 
     let xPos = startX;
-    values.forEach((value, index) => {
-        doc.fillColor('#2F3136')
-            .font('Times-Roman')
-            .fontSize(11)
-            .text(String(value || ''), xPos + TABLE_CELL_PADDING_X, rowY + TABLE_CELL_PADDING_Y, {
-                width: colWidths[index] - TABLE_CELL_PADDING_X * 2,
-                align: index === 0 || index === 3 ? 'center' : 'left',
-                lineGap: 1
-            });
+        values.forEach((value, index) => {
+            doc.fillColor('#2F3136')
+                .font('Times-Roman')
+                .fontSize(11)
+                .text(String(value || ''), xPos + TABLE_CELL_PADDING_X, rowY + TABLE_CELL_PADDING_Y, {
+                    width: colWidths[index] - TABLE_CELL_PADDING_X * 2,
+                    align: index === 0 || index >= 2 ? 'center' : 'left',
+                    lineGap: 1
+                });
 
         if (index < values.length - 1) {
             xPos += colWidths[index];
