@@ -28,7 +28,13 @@ export default function AdminLabs() {
     };
 
     useEffect(() => {
-        fetchLabs();
+        const timeoutId = setTimeout(() => {
+            fetchLabs();
+        }, 0);
+
+        return () => {
+            clearTimeout(timeoutId);
+        };
     }, []);
 
     const handleOpenCreate = () => {

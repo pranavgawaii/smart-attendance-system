@@ -1,5 +1,6 @@
 const placementModel = require('../models/placement.model');
 const userModel = require('../models/user.model');
+const { sendApiError } = require('../utils/api-response');
 
 // --- Admin Controllers ---
 
@@ -9,7 +10,7 @@ const createDrive = async (req, res) => {
 
         // 1. Basic Validation
         if (!company_name || !role || !job_type || !deadline) {
-            return res.status(400).json({ error: 'Missing required fields' });
+            return sendApiError(res, 400, 'PLACEMENT_DRIVE_VALIDATION_FAILED', 'Missing required fields');
         }
 
         // 2. Create Drive
@@ -35,7 +36,7 @@ const createDrive = async (req, res) => {
 
     } catch (err) {
         console.error('Create Drive Error:', err);
-        res.status(500).json({ error: 'Internal Server Error' });
+        return sendApiError(res, 500, 'PLACEMENT_DRIVE_CREATE_FAILED', 'Internal Server Error');
     }
 };
 
@@ -47,13 +48,13 @@ const deleteDrive = async (req, res) => {
         const deleted = await placementModel.deleteDrive(id);
 
         if (!deleted) {
-            return res.status(404).json({ error: 'Drive not found' });
+            return sendApiError(res, 404, 'PLACEMENT_DRIVE_NOT_FOUND', 'Drive not found');
         }
 
         res.json({ message: 'Drive deleted successfully', id });
     } catch (err) {
         console.error('Delete Drive Error:', err);
-        res.status(500).json({ error: 'Internal Server Error' });
+        return sendApiError(res, 500, 'PLACEMENT_DRIVE_DELETE_FAILED', 'Internal Server Error');
     }
 };
 
@@ -61,14 +62,13 @@ const deleteDrive = async (req, res) => {
 
 const getAllDrives = async (req, res) => {
     try {
-        console.log('getAllDrives called by:', req.user.id, req.user.role);
         const userId = req.user.id;
         const userRole = req.user.role ? req.user.role.toLowerCase() : '';
 
         const drives = await placementModel.getAllDrives();
 
         // If Admin, return raw drives
-        if (userRole === 'admin') {
+        if (userRole === 'admin' || userRole === 'super_admin') {
             return res.json(drives);
         }
 
@@ -76,7 +76,7 @@ const getAllDrives = async (req, res) => {
         const student = await userModel.findById(userId);
         if (!student) {
             console.error('Student profile not found for ID:', userId);
-            return res.status(404).json({ error: 'Student profile not found' });
+            return sendApiError(res, 404, 'STUDENT_PROFILE_NOT_FOUND', 'Student profile not found');
         }
 
         const drivesWithEligibility = drives.map(drive => {
@@ -88,7 +88,7 @@ const getAllDrives = async (req, res) => {
 
     } catch (err) {
         console.error('Get All Drives Error:', err);
-        res.status(500).json({ error: 'Internal Server Error' });
+        return sendApiError(res, 500, 'PLACEMENT_DRIVE_FETCH_FAILED', 'Internal Server Error');
     }
 };
 
@@ -97,23 +97,23 @@ const applyToDrive = async (req, res) => {
         const studentId = req.user.id;
         const { driveId } = req.body;
 
-        if (!driveId) return res.status(400).json({ error: 'Drive ID is required' });
+        if (!driveId) return sendApiError(res, 400, 'PLACEMENT_DRIVE_ID_REQUIRED', 'Drive ID is required');
 
         // 1. Check if already applied
         const alreadyApplied = await placementModel.checkApplicationExists(driveId, studentId);
         if (alreadyApplied) {
-            return res.status(400).json({ error: 'You have already applied to this drive' });
+            return sendApiError(res, 400, 'PLACEMENT_ALREADY_APPLIED', 'You have already applied to this drive');
         }
 
         // 2. Fetch Drive & Rules to check eligibility
         const drive = await placementModel.getDriveById(driveId);
-        if (!drive) return res.status(404).json({ error: 'Drive not found' });
+        if (!drive) return sendApiError(res, 404, 'PLACEMENT_DRIVE_NOT_FOUND', 'Drive not found');
 
         const student = await userModel.findById(studentId);
 
         // 3. Verify Eligibility
         if (!checkEligibility(student, drive)) {
-            return res.status(403).json({ error: 'You are not eligible for this drive' });
+            return sendApiError(res, 403, 'PLACEMENT_NOT_ELIGIBLE', 'You are not eligible for this drive');
         }
 
         // 4. Apply
@@ -122,7 +122,7 @@ const applyToDrive = async (req, res) => {
 
     } catch (err) {
         console.error('Apply Drive Error:', err);
-        res.status(500).json({ error: 'Internal Server Error' });
+        return sendApiError(res, 500, 'PLACEMENT_APPLY_FAILED', 'Internal Server Error');
     }
 };
 
@@ -168,7 +168,7 @@ const updateDrive = async (req, res) => {
         });
 
         if (!updatedDrive) {
-            return res.status(404).json({ error: 'Drive not found' });
+            return sendApiError(res, 404, 'PLACEMENT_DRIVE_NOT_FOUND', 'Drive not found');
         }
 
         // 2. Update Eligibility (if provided)
@@ -179,7 +179,7 @@ const updateDrive = async (req, res) => {
         res.json({ message: 'Drive updated successfully', drive: updatedDrive });
     } catch (err) {
         console.error('Update Drive Error:', err);
-        res.status(500).json({ error: 'Internal Server Error' });
+        return sendApiError(res, 500, 'PLACEMENT_DRIVE_UPDATE_FAILED', 'Internal Server Error');
     }
 };
 
@@ -190,7 +190,7 @@ const getStudentApplications = async (req, res) => {
         res.json(applications);
     } catch (err) {
         console.error('Get Student Applications Error:', err);
-        res.status(500).json({ error: 'Internal Server Error' });
+        return sendApiError(res, 500, 'PLACEMENT_APPLICATION_FETCH_FAILED', 'Internal Server Error');
     }
 };
 

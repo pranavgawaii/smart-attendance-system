@@ -38,14 +38,27 @@ const checkDeviceUsed = async (session_id, device_fingerprint) => {
 };
 
 // Log a proxy attempt
-const logProxyAttempt = async ({ session_id, student_email, attempted_fingerprint, original_fingerprint }) => {
+const logProxyAttempt = async ({
+  session_id,
+  student_id = null,
+  student_email,
+  attempted_fingerprint,
+  original_fingerprint,
+  original_device = null,
+  attempted_device = null,
+  attempted_at = new Date()
+}) => {
   const { data, error } = await supabase
     .from('proxy_attempts')
     .insert([{
       session_id,
+      student_id,
       student_email,
       attempted_fingerprint,
-      original_fingerprint
+      original_fingerprint,
+      original_device,
+      attempted_device,
+      attempted_at
     }])
     .select()
     .single();
@@ -60,6 +73,32 @@ const findByUserAndEvent = async (user_id, session_id) => {
     .select('*')
     .eq('user_id', user_id)
     .eq('session_id', session_id)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+};
+
+const findBySessionAndStudent = async (session_id, student_id) => {
+  const { data, error } = await supabase
+    .from('attendance_logs')
+    .select('*')
+    .eq('session_id', session_id)
+    .eq('student_id', student_id)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+};
+
+const findBySessionAndDevice = async (session_id, device_fingerprint) => {
+  const { data, error } = await supabase
+    .from('attendance_logs')
+    .select('*')
+    .eq('session_id', session_id)
+    .eq('device_fingerprint', device_fingerprint)
+    .order('scanned_at', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (error) throw error;
@@ -135,6 +174,8 @@ module.exports = {
   checkDeviceUsed,
   logProxyAttempt,
   findByUserAndEvent,
+  findBySessionAndStudent,
+  findBySessionAndDevice,
   countByEvent,
   getRecentByEvent,
   getProxyAttemptsByEvent,

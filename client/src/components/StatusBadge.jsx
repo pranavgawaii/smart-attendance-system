@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function StatusBadge({ status, type = 'default' }) {
+export default function StatusBadge({ status }) {
     // Normalize status to lowercase for matching
     const s = (status || '').toString().toLowerCase();
 

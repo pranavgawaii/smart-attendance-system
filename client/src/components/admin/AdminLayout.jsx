@@ -1,11 +1,11 @@
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useState, useMemo } from 'react';
 import Sidebar from '../Sidebar';
 import { Search, Bell, Menu, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { getAdminMenu } from '../../config/adminMenu';
 
-export default function AdminLayout({ children, title, actions }) {
+export default function AdminLayout({ children, title }) {
     const { user } = useAuth();
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const location = useLocation();

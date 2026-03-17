@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Search, Shield, Trash2, Power, UserCheck, UserX } from 'lucide-react';
 import api from '../../services/api';
 import AdminLayout from '../../components/admin/AdminLayout';
@@ -13,16 +13,9 @@ export default function AdminManagement() {
     const [error, setError] = useState('');
 
     const { user } = useAuth();
+    const navigate = useNavigate();
 
-    useEffect(() => {
-        if (user?.role !== 'super_admin') {
-            navigate('/admin');
-            return;
-        }
-        fetchAdmins();
-    }, [user, navigate]);
-
-    const fetchAdmins = async () => {
+    const fetchAdmins = useCallback(async () => {
         try {
             const res = await api.get('/admin-management');
             // Hide Super Admins (including self) from management list
@@ -33,7 +26,19 @@ export default function AdminManagement() {
             console.error(err);
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        if (user?.role !== 'super_admin') {
+            navigate('/admin');
+            return;
+        }
+        const timer = setTimeout(() => {
+            void fetchAdmins();
+        }, 0);
+
+        return () => clearTimeout(timer);
+    }, [user, navigate, fetchAdmins]);
 
     const handleCreateAdmin = async (e) => {
         e.preventDefault();

@@ -1,8 +1,6 @@
-
-import { useNavigate, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import Sidebar from './Sidebar';
-import { Menu, Search, Bell } from 'lucide-react';
+import { Menu, Bell } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function StudentLayout({ children, title }) {

@@ -8,7 +8,7 @@
     "vercel-build": "cd client && npm install && npm run build",
     "dev": "nodemon src/server.js",
     "migrate": "node scripts/migrate.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test tests/**/*.test.js"
   },
   "engines": {
     "node": ">=18"

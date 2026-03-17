@@ -31,14 +31,6 @@ export default function Step5Review({ formData, prevStep, navigate }) {
         }
     };
 
-    const getEffectiveCapacity = (labCapacity) => {
-        switch (formData.seating_mode) {
-            case 'alternate': return Math.floor(labCapacity / 2);
-            case 'distanced': return Math.floor(labCapacity / 3);
-            default: return labCapacity;
-        }
-    };
-
     const handleCreate = async () => {
         setCreating(true);
         setError('');
@@ -81,7 +73,6 @@ export default function Step5Review({ formData, prevStep, navigate }) {
 
     const modeDisplay = getModeDisplay(formData.seating_mode);
     const totalStudents = formData.validStudents?.length || 0;
-    const totalCapacity = formData.selected_labs.reduce((sum, lab) => sum + getEffectiveCapacity(lab.capacity), 0);
     const avgStudentsPerLab = formData.selected_labs.length > 0 ? Math.ceil(totalStudents / formData.selected_labs.length) : 0;
 
     return (

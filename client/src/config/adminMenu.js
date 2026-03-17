@@ -22,13 +22,25 @@ export const getAdminMenu = (role) => {
     const isCoordinatorAdmin = role === 'coordinator_admin';
 
     // Allowed paths for coordinator_admin
-    const coordinatorAllowedPaths = ['/admin/coordinators', '/admin/coordinators/attendance', '/admin/coordinator-forms'];
+    const coordinatorAllowedPaths = [
+        '/admin/dashboard',
+        '/admin',
+        '/admin/coordinators',
+        '/admin/coordinators/attendance',
+        '/admin/coordinators/forms',
+        '/admin/users',
+        '/admin/students'
+    ];
 
     // Helper function to mark items as locked for coordinator_admin
     const markLocked = (item) => {
         if (!isCoordinatorAdmin) return item;
         const isAllowed = coordinatorAllowedPaths.some(p =>
-            item.path === p || item.path.startsWith('/admin/coordinators') || item.path.startsWith('/admin/coordinator-forms')
+            item.path === p ||
+            item.path.startsWith('/admin/coordinators') ||
+            item.path.startsWith('/admin/coordinators/forms') ||
+            item.path.startsWith('/admin/users') ||
+            item.path.startsWith('/admin/students')
         );
         return { ...item, locked: !isAllowed };
     };
@@ -46,7 +58,7 @@ export const getAdminMenu = (role) => {
                 markLocked({ icon: Users, label: 'All Students', path: '/admin/users' }),
                 markLocked({ icon: UserPlus, label: 'Bulk Upload', path: '/admin/users/bulk-upload' }),
                 markLocked({ icon: Grid, label: 'Allocations', path: '/admin/allocations' }),
-                markLocked({ icon: Users2, label: 'Coordinators', path: '/admin/coordinators' }),
+                markLocked({ icon: Users2, label: 'Placement student coordinator', path: '/admin/coordinators' }),
             ]
         },
         {

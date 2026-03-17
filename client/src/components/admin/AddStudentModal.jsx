@@ -16,7 +16,6 @@ export default function AddStudentModal({ onClose, onSuccess }) {
     });
 
     // --- Upload State ---
-    const [csvFile, setCsvFile] = useState(null);
     const [parsedUsers, setParsedUsers] = useState([]);
     const [uploadError, setUploadError] = useState(null);
 
@@ -39,14 +38,13 @@ export default function AddStudentModal({ onClose, onSuccess }) {
     const handleFileUpload = (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        setCsvFile(file);
         setUploadError(null);
 
         const reader = new FileReader();
         reader.onload = (event) => {
             try {
                 processCSV(event.target.result);
-            } catch (err) {
+            } catch {
                 setUploadError("Invalid CSV format");
             }
         };
@@ -103,7 +101,7 @@ export default function AddStudentModal({ onClose, onSuccess }) {
                 console.error("Bulk Errors:", res.data.errors);
             }
             onSuccess();
-        } catch (error) {
+        } catch {
             alert('Bulk upload failed');
         } finally {
             setSubmitting(false);

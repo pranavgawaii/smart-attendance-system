@@ -1,10 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const { supabase } = require('../config/db');
-const { authenticateToken } = require('../middlewares/auth.middleware');
+const { requireRole } = require('../middlewares/auth.middleware');
+
+const ADMIN_ROLES = ['admin', 'super_admin', 'coordinator_admin'];
 
 // Get all placement assessments
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', requireRole(ADMIN_ROLES), async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('placement_assessments')
@@ -34,7 +36,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Get single placement assessment
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id', requireRole(ADMIN_ROLES), async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('placement_assessments')
@@ -53,7 +55,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // Create placement assessment
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', requireRole(ADMIN_ROLES), async (req, res) => {
     try {
         const {
             company_name,
@@ -99,7 +101,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Update placement assessment
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', requireRole(ADMIN_ROLES), async (req, res) => {
     try {
         const updates = {};
         const allowedFields = [
@@ -132,7 +134,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // Delete placement assessment
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', requireRole(ADMIN_ROLES), async (req, res) => {
     try {
         const { error } = await supabase
             .from('placement_assessments')

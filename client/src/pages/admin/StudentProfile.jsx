@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import api from '../../services/api';
 import AdminLayout from '../../components/admin/AdminLayout';
 import {
@@ -303,7 +303,6 @@ const ActivityLogSection = ({ isLogExpanded, setIsLogExpanded, mockActivityLog }
 
 export default function StudentProfile() {
     const { id } = useParams();
-    const navigate = useNavigate();
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isLogExpanded, setIsLogExpanded] = useState(false);

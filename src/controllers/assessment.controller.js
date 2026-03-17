@@ -1,5 +1,6 @@
 const assessmentModel = require('../models/assessment.model');
 const userModel = require('../models/user.model');
+const attendanceModel = require('../models/attendance.model');
 const auditStore = require('../utils/auditStore');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
@@ -66,7 +67,7 @@ const addCandidates = async (req, res) => {
 
         if (sourceEventId) {
             // Fetch users who attended this event
-            const logs = await attendanceModel.getEventLogs(sourceEventId); // Assuming we have or create this
+            const logs = await attendanceModel.findAllByEvent(sourceEventId); // Fixed method name
             // We need a way to get user IDs from event logs. 
             // attendance.model.js might need a specific query for this or we reuse existing.
             // Let's assume logs contain user_id or we query attendance_logs directly here for simplicity if model lacks it.

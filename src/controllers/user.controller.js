@@ -2,8 +2,18 @@ const { supabase } = require('../config/db');
 const userModel = require('../models/user.model');
 const jwt = require('jsonwebtoken');
 
+const isAdminUser = (user) => ['admin', 'super_admin'].includes(user?.role);
+
 const createUser = async (req, res) => {
     try {
+        if (!isAdminUser(req.user)) {
+            return res.status(403).json({
+                success: false,
+                code: 'AUTH_FORBIDDEN',
+                error: 'Only admin users can create accounts'
+            });
+        }
+
         const { name, email, enrollment_no, branch, academic_year } = req.body;
 
         if (!name || !email || !enrollment_no) {
@@ -30,6 +40,14 @@ const createUser = async (req, res) => {
 
 const createBulkUsers = async (req, res) => {
     try {
+        if (!isAdminUser(req.user)) {
+            return res.status(403).json({
+                success: false,
+                code: 'AUTH_FORBIDDEN',
+                error: 'Only admin users can bulk-create accounts'
+            });
+        }
+
         const { users } = req.body;
         if (!Array.isArray(users) || users.length === 0) {
             return res.status(400).json({ error: 'Invalid user list provided' });
@@ -179,7 +197,8 @@ const updateProfile = async (req, res) => {
 
         // Generate NEW Token with updated info (only if legacy test user)
         let token = null;
-        if (!req.user.supabase_id) { // Simple check if it's not a native Supabase user
+        const legacyJwtSecret = process.env.JWT_SECRET?.trim();
+        if (!req.user.supabase_id && legacyJwtSecret) { // Simple check if it's not a native Supabase user
             token = jwt.sign(
                 {
                     id: updatedUser.id,
@@ -188,7 +207,7 @@ const updateProfile = async (req, res) => {
                     name: updatedUser.name,
                     enrollment_no: updatedUser.enrollment_no
                 },
-                process.env.JWT_SECRET || 'super-secret-jwt-key',
+                legacyJwtSecret,
                 { expiresIn: '24h' }
             );
         }
@@ -215,8 +234,35 @@ const getProfile = async (req, res) => {
 
 const getAllUsers = async (req, res) => {
     try {
-        const users = await userModel.findAll();
-        res.json(users);
+        if (!isAdminUser(req.user)) {
+            return res.status(403).json({
+                success: false,
+                code: 'AUTH_FORBIDDEN',
+                error: 'Only admin users can view all users'
+            });
+        }
+
+        const { page, limit, role, q } = req.query;
+        const result = await userModel.findAll({ page, limit, role, q });
+
+        if (result && Array.isArray(result.rows)) {
+            const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 200);
+            const safePage = Math.max(Number(page) || 1, 1);
+            const total = Number(result.count) || 0;
+
+            return res.json({
+                success: true,
+                items: result.rows,
+                pagination: {
+                    page: safePage,
+                    limit: safeLimit,
+                    total,
+                    total_pages: Math.max(Math.ceil(total / safeLimit), 1)
+                }
+            });
+        }
+
+        return res.json(result);
     } catch (error) {
         console.error('Error fetching users:', error);
         res.status(500).json({ error: 'Failed to fetch users' });

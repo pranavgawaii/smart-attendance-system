@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+/* eslint-disable react-hooks/set-state-in-effect, react-hooks/preserve-manual-memoization */
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import api from '../services/api';
@@ -112,12 +113,10 @@ export default function EventDetails() {
     // Initial Fetch
     useEffect(() => {
         if (event && (event.session_state === 'ACTIVE' || event.session_state === 'LIVE')) {
-            if (!qrData.token) {
-                fetchQrData();
-                setTimeLeft(event.qr_refresh_interval || 10);
-            }
+            fetchQrData();
+            setTimeLeft(event.qr_refresh_interval || 10);
         }
-    }, [event, fetchQrData]); // Removed qrData.token from dep array to avoid loops
+    }, [event, qrData.token, fetchQrData]);
 
     // Live Stats Poller
     useEffect(() => {
@@ -139,18 +138,12 @@ export default function EventDetails() {
         }
     };
 
-    // Memoize QR Data to prevent flickering every second (due to timer re-renders)
-    const qrPayload = useMemo(() => {
-        if (!qrData.token) return '';
-        return JSON.stringify({
-            session_id: event?.id,
-            event_id: event.name || event.event_display_id || 'UNKNOWN',
-            token: qrData.token,
-            code: qrData.code,
-            timestamp: new Date().toISOString(), // Fixed at generation time
-            expires_at: new Date(Date.now() + 15000).toISOString() // Fixed 15s validity window
+    const qrPayload = (!qrData.token || !event?.id)
+        ? ''
+        : JSON.stringify({
+            session_id: event.id,
+            token: qrData.token
         });
-    }, [qrData.token, qrData.code, event?.id, event?.name, event?.event_display_id]);
 
     if (loading) return (
         <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-6">
@@ -396,10 +389,10 @@ export default function EventDetails() {
 
                                     <QRCodeSVG
                                         value={qrPayload}
-                                        size={isFullscreen ? 480 : 380}
-                                        level="H"
-                                        includeMargin={false}
-                                        marginSize={2}
+                                        size={isFullscreen ? 560 : 440}
+                                        level="M"
+                                        includeMargin={true}
+                                        marginSize={4}
                                     />
                                     {/* Logo Removed from here */}
                                 </div>

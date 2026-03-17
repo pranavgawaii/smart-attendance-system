@@ -1,30 +1,28 @@
 const express = require('express');
 const router = express.Router();
 const eventController = require('../controllers/event.controller');
+const { requireRole } = require('../middlewares/auth.middleware');
 
-router.get('/', eventController.listEvents);
-router.get('/:id', eventController.getById);
-router.post('/', eventController.create);
-router.put('/:id', eventController.update);
-router.delete('/:id', eventController.remove);
-router.post('/:id/start-qr', eventController.startQr);
-router.post('/:id/stop-qr', eventController.stopQr);
-router.get('/:id/current-qr', eventController.getCurrentQr);
-router.get('/:id/stats', eventController.getStats);
-router.get('/:id/export', eventController.exportCsv);
-router.get('/:id/export-pdf', eventController.exportPdf);
-router.get('/:id/recent-attendance', eventController.getRecentAttendance);
-router.get('/:id/attendance', eventController.getEventAttendance);
-router.get('/:id/audit-alerts', eventController.getAuditAlerts);
-router.get('/:id/proxy-attempts', eventController.getProxyAttempts);
+const ADMIN_ROLES = ['admin', 'super_admin', 'coordinator_admin'];
 
-router.post('/:id/open-entry', eventController.openEntry);
-router.post('/:id/open-exit', eventController.openExit);
-router.post('/:id/close-attendance', eventController.closeAttendance);
+router.get('/', requireRole(ADMIN_ROLES), eventController.listEvents);
+router.get('/:id', requireRole(ADMIN_ROLES), eventController.getById);
+router.post('/', requireRole(ADMIN_ROLES), eventController.create);
+router.put('/:id', requireRole(ADMIN_ROLES), eventController.update);
+router.delete('/:id', requireRole(ADMIN_ROLES), eventController.remove);
+router.post('/:id/start-qr', requireRole(ADMIN_ROLES), eventController.startQr);
+router.post('/:id/stop-qr', requireRole(ADMIN_ROLES), eventController.stopQr);
+router.get('/:id/current-qr', requireRole(ADMIN_ROLES), eventController.getCurrentQr);
+router.get('/:id/stats', requireRole(ADMIN_ROLES), eventController.getStats);
+router.get('/:id/export', requireRole(ADMIN_ROLES), eventController.exportCsv);
+router.get('/:id/export-pdf', requireRole(ADMIN_ROLES), eventController.exportPdf);
+router.get('/:id/recent-attendance', requireRole(ADMIN_ROLES), eventController.getRecentAttendance);
+router.get('/:id/attendance', requireRole(ADMIN_ROLES), eventController.getEventAttendance);
+router.get('/:id/proxy-attempts', requireRole(ADMIN_ROLES), eventController.getProxyAttempts);
 
-router.post('/:id/start-session', eventController.startSession);
-router.post('/:id/pause-session', eventController.pauseSession);
-router.post('/:id/stop-session', eventController.stopSession);
+router.post('/:id/start-session', requireRole(ADMIN_ROLES), eventController.startSession);
+router.post('/:id/pause-session', requireRole(ADMIN_ROLES), eventController.pauseSession);
+router.post('/:id/stop-session', requireRole(ADMIN_ROLES), eventController.stopSession);
 
 
 module.exports = router;

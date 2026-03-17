@@ -1,43 +1,64 @@
-const jwt = require('jsonwebtoken');
 const { supabase } = require('../config/db');
 require('dotenv').config();
 
-const authenticateToken = async (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+const sendError = (res, status, code, error, details) => {
+    const payload = { success: false, code, error };
+    if (details !== undefined) payload.details = details;
+    return res.status(status).json(payload);
+};
 
-    if (!token) return res.status(401).json({ error: 'Access token required' });
+const sendAuthError = (res, code, error) => sendError(res, 401, code, error);
+const sendForbidden = (res, code, error) => sendError(res, 403, code, error);
+
+const normalizeRole = (value) => String(value || '').trim().toLowerCase();
+const hasAllowedRole = (user, allowedRoles = []) => {
+    const role = normalizeRole(user?.role);
+    return allowedRoles.map(normalizeRole).includes(role);
+};
+
+const authenticateToken = async (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+        return sendAuthError(res, 'AUTH_TOKEN_MISSING', 'Access token required');
+    }
+
+    if (!supabase) {
+        return sendError(
+            res,
+            503,
+            'AUTH_SERVICE_UNAVAILABLE',
+            'Authentication service is not configured'
+        );
+    }
 
     try {
-        // 1. Try Legacy/Test JWT Verification
-        try {
-            const user = jwt.verify(token, process.env.JWT_SECRET || 'super-secret-jwt-key');
-            req.user = user;
-            return next();
-        } catch (jwtErr) {
-            // Not a legacy/test token, proceed to Supabase
-        }
+        // NOTE: Legacy JWT path intentionally removed.
+        // Supabase access tokens share the same JWT secret, so jwt.verify() would
+        // succeed on them — but the decoded payload has role: "authenticated" (Supabase
+        // internal), NOT the user's actual role from user_profiles. This caused 403s.
+        // All authentication now flows through Supabase auth.getUser() below.
 
-        // 2. Try Supabase Auth Verification
         const { data, error } = await supabase.auth.getUser(token);
 
-        if (error || !data.user) {
-            console.error('[AuthMiddleware] Supabase verification failed:', error?.message);
-            return res.status(403).json({ error: 'Invalid or expired token' });
+        if (error || !data?.user) {
+            const isExpiredToken = /expired/i.test(error?.message || '');
+            return sendAuthError(
+                res,
+                isExpiredToken ? 'AUTH_TOKEN_EXPIRED' : 'AUTH_TOKEN_INVALID',
+                isExpiredToken ? 'Token expired. Please login again.' : 'Invalid token. Please login again.'
+            );
         }
 
-        // 3. For real users, we need to fetch their profile/role from user_profiles
-        // Try exact match by ID first (Supabase standard)
-        let { data: profile, error: profileError } = await supabase
+        let { data: profile } = await supabase
             .from('user_profiles')
             .select('*')
             .eq('id', data.user.id)
             .maybeSingle();
 
-        // 4. Fallback for migrated users (Lookup by email and sync ID)
-        if (!profile) {
-            console.log(`[AuthMiddleware] ID lookup failed for ${data.user.email}. Attempting email fallback...`);
-            const { data: emailProfile, error: emailError } = await supabase
+        if (!profile && data.user.email) {
+            const { data: emailProfile } = await supabase
                 .from('user_profiles')
                 .select('*')
                 .eq('email', data.user.email)
@@ -45,49 +66,86 @@ const authenticateToken = async (req, res, next) => {
 
             if (emailProfile) {
                 profile = emailProfile;
-                // Proactively sync IDs for next time
-                supabase.from('user_profiles')
+                supabase
+                    .from('user_profiles')
                     .update({ id: data.user.id })
                     .eq('email', data.user.email)
-                    .then(({ error: syncError }) => {
-                        if (!syncError) console.log(`[AuthMiddleware] Synced ID for ${data.user.email}`);
-                    });
+                    .then(() => {})
+                    .catch(() => {});
             }
         }
 
         if (!profile) {
-            console.error('[AuthMiddleware] Profile lookup failed for:', data.user.email);
-            return res.status(403).json({ error: 'User authenticated, but profile missing.' });
+            return sendForbidden(res, 'AUTH_PROFILE_MISSING', 'User authenticated, but profile missing.');
         }
 
-        req.user = profile;
-        next();
+        if (profile.user_status && profile.user_status !== 'active') {
+            return sendForbidden(res, 'AUTH_USER_DISABLED', 'Your account has been disabled. Contact administrator.');
+        }
 
+        console.log(`[Auth] ✅ Authenticated: ${profile.email || data.user.email} | Role: ${profile.role}`);
+        req.user = profile;
+        return next();
     } catch (err) {
         console.error('[AuthMiddleware] Unexpected error:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        return sendError(res, 500, 'AUTH_INTERNAL_ERROR', 'Internal server error');
     }
 };
 
-const authorizeRole = (allowedRoles) => {
+const requireRole = (allowedRoles = []) => {
     return (req, res, next) => {
-        if (!req.user || !allowedRoles.includes(req.user.role)) {
-            return res.status(403).json({ error: 'Access denied: insufficient permissions' });
+        if (!req.user) {
+            return sendAuthError(res, 'AUTH_UNAUTHENTICATED', 'Authentication required');
         }
-        next();
+
+        if (!hasAllowedRole(req.user, allowedRoles)) {
+            console.warn(`[Auth] 🚫 Role denied: user role="${req.user.role}" not in [${allowedRoles.join(', ')}] | path=${req.originalUrl}`);
+            return sendForbidden(res, 'AUTH_FORBIDDEN', 'Access denied: insufficient permissions');
+        }
+
+        return next();
     };
 };
 
+const requireSelfOrRole = ({ param = 'id', roles = [] } = {}) => {
+    return (req, res, next) => {
+        if (!req.user) {
+            return sendAuthError(res, 'AUTH_UNAUTHENTICATED', 'Authentication required');
+        }
+
+        const targetValue = String(req.params?.[param] || '').trim();
+        const currentUserId = String(req.user.id || '').trim();
+
+        if (targetValue && currentUserId && targetValue === currentUserId) {
+            return next();
+        }
+
+        if (hasAllowedRole(req.user, roles)) {
+            return next();
+        }
+
+        return sendForbidden(res, 'AUTH_FORBIDDEN', 'Access denied: insufficient permissions');
+    };
+};
+
+const authorizeRole = (allowedRoles = []) => requireRole(allowedRoles);
+
 const verifySuperAdmin = (req, res, next) => {
-    // Check for super_admin role
-    if (!req.user || req.user.role !== 'super_admin') {
-        return res.status(403).json({ error: 'Access denied: Super Admin only' });
+    if (!req.user) {
+        return sendAuthError(res, 'AUTH_UNAUTHENTICATED', 'Authentication required');
     }
-    next();
+
+    if (!hasAllowedRole(req.user, ['super_admin'])) {
+        return sendForbidden(res, 'AUTH_SUPER_ADMIN_REQUIRED', 'Access denied: Super Admin only');
+    }
+
+    return next();
 };
 
 module.exports = {
     authenticateToken,
     authorizeRole,
+    requireRole,
+    requireSelfOrRole,
     verifySuperAdmin
 };

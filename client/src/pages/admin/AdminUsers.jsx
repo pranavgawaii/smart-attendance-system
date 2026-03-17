@@ -30,7 +30,11 @@ export default function AdminUsers() {
     };
 
     useEffect(() => {
-        fetchUsers();
+        const timer = setTimeout(() => {
+            void fetchUsers();
+        }, 0);
+
+        return () => clearTimeout(timer);
     }, []);
 
     const handleSaveUser = async (e) => {

@@ -38,7 +38,7 @@ University placement processes often suffer from significant inefficiencies:
 - **Poor Visibility**: Administrators lack real-time data on student participation
 - **Manual Shortlisting**: Filtering eligible students for drives is tedious and error-prone
 - **Allocation Chaos**: Manually assigning labs and seats for assessments is logistically complex
-- **Coordinator Management**: Tracking placement coordinators and generating attendance letters manually
+- **Coordinator Management**: Tracking Placement student coordinators and generating attendance letters manually
 
 ---
 
@@ -48,7 +48,7 @@ This portal **digitizes the entire placement workflow** with a modern, scalable 
 
 - Create live sessions with **dynamic QR codes** for secure attendance
 - Manage end-to-end assessment flows from eligibility to seat allocation
-- Track and manage **placement coordinators** with automated letter generation
+- Track and manage **Placement student coordinators** with automated letter generation
 - Handle **high-concurrency scans** with real-time updates
 - Provide **role-based dashboards** for clear visibility across all stakeholders
 
@@ -72,8 +72,8 @@ Designed for **scalability, security, and user experience**, this system transfo
 - Automated seat allocation with one-click shuffling
 - Prevent dishonesty with randomized lab assignments
 
-#### **Placement Coordinators Module** 🆕
-- **CRUD Operations**: Add, view, edit, and delete placement coordinators
+#### **Placement student coordinator Module** 🆕
+- **CRUD Operations**: Add, view, edit, and delete Placement student coordinators
 - **Professional UI**: Clean, monochromatic design matching admin panel theme
 - **Search & Filter**: Find coordinators by name, enrollment number, or department
 - **Attendance Letters**: Generate professional PDF letters with:
@@ -211,15 +211,23 @@ Designed for **scalability, security, and user experience**, this system transfo
 
 3. **Configure environment variables**
    
-   Create a `.env` file in the root directory:
+   Copy `.env.example` to `.env` and fill values:
    ```env
+   NODE_ENV=development
    PORT=5001
-   JWT_SECRET=your_secure_secret_key
-   ADMIN_EMAIL=admin@example.com
-   
    SUPABASE_URL=https://your-project.supabase.co
-   SUPABASE_ANON_KEY=your_anon_key
    SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+   JWT_SECRET=your_secure_secret_key
+   QR_HMAC_SECRET=your_qr_hmac_secret
+   CORS_ALLOWED_ORIGINS=http://localhost:5175,http://localhost:3000
+   REQUEST_BODY_LIMIT=1mb
+
+   AUTH_RATE_LIMIT_WINDOW_MS=900000
+   AUTH_RATE_LIMIT_MAX=40
+   ATTENDANCE_RATE_LIMIT_WINDOW_MS=60000
+   ATTENDANCE_RATE_LIMIT_MAX=120
+   PUBLIC_FORM_RATE_LIMIT_WINDOW_MS=600000
+   PUBLIC_FORM_RATE_LIMIT_MAX=20
    ```
 
 4. **Set up database**

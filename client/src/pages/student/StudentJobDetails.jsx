@@ -1,5 +1,4 @@
-
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Building2, MapPin, Briefcase, Calendar, CheckCircle, XCircle, ArrowLeft, Clock, DollarSign, Globe, Share2 } from 'lucide-react';
@@ -13,11 +12,21 @@ export default function StudentJobDetails() {
     const [applying, setApplying] = useState(false);
     const [hasApplied, setHasApplied] = useState(false);
 
-    useEffect(() => {
-        fetchDriveDetails();
-    }, [id]);
+    const checkApplicationStatus = useCallback(async (driveId) => {
+        try {
+            const appsRes = await fetch('/api/placement/student/applications', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (appsRes.ok) {
+                const myApps = await appsRes.json();
+                setHasApplied(myApps.some(a => a.drive_id === driveId));
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }, [token]);
 
-    const fetchDriveDetails = async () => {
+    const fetchDriveDetails = useCallback(async () => {
         try {
             // Need a specific endpoint or just filter? 
             // We'll filter from the list for now or we can implement GET /:id if strictly needed.
@@ -49,21 +58,11 @@ export default function StudentJobDetails() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [checkApplicationStatus, id, navigate, token]);
 
-    const checkApplicationStatus = async (driveId) => {
-        try {
-            const appsRes = await fetch('/api/placement/student/applications', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (appsRes.ok) {
-                const myApps = await appsRes.json();
-                setHasApplied(myApps.some(a => a.drive_id === driveId));
-            }
-        } catch (e) {
-            console.error(e);
-        }
-    };
+    useEffect(() => {
+        fetchDriveDetails();
+    }, [fetchDriveDetails]);
 
     const handleApply = async () => {
         if (!window.confirm("Confirm application?")) return;

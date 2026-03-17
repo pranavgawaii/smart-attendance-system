@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -11,30 +11,21 @@ import {
     History,
     ScanLine,
     Briefcase,
-    ChevronRight,
-    Building2,
-    Calendar,
     Clock,
-    User,
-    ArrowRight
+    User
 } from 'lucide-react';
 
 export default function StudentDashboard() {
     const { user, logout } = useAuth();
-    const navigate = useNavigate();
 
     const [activeAssessment, setActiveAssessment] = useState(null);
     const [myAllocation, setMyAllocation] = useState(null);
     const [history, setHistory] = useState([]);
     const [activeTab, setActiveTab] = useState('HOME');
     const [showProfileMenu, setShowProfileMenu] = useState(false);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        fetchData();
-    }, []);
 
     const fetchData = async () => {
+        if (!user?.id) return;
         try {
             const allocationsRes = await api.get(`/allocations/student/${user.id}`);
             if (allocationsRes.data && allocationsRes.data.length > 0) {
@@ -57,10 +48,17 @@ export default function StudentDashboard() {
 
         } catch (error) {
             console.error("Dashboard data fetch error:", error);
-        } finally {
-            setLoading(false);
         }
     };
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            void fetchData();
+        }, 0);
+
+        return () => clearTimeout(timer);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.id]);
 
     const Header = () => (
         <div className="px-6 pt-6 pb-4">
@@ -138,21 +136,25 @@ export default function StudentDashboard() {
         </div>
     );
 
-    const QuickActionCard = ({ to, icon: Icon, title, desc }) => (
-        <Link to={to} className="group">
-            <div className="bg-white p-5 rounded-xl border border-zinc-200/60 shadow-card hover:shadow-card-hover flex flex-col justify-between h-32 hover:border-zinc-300 transition-all">
-                <div className="flex justify-between items-start">
-                    <div className="flex flex-col">
-                        <span className="text-zinc-500 text-xs font-medium uppercase tracking-wide">{title}</span>
-                        <span className="text-sm text-zinc-600 mt-1 font-normal">{desc}</span>
-                    </div>
-                    <div className="w-8 h-8 rounded-full bg-zinc-50 border border-zinc-100 flex items-center justify-center text-zinc-400 group-hover:text-zinc-600 transition-colors">
-                        <Icon size={16} strokeWidth={1.5} />
+    const QuickActionCard = ({ to, icon, title, desc }) => {
+        const ActionIcon = icon;
+
+        return (
+            <Link to={to} className="group">
+                <div className="bg-white p-5 rounded-xl border border-zinc-200/60 shadow-card hover:shadow-card-hover flex flex-col justify-between h-32 hover:border-zinc-300 transition-all">
+                    <div className="flex justify-between items-start">
+                        <div className="flex flex-col">
+                            <span className="text-zinc-500 text-xs font-medium uppercase tracking-wide">{title}</span>
+                            <span className="text-sm text-zinc-600 mt-1 font-normal">{desc}</span>
+                        </div>
+                        <div className="w-8 h-8 rounded-full bg-zinc-50 border border-zinc-100 flex items-center justify-center text-zinc-400 group-hover:text-zinc-600 transition-colors">
+                            <ActionIcon size={16} strokeWidth={1.5} />
+                        </div>
                     </div>
                 </div>
-            </div>
-        </Link>
-    );
+            </Link>
+        );
+    };
 
     const RenderHome = () => (
         <div className="pb-32 flex flex-col">

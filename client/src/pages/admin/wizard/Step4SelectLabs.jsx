@@ -47,7 +47,6 @@ export default function Step4SelectLabs({ formData, updateFormData, nextStep, pr
     const totalStudents = formData.validStudents?.length || 0;
     const totalCapacity = selectedLabs.reduce((sum, lab) => sum + getEffectiveCapacity(lab.capacity), 0);
     const isSufficient = totalCapacity >= totalStudents;
-    const fillPercentage = totalStudents > 0 ? Math.min((totalStudents / totalCapacity) * 100, 100) : 0;
     const needed = Math.max(0, totalStudents - totalCapacity);
 
     // Filter out labs with 0 capacity if any (sanity check)

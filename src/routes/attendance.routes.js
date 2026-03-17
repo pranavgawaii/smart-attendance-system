@@ -10,7 +10,5 @@ router.post('/mark-manual', attendanceController.markManualAttendance);
 router.post('/', attendanceController.logAttendance);
 
 router.get('/my-history', attendanceController.getMyHistory);
-router.get('/all', attendanceController.getAllAttendance);
-router.put('/:id/status', attendanceController.updateStatus);
 
 module.exports = router;

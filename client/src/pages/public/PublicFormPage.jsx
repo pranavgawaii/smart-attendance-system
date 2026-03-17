@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { Loader2, CheckCircle, AlertCircle, Send } from 'lucide-react';
+import { Loader2, CheckCircle, AlertCircle, Send, Clock } from 'lucide-react';
 import api from '../../services/api';
 
 export default function PublicFormPage() {
@@ -14,16 +14,24 @@ export default function PublicFormPage() {
     const [submitted, setSubmitted] = useState(false);
     const [errors, setErrors] = useState({});
     const [notFound, setNotFound] = useState(false);
+    const [isClosed, setIsClosed] = useState(false);
+    const [closedDeadline, setClosedDeadline] = useState(null);
 
-    useEffect(() => {
-        fetchForm();
-    }, [slug]);
-
-    const fetchForm = async () => {
+    const fetchForm = useCallback(async () => {
         try {
+            setNotFound(false);
+            setIsClosed(false);
             const res = await api.get(`/forms/public/${slug}`);
             setForm(res.data.form);
             setFields(res.data.fields || []);
+
+            // Check if form is closed by deadline
+            if (res.data.form.deadline) {
+                const deadline = new Date(res.data.form.deadline);
+                if (deadline < new Date()) {
+                    setIsClosed(true);
+                }
+            }
 
             const initialAnswers = {};
             res.data.fields.forEach(f => {
@@ -32,11 +40,24 @@ export default function PublicFormPage() {
             setAnswers(initialAnswers);
         } catch (err) {
             console.error('Error fetching form:', err);
+            const status = err.response?.status;
+            const code = err.response?.data?.code;
+
+            if (status === 410 && code === 'FORM_DEADLINE_PASSED') {
+                setIsClosed(true);
+                setClosedDeadline(err.response?.data?.details?.deadline || null);
+                return;
+            }
+
             setNotFound(true);
         } finally {
             setLoading(false);
         }
-    };
+    }, [slug]);
+
+    useEffect(() => {
+        fetchForm();
+    }, [fetchForm]);
 
     const validateEmail = (email) => {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -62,6 +83,7 @@ export default function PublicFormPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (isClosed) return;
         if (!validate()) return;
 
         setSubmitting(true);
@@ -69,8 +91,15 @@ export default function PublicFormPage() {
             await api.post(`/forms/public/${slug}/submit`, { answers });
             setSubmitted(true);
         } catch (err) {
+            const status = err.response?.status;
+            const code = err.response?.data?.code;
+            if (status === 410 && code === 'FORM_DEADLINE_PASSED') {
+                setIsClosed(true);
+                setClosedDeadline(err.response?.data?.details?.deadline || null);
+                return;
+            }
             console.error('Error submitting:', err);
-            alert('Error submitting form. Please try again.');
+            alert(err.response?.data?.error || 'Error submitting form. Please try again.');
         } finally {
             setSubmitting(false);
         }
@@ -159,15 +188,25 @@ export default function PublicFormPage() {
         );
     }
 
-    if (notFound) {
+    if (notFound || isClosed) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-zinc-50">
-                <div className="text-center max-w-md p-8">
+            <div className="min-h-screen flex items-center justify-center bg-zinc-50 p-6">
+                <div className="text-center max-w-md bg-white rounded-xl shadow-sm border border-zinc-200 p-8">
                     <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <AlertCircle className="text-zinc-400" size={32} />
+                        {isClosed ? <Clock className="text-zinc-600" size={32} /> : <AlertCircle className="text-zinc-400" size={32} />}
                     </div>
-                    <h1 className="text-xl font-semibold text-zinc-800 mb-2">Form Not Available</h1>
-                    <p className="text-sm text-zinc-500">This form may have been closed or doesn't exist.</p>
+                    <h1 className="text-xl font-semibold text-zinc-800 mb-2">
+                        {isClosed ? 'Submissions Closed' : 'Form Not Available'}
+                    </h1>
+                    <p className="text-sm text-zinc-500 mb-6">
+                        {isClosed
+                            ? `This application reached its deadline on ${new Date(form?.deadline || closedDeadline || Date.now()).toLocaleString([], { dateStyle: 'long', timeStyle: 'short' })}.`
+                            : "This form may have been closed or doesn't exist."
+                        }
+                    </p>
+                    <div className="pt-4 border-t border-zinc-100">
+                        <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">MIT ADT PlacePro</p>
+                    </div>
                 </div>
             </div>
         );
@@ -176,7 +215,7 @@ export default function PublicFormPage() {
     if (submitted) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-zinc-50">
-                <div className="text-center max-w-md p-8">
+                <div className="text-center max-w-md bg-white rounded-xl shadow-sm border border-zinc-200 p-8">
                     <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <CheckCircle className="text-emerald-500" size={32} />
                     </div>
@@ -190,6 +229,8 @@ export default function PublicFormPage() {
         );
     }
 
+    const primaryColor = form.theme_settings?.primaryColor || '#673ab7';
+
     return (
         <div
             className="min-h-screen py-8 px-4 sm:px-6 lg:px-8 transition-colors duration-500"
@@ -201,7 +242,7 @@ export default function PublicFormPage() {
                     {/* Header Strip */}
                     <div
                         className="h-2.5 w-full"
-                        style={{ backgroundColor: form.theme_settings?.primaryColor || '#673ab7' }}
+                        style={{ backgroundColor: primaryColor }}
                     />
 
                     <div className="p-6 sm:p-8">
@@ -219,7 +260,7 @@ export default function PublicFormPage() {
                     </div>
                 </div>
 
-                {/* Form Fields as separate cards (Google Forms Style) */}
+                {/* Form Fields Section */}
                 <form onSubmit={handleSubmit} className="space-y-4 pb-12">
                     {fields.map((field) => (
                         <div
@@ -235,7 +276,7 @@ export default function PublicFormPage() {
                                 {renderField(field)}
                                 {/* Decorative underline like Google Forms */}
                                 <div className="absolute bottom-0 left-0 h-0.5 bg-zinc-900 w-0 group-focus-within:w-full transition-all duration-300"
-                                    style={{ backgroundColor: form.theme_settings?.primaryColor || '#673ab7' }}
+                                    style={{ backgroundColor: primaryColor }}
                                 />
                             </div>
 
@@ -254,7 +295,7 @@ export default function PublicFormPage() {
                             type="submit"
                             disabled={submitting}
                             className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-2.5 bg-zinc-900 text-white font-medium rounded-lg hover:shadow-lg disabled:opacity-50 transition-all text-sm active:scale-95"
-                            style={{ backgroundColor: form.theme_settings?.primaryColor || '#673ab7' }}
+                            style={{ backgroundColor: primaryColor }}
                         >
                             {submitting ? (
                                 <Loader2 className="animate-spin" size={18} />

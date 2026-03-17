@@ -1,6 +1,13 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
+let helmet = null;
+try {
+    // Optional dependency in case production image installs a reduced package set.
+    helmet = require('helmet');
+} catch (error) {
+    console.warn('[Security] helmet is not installed. Falling back to minimal security headers.');
+}
 const healthRoutes = require('./routes/health.routes');
 const userRoutes = require('./routes/user.routes');
 const eventRoutes = require('./routes/event.routes');
@@ -17,113 +24,91 @@ const allocationsRoutes = require('./routes/allocations.routes');
 const adminManagementRoutes = require('./routes/admin-management.routes');
 const coordinatorsRoutes = require('./routes/coordinators.routes');
 const formsRoutes = require('./routes/forms.routes');
-const { authenticateToken, verifySuperAdmin } = require('./middlewares/auth.middleware');
+const { authRateLimiter, attendanceRateLimiter } = require('./middlewares/rate-limit.middleware');
+const { attachRequestContext, requestLogger } = require('./middlewares/request-context.middleware');
+const { authenticateToken, requireRole, verifySuperAdmin } = require('./middlewares/auth.middleware');
+const { sendApiError } = require('./utils/api-response');
 
 const app = express();
+app.disable('x-powered-by');
 
-// Request Logger
-app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-    next();
-});
+const isProduction = process.env.NODE_ENV === 'production';
+const requestBodyLimit = process.env.REQUEST_BODY_LIMIT || '1mb';
+
+if (!helmet && isProduction) {
+    throw new Error('[Security] helmet package is required in production runtime.');
+}
+
+const parseAllowedOrigins = (rawValue) => String(rawValue || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+const corsAllowlist = parseAllowedOrigins(process.env.CORS_ALLOWED_ORIGINS);
 
 // Middleware
-app.use(cors({
-    origin: true,  // Allow all origins (including production Vercel domain)
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
-}));
-app.use(express.json());
+app.use(attachRequestContext);
+app.use(requestLogger);
 
-// Public Test Route (No Auth)
-app.get('/api/test', (req, res) => {
-    res.json({ status: 'ok', message: 'Backend is accessible', timestamp: new Date() });
-});
-
-// Debug & Health Check - Absolute Last Resort Diagnostic
-app.get('/api/test', async (req, res) => {
-    const { supabase } = require('./config/db');
-    let dbStatus = 'Unknown';
-    let dbError = null;
-    let profileExists = 'Checking...';
-    let authUserExists = 'Checking...';
-    let userCount = 0;
-
-    if (supabase) {
-        try {
-            // 1. Check if ANY users exist in user_profiles
-            const { count, error } = await supabase
-                .from('user_profiles')
-                .select('*', { count: 'exact', head: true });
-
-            if (error) {
-                dbStatus = 'Connected but Error';
-                dbError = error.message;
-            } else {
-                dbStatus = 'Connected and Healthy';
-                userCount = count || 0;
-            }
-
-            // 2. specifically check if admin@test.com is there in user_profiles
-            const { data: adminProfile } = await supabase
-                .from('user_profiles')
-                .select('email, role')
-                .ilike('email', 'admin@test.com')
-                .maybeSingle();
-
-            profileExists = adminProfile ? `YES (${adminProfile.role})` : 'NO - Record missing from user_profiles table';
-
-            // 3. SECURELY check if user exists in Supabase AUTH (requires service role key)
-            const { data: { users }, error: authListError } = await supabase.auth.admin.listUsers();
-            if (!authListError) {
-                const hasAuth = users.some(u => u.email.toLowerCase() === 'admin@test.com');
-                authUserExists = hasAuth ? 'YES - Account found in Auth' : 'NO - Account missing from Auth tab';
-            } else {
-                authUserExists = `Error checking Auth: ${authListError.message}`;
-            }
-
-        } catch (e) {
-            dbStatus = 'Failed to Connect';
-            dbError = e.message;
-        }
-    }
-
-    res.json({
-        status: 'ok',
-        message: 'Backend Service Alive',
-        forensics: {
-            nodeVersion: process.version,
-            environment: process.env.NODE_ENV,
-            isVercel: !!process.env.VERCEL,
-            databaseHealthy: dbStatus === 'Connected and Healthy',
-            totalTableRecords: userCount,
-            adminTableStatus: profileExists,
-            adminAuthStatus: authUserExists,
-            supabaseError: dbError
-        },
-        keysMasked: {
-            url: process.env.SUPABASE_URL ? `${process.env.SUPABASE_URL.substring(0, 15)}...` : 'MISSING',
-            key: process.env.SUPABASE_SERVICE_ROLE_KEY ? `...${process.env.SUPABASE_SERVICE_ROLE_KEY.substring(process.env.SUPABASE_SERVICE_ROLE_KEY.length - 4)}` : 'MISSING'
-        }
+if (helmet) {
+    app.use(helmet({
+        contentSecurityPolicy: false,
+        crossOriginResourcePolicy: { policy: 'cross-origin' },
+        crossOriginEmbedderPolicy: false
+    }));
+} else {
+    app.use((req, res, next) => {
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+        res.setHeader('Referrer-Policy', 'no-referrer');
+        next();
     });
-});
+}
+
+app.use(cors({
+    origin(origin, callback) {
+        if (!origin) {
+            return callback(null, true);
+        }
+
+        if (!isProduction && corsAllowlist.length === 0) {
+            return callback(null, true);
+        }
+
+        if (corsAllowlist.includes(origin)) {
+            return callback(null, true);
+        }
+
+        const corsError = new Error('Origin not allowed by CORS policy');
+        corsError.status = 403;
+        corsError.code = 'CORS_ORIGIN_DENIED';
+        return callback(corsError);
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id']
+}));
+app.use(express.json({ limit: requestBodyLimit }));
+app.use(express.urlencoded({ extended: true, limit: requestBodyLimit }));
+
+const ADMIN_ROLES = ['admin', 'super_admin', 'coordinator_admin'];
 
 // Routes - Consolidated under /api
 const apiRouter = express.Router();
 apiRouter.use('/health', healthRoutes);
-apiRouter.use('/auth', authRoutes);
+apiRouter.use('/auth', authRateLimiter, authRoutes);
 apiRouter.use('/users', userRoutes);
-apiRouter.use('/events', authenticateToken, eventRoutes);
-apiRouter.use('/qr-sessions', authenticateToken, qrRoutes);
-apiRouter.use('/attendance', authenticateToken, attendanceRoutes);
-apiRouter.use('/labs-old', authenticateToken, labRoutes);
-apiRouter.use('/labs', authenticateToken, labsRoutes);
-apiRouter.use('/assessments', authenticateToken, assessmentRoutes);
+apiRouter.use('/events', authenticateToken, requireRole(ADMIN_ROLES), eventRoutes);
+apiRouter.use('/qr-sessions', authenticateToken, requireRole(ADMIN_ROLES), qrRoutes);
+apiRouter.use('/attendance', authenticateToken, attendanceRateLimiter, attendanceRoutes);
+apiRouter.use('/labs-old', authenticateToken, requireRole(ADMIN_ROLES), labRoutes);
+apiRouter.use('/labs', authenticateToken, requireRole(ADMIN_ROLES), labsRoutes);
+apiRouter.use('/assessments', authenticateToken, requireRole(ADMIN_ROLES), assessmentRoutes);
 apiRouter.use('/student', authenticateToken, studentRoutes);
 apiRouter.use('/placement', authenticateToken, placementRoutes);
-apiRouter.use('/placement-assessments', authenticateToken, placementAssessmentsRoutes);
+apiRouter.use('/placement-assessments', authenticateToken, requireRole(ADMIN_ROLES), placementAssessmentsRoutes);
 apiRouter.use('/allocations', authenticateToken, allocationsRoutes);
-apiRouter.use('/coordinators', authenticateToken, coordinatorsRoutes);
+apiRouter.use('/coordinators', coordinatorsRoutes);
 apiRouter.use('/admin-management', authenticateToken, verifySuperAdmin, adminManagementRoutes);
 apiRouter.use('/forms', formsRoutes);
 
@@ -131,13 +116,25 @@ app.use('/api', apiRouter);
 
 // Global Error Handler (Ensure JSON response)
 app.use((err, req, res, next) => {
-    console.error('[Global Error]', err);
-    res.status(500).json({ error: 'Internal Server Error', details: err.message });
+    const status = Number(err?.status) || Number(err?.statusCode) || 500;
+    const code = err?.code || (status >= 500 ? 'INTERNAL_SERVER_ERROR' : 'REQUEST_FAILED');
+    const message = status >= 500 ? 'Internal Server Error' : (err?.message || 'Request failed');
+    const details = status >= 500 && isProduction
+        ? { request_id: req.requestId }
+        : { request_id: req.requestId, reason: err?.message };
+
+    if (status >= 500) {
+        console.error(`[Global Error] [${req.requestId || 'n/a'}]`, err);
+    }
+
+    return sendApiError(res, status, code, message, details);
 });
 
 // Explicitly handle API 404s to avoid returning index.html
 app.use('/api', (req, res) => {
-    res.status(404).json({ error: 'API Endpoint Not Found' });
+    return sendApiError(res, 404, 'API_NOT_FOUND', 'API Endpoint Not Found', {
+        request_id: req.requestId
+    });
 });
 
 // Serve Frontend in Production
@@ -164,7 +161,9 @@ if (process.env.NODE_ENV === 'production') {
                     res.status(404).send('Frontend index.html missing');
                 }
             } else {
-                res.status(404).json({ error: 'API Endpoint Not Found' });
+                sendApiError(res, 404, 'API_NOT_FOUND', 'API Endpoint Not Found', {
+                    request_id: req.requestId
+                });
             }
         });
     } else {

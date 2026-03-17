@@ -8,7 +8,7 @@ export default function ProtectedRoute({ children, role }) {
     if (loading) return <div>Loading...</div>;
 
     if (!user) {
-        return <Navigate to="/" />;
+        return <Navigate to="/login" replace />;
     }
 
     if (role && user.role !== role) {
@@ -19,10 +19,12 @@ export default function ProtectedRoute({ children, role }) {
 
         // Allow coordinator_admin to access only coordinator-related admin pages
         if (role === 'admin' && user.role === 'coordinator_admin') {
-            const allowedPaths = ['/admin/coordinators', '/admin'];
+            const allowedPaths = ['/admin/coordinators', '/admin/users', '/admin/students', '/admin'];
             const isAllowed = allowedPaths.some(path =>
                 location.pathname === path ||
-                location.pathname.startsWith('/admin/coordinators')
+                location.pathname.startsWith('/admin/coordinators') ||
+                location.pathname.startsWith('/admin/users') ||
+                location.pathname.startsWith('/admin/students')
             );
 
             if (isAllowed) {

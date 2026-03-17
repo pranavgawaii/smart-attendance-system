@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import AdminLayout from '../../components/admin/AdminLayout';
 import PageHeader from '../../components/PageHeader';
@@ -11,8 +11,6 @@ export default function BulkStudentUpload() {
 
     // CSV Workflow State
     const [step, setStep] = useState(1);
-    const [file, setFile] = useState(null);
-    const [parsedData, setParsedData] = useState([]);
     const [validationResults, setValidationResults] = useState({ valid: [], invalid: [], duplicates: [] });
 
     // Quick Add Workflow State
@@ -22,7 +20,7 @@ export default function BulkStudentUpload() {
     const [quickErrors, setQuickErrors] = useState({}); // { 0: { email: 'Invalid' } }
 
     // Shared State
-    const [processing, setProcessing] = useState(false);
+    const [, setProcessing] = useState(false);
     const [uploadResults, setUploadResults] = useState(null);
 
     const steps = [
@@ -135,7 +133,14 @@ export default function BulkStudentUpload() {
         if (!validateQuickForm()) return;
 
         // Prepare data for upload (matching validationResults.valid structure)
-        const validData = quickStudents.map(({ id, passwordPreview, ...rest }) => rest);
+        const validData = quickStudents.map((student) => ({
+            enrollment_no: student.enrollment_no,
+            name: student.name,
+            email: student.email,
+            mobile: student.mobile,
+            department: student.department,
+            year: student.year
+        }));
 
         setValidationResults({ valid: validData, invalid: [], duplicates: [] });
         handleGenerateAndUpload(validData);
@@ -158,7 +163,6 @@ export default function BulkStudentUpload() {
     const handleFileUpload = (e) => {
         const uploadedFile = e.target.files[0];
         if (uploadedFile) {
-            setFile(uploadedFile);
             parseCSV(uploadedFile);
         }
     };
@@ -168,7 +172,6 @@ export default function BulkStudentUpload() {
             header: true,
             skipEmptyLines: true,
             complete: (results) => {
-                setParsedData(results.data);
                 validateData(results.data);
                 setStep(3);
             },

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import PageHeader from '../../components/PageHeader';
 import StatusBadge from '../../components/StatusBadge';
@@ -14,11 +14,7 @@ export default function AdminPlacements() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    useEffect(() => {
-        fetchDrives();
-    }, []);
-
-    const fetchDrives = async () => {
+    const fetchDrives = useCallback(async () => {
         try {
             const response = await fetch('/api/placement/drives', {
                 headers: {
@@ -40,7 +36,11 @@ export default function AdminPlacements() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [token]);
+
+    useEffect(() => {
+        fetchDrives();
+    }, [fetchDrives]);
 
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure you want to delete this drive? This cannot be undone.')) return;

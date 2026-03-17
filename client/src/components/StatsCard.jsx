@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { ArrowUpRight, ArrowDownRight, ArrowRight } from 'lucide-react';
 
 export default function StatsCard({ title, value, icon: Icon, trend, trendLabel, link, iconColor = 'text-zinc-600', iconBg = 'bg-zinc-100' }) {
+    const hasIcon = Boolean(Icon);
+
     return (
         <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between h-full group relative overflow-hidden">
             {/* Hover Indicator */}
@@ -10,9 +12,11 @@ export default function StatsCard({ title, value, icon: Icon, trend, trendLabel,
 
             <div>
                 <div className="flex justify-between items-start mb-4">
-                    <div className={`p-3 rounded-lg ${iconBg} ${iconColor}`}>
-                        <Icon size={22} strokeWidth={1.5} />
-                    </div>
+                    {hasIcon ? (
+                        <div className={`p-3 rounded-lg ${iconBg} ${iconColor}`}>
+                            <Icon size={22} strokeWidth={1.5} />
+                        </div>
+                    ) : null}
                 </div>
 
                 <div className="mb-1">

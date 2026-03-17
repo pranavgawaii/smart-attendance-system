@@ -9,6 +9,8 @@ const login = async (req, res) => {
         // Validate inputs
         if (!email || !password) {
             return res.status(400).json({
+                success: false,
+                code: 'AUTH_VALIDATION_FAILED',
                 error: 'Email and password are required'
             });
         }
@@ -16,6 +18,8 @@ const login = async (req, res) => {
         if (!supabase) {
             console.error('[Auth] Supabase client not initialized. Check Env Vars.');
             return res.status(500).json({
+                success: false,
+                code: 'AUTH_SERVICE_UNAVAILABLE',
                 error: 'Authentication service not configured. Please contact administrator.'
             });
         }
@@ -30,8 +34,9 @@ const login = async (req, res) => {
         if (error) {
             console.error(`[Auth] ❌ Supabase Auth Rejection: ${error.message}`);
             return res.status(error.status || 401).json({
-                error: 'Invalid credentials. Check email/password or Supabase project.',
                 code: 'AUTH_FAILED',
+                success: false,
+                error: 'Invalid credentials. Check email/password or Supabase project.',
                 message: error.message
             });
         }
@@ -47,8 +52,18 @@ const login = async (req, res) => {
         if (profileError || !profile) {
             console.error('[Auth] ❌ Profile lookup failed for authenticated user:', email);
             return res.status(404).json({
+                success: false,
                 error: 'Login successful, but user has no profile record in user_profiles table.',
                 code: 'PROFILE_MISSING'
+            });
+        }
+
+        if (profile.user_status && profile.user_status !== 'active') {
+            await supabase.auth.signOut().catch(() => {});
+            return res.status(403).json({
+                success: false,
+                code: 'AUTH_USER_DISABLED',
+                error: 'Your account is disabled. Contact administrator.'
             });
         }
 
@@ -70,7 +85,11 @@ const login = async (req, res) => {
 
     } catch (error) {
         console.error('Login error:', error);
-        return res.status(500).json({ error: 'Login failed' });
+        return res.status(500).json({
+            success: false,
+            code: 'AUTH_LOGIN_FAILED',
+            error: 'Login failed'
+        });
     }
 };
 
@@ -80,42 +99,45 @@ const logout = async (req, res) => {
         const { error } = await supabase.auth.signOut();
 
         if (error) {
-            return res.status(500).json({ error: 'Logout failed' });
+            return res.status(500).json({
+                success: false,
+                code: 'AUTH_LOGOUT_FAILED',
+                error: 'Logout failed'
+            });
         }
 
         return res.json({ success: true });
     } catch (error) {
-        return res.status(500).json({ error: 'Logout failed' });
+        return res.status(500).json({
+            success: false,
+            code: 'AUTH_LOGOUT_FAILED',
+            error: 'Logout failed'
+        });
     }
 };
 
 // Get current user
 const getCurrentUser = async (req, res) => {
     try {
-        const { data: { user }, error } = await supabase.auth.getUser();
-
-        if (error || !user) {
-            return res.status(401).json({ error: 'Not authenticated' });
-        }
-
-        // Get profile
-        const { data: profile } = await supabase
-            .from('user_profiles')
-            .select('*')
-            .ilike('email', user.email)
-            .single();
+        const profile = req.user;
 
         return res.json({
+            success: true,
             user: {
-                id: user.id,
-                email: user.email,
-                role: profile?.role,
-                name: profile?.name,
-                enrollment_no: profile?.enrollment_no
+                id: profile.id,
+                email: profile.email,
+                role: profile.role,
+                name: profile.name,
+                enrollment_no: profile.enrollment_no,
+                user_status: profile.user_status || 'active'
             }
         });
     } catch (error) {
-        return res.status(500).json({ error: 'Failed to get user' });
+        return res.status(500).json({
+            success: false,
+            code: 'AUTH_CURRENT_USER_FAILED',
+            error: 'Failed to get user'
+        });
     }
 };
 

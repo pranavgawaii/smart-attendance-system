@@ -1,6 +1,7 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect } from 'react';
 import { jwtDecode } from 'jwt-decode';
-import api from '../services/api';
+import api, { bootstrapSupabaseSession, clearLocalAuthState } from '../services/api';
 
 const AuthContext = createContext(null);
 
@@ -35,18 +36,14 @@ export const AuthProvider = ({ children }) => {
                             console.error("Failed to parse stored session", e);
                         }
                     }
+                }
 
-                    // Token expiration check disabled - let API handle expired tokens gracefully
-                    // This prevents premature logout on page refresh
-                    // try {
-                    //     const decoded = jwtDecode(storedToken);
-                    //     if (decoded && decoded.exp && decoded.exp * 1000 < Date.now()) {
-                    //         console.warn("Token expired, logging out");
-                    //         logout();
-                    //     }
-                    // } catch (e) {
-                    //     // Not a JWT or decode failed, ignore
-                    // }
+                const restoredSession = await bootstrapSupabaseSession();
+                if (restoredSession?.access_token) {
+                    setToken(restoredSession.access_token);
+                    setSession(restoredSession);
+                    localStorage.setItem('token', restoredSession.access_token);
+                    localStorage.setItem('session', JSON.stringify(restoredSession));
                 }
             } catch (error) {
                 console.error("Auth initialization error:", error);
@@ -78,6 +75,12 @@ export const AuthProvider = ({ children }) => {
                 localStorage.setItem('user', JSON.stringify(userData));
                 if (sessionData) {
                     localStorage.setItem('session', JSON.stringify(sessionData));
+
+                    if (sessionData.access_token && sessionData.refresh_token) {
+                        bootstrapSupabaseSession(true).catch((sessionError) => {
+                            console.warn("Failed to initialize browser auth session", sessionError);
+                        });
+                    }
                 }
             }
         } catch (e) {
@@ -89,15 +92,11 @@ export const AuthProvider = ({ children }) => {
     const logout = async () => {
         try {
             await api.post('/auth/logout');
-        } catch (e) {
+        } catch {
             console.warn("AuthContext: Remote logout failed, performing local cleanup only");
         }
 
-        // Local cleanup
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('session');
-        localStorage.removeItem('role'); // Cleanup legacy role key if it exists
+        await clearLocalAuthState();
 
         setUser(null);
         setToken(null);

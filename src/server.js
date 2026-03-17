@@ -1,11 +1,22 @@
 require('dotenv').config();
 const app = require('./app');
-const { supabase } = require('./config/db');
-const eventModel = require('./models/event.model');
-const qrService = require('./services/qr.service');
-const qrModel = require('./models/qr.model');
 
 const PORT = process.env.PORT || 3000;
+const isProduction = process.env.NODE_ENV === 'production';
+
+const requiredProdEnv = [
+    'SUPABASE_URL',
+    'SUPABASE_SERVICE_ROLE_KEY',
+    'JWT_SECRET',
+    'QR_HMAC_SECRET'
+];
+
+const missingProdEnv = requiredProdEnv.filter((name) => !process.env[name]);
+if (isProduction && missingProdEnv.length > 0) {
+    throw new Error(
+        `[Startup] Missing required environment variables in production: ${missingProdEnv.join(', ')}`
+    );
+}
 
 // Validate required environment variables (warn but don't crash in serverless)
 if (!process.env.ADMIN_EMAIL) {
@@ -13,45 +24,12 @@ if (!process.env.ADMIN_EMAIL) {
     console.warn('Some admin features may not work correctly');
 }
 
-// Routes are handled in app.js
-
-const resumeActiveSessions = async () => {
-    try {
-        console.log("🔄 Checking for active sessions to resume (Supabase)...");
-        const events = await eventModel.findAll();
-        const activeEvents = events.filter(e => e.session_state === 'ACTIVE');
-
-        for (const event of activeEvents) {
-            console.log(`▶️ Resuming session for Event: ${event.name} (${event.id})`);
-            // Default to 10s if null
-            await qrService.startRotation(event.id, event.qr_refresh_interval || 10);
-        }
-
-        if (activeEvents.length === 0) console.log("✅ No active sessions found.");
-
-    } catch (err) {
-        console.error("❌ Failed to resume sessions:", err.message);
-    }
-};
-
 // Only start the server and background tasks if running directly (local or non-serverless)
 if (require.main === module) {
     const server = app.listen(PORT, async () => {
         console.log(`🚀 Server running on port ${PORT}`);
         console.log("✅ Connected to Supabase backend");
-
-        // ONLY start background tasks if NOT on Vercel
-        if (!process.env.VERCEL) {
-            try {
-                // Clean up any orphaned sessions from before
-                await qrModel.cleanupOrphanedSessions();
-
-                // Resume active QR sessions
-                await resumeActiveSessions();
-            } catch (err) {
-                console.error("❌ Error during server startup initialization:", err.message);
-            }
-        }
+        console.log('✅ QR generation runs on deterministic slot model (no in-memory rotation timers).');
     });
 
     // Graceful shutdown logic (only for persistent servers)

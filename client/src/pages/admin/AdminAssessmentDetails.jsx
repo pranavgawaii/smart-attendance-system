@@ -25,7 +25,13 @@ export default function AdminAssessmentDetails() {
     }, [id]);
 
     useEffect(() => {
-        fetchDetails();
+        const timeoutId = setTimeout(() => {
+            fetchDetails();
+        }, 0);
+
+        return () => {
+            clearTimeout(timeoutId);
+        };
     }, [fetchDetails]);
 
     const handleRemoveCandidate = async (userId) => {
@@ -33,7 +39,7 @@ export default function AdminAssessmentDetails() {
         try {
             await api.delete(`/assessments/${id}/candidates/${userId}`);
             fetchDetails(); // Refresh list
-        } catch (error) {
+        } catch {
             alert('Failed to remove candidate');
         }
     };

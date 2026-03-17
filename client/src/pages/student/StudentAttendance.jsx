@@ -1,13 +1,12 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import { QrCode, ArrowLeft, Home, X, CheckCircle2, AlertCircle, Info, Keyboard, ScanLine, Shield } from 'lucide-react';
 import FingerprintJS from '@fingerprintjs/fingerprintjs';
+import { Html5Qrcode } from 'html5-qrcode';
 
-export default function StudentAttendance() {
-    const { user } = useAuth();
+export default function StudentAttendance({ initialTab = 'scan' }) {
     const navigate = useNavigate();
 
     // Data State
@@ -16,84 +15,89 @@ export default function StudentAttendance() {
     const [scanResult, setScanResult] = useState(null);
     const [isScanning, setIsScanning] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [activeTab, setActiveTab] = useState('scan'); // 'scan' or 'manual'
+    const [activeTab, setActiveTab] = useState(initialTab === 'manual' ? 'manual' : 'scan'); // 'scan' or 'manual'
 
     // Scanner Refs
-    const videoRef = useRef(null);
-    const requestRef = useRef(null);
-    const cleanupRef = useRef(null);
+    const html5QrCodeRef = useRef(null);
     const isSubmittingRef = useRef(false);
 
-    // Load Fingerprint
-    const fpPromise = FingerprintJS.load();
+    // Load Fingerprint once
+    const fpPromiseRef = useRef(FingerprintJS.load());
 
     const getFingerprint = async () => {
-        const fp = await fpPromise;
+        const fp = await fpPromiseRef.current;
         const result = await fp.get();
         return result.visitorId;
     };
 
+    const teardownScanner = async () => {
+        const scanner = html5QrCodeRef.current;
+        if (!scanner) return;
+
+        try {
+            await scanner.stop();
+        } catch {
+            // Ignore stop errors when scanner is already stopped/not running.
+        }
+
+        try {
+            await scanner.clear();
+        } catch {
+            // Ignore clear errors.
+        }
+
+        html5QrCodeRef.current = null;
+    };
+
     useEffect(() => {
-        return () => stopScanner();
+        return () => {
+            void teardownScanner();
+        };
     }, []);
+
+    useEffect(() => {
+        setActiveTab(initialTab === 'manual' ? 'manual' : 'scan');
+    }, [initialTab]);
 
     const startScanner = async () => {
         setScanResult(null);
         setIsScanning(true);
-        if (cleanupRef.current) cleanupRef.current();
+
+        // Ensure scanner container is mounted before initializing camera.
+        await new Promise(resolve => setTimeout(resolve, 0));
+        await teardownScanner();
 
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-            const readerDiv = document.getElementById("reader");
-            if (!readerDiv) return;
+            const readerElement = document.getElementById('reader');
+            if (!readerElement) {
+                throw new Error('Scanner container unavailable');
+            }
 
-            readerDiv.innerHTML = '';
-            const video = document.createElement("video");
+            const scanner = new Html5Qrcode('reader', { verbose: false });
+            html5QrCodeRef.current = scanner;
 
-            Object.assign(video.style, {
-                width: "100%", height: "100%", objectFit: "cover"
-            });
-
-            video.autoplay = true;
-            video.playsInline = true;
-            video.srcObject = stream;
-            readerDiv.appendChild(video);
-            videoRef.current = video;
-
-            await new Promise(r => video.onloadedmetadata = () => video.play().then(r));
-
-            const canvas = document.createElement("canvas");
-            const ctx = canvas.getContext("2d", { willReadFrequently: true });
-
-            const scanLoop = async () => {
-                if (!videoRef.current || videoRef.current.paused || videoRef.current.ended) return;
-
-                canvas.width = videoRef.current.videoWidth;
-                canvas.height = videoRef.current.videoHeight;
-                ctx.drawImage(videoRef.current, 0, 0);
-
-                try {
-                    if ("BarcodeDetector" in window) {
-                        const detector = new window.BarcodeDetector({ formats: ['qr_code'] });
-                        const barcodes = await detector.detect(canvas);
-                        if (barcodes.length > 0) {
-                            const raw = barcodes[0].rawValue;
-                            stopScanner();
-                            handleScan(raw);
-                            return;
-                        }
-                    }
-                } catch (e) { /* ignore */ }
-
-                requestRef.current = requestAnimationFrame(scanLoop);
+            const scannerConfig = {
+                fps: 12,
+                qrbox: { width: 280, height: 280 },
+                aspectRatio: 1.0,
+                disableFlip: false
             };
 
-            requestRef.current = requestAnimationFrame(scanLoop);
-
-            cleanupRef.current = () => {
-                if (requestRef.current) cancelAnimationFrame(requestRef.current);
-                if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
+            const onScanSuccess = (decodedText) => {
+                if (isSubmittingRef.current) return;
+                stopScanner();
+                void handleScan(decodedText);
             };
+
+            const onScanError = () => {
+                // Ignore noisy scan misses; keep scanning.
+            };
+
+            try {
+                await scanner.start({ facingMode: { exact: 'environment' } }, scannerConfig, onScanSuccess, onScanError);
+            } catch {
+                await scanner.start({ facingMode: 'environment' }, scannerConfig, onScanSuccess, onScanError);
+            }
 
         } catch (err) {
             console.error(err);
@@ -103,12 +107,13 @@ export default function StudentAttendance() {
                 title: 'Camera Error',
                 message: 'Camera access denied. Please enable camera permissions.'
             });
+            await teardownScanner();
         }
     };
 
     const stopScanner = () => {
         setIsScanning(false);
-        if (cleanupRef.current) cleanupRef.current();
+        void teardownScanner();
     };
 
     const processAttendanceResponse = (data, isManual = false) => {
@@ -130,6 +135,25 @@ export default function StudentAttendance() {
         }
     };
 
+    const parseAttendanceError = (error) => {
+        const code = error.response?.data?.code;
+        const message = error.response?.data?.error || error.message || 'Failed to mark attendance';
+
+        if (code === 'PROXY_DETECTED') {
+            return { title: 'Proxy Blocked', message };
+        }
+
+        if (code === 'DEVICE_ALREADY_USED_FOR_SESSION') {
+            return { title: 'Device Already Used', message };
+        }
+
+        if (code === 'AUTH_TOKEN_EXPIRED' || code === 'AUTH_TOKEN_INVALID' || code === 'AUTH_TOKEN_MISSING') {
+            return { title: 'Session Expired', message: 'Your login session expired. Please login again.' };
+        }
+
+        return { title: 'Error', message };
+    };
+
     const handleScan = async (qrData) => {
         if (isSubmittingRef.current) return;
         isSubmittingRef.current = true;
@@ -138,45 +162,58 @@ export default function StudentAttendance() {
         try {
             if (navigator.vibrate) navigator.vibrate(200);
 
-            let eventId, token;
+            const rawData = typeof qrData === 'string' ? qrData.trim() : '';
+            let sessionId = null;
+            let eventId = null;
+            let token = null;
 
             try {
-                const urlObj = new URL(qrData);
+                const urlObj = new URL(rawData);
+                sessionId = urlObj.searchParams.get('session_id');
                 eventId = urlObj.searchParams.get('event_id');
                 token = urlObj.searchParams.get('token');
-            } catch (e) {
+            } catch {
                 try {
-                    const json = JSON.parse(qrData);
-                    eventId = json.event_id || json.id;
+                    const json = JSON.parse(rawData);
+                    sessionId = json.session_id || json.sessionId || null;
+                    eventId = json.event_id || json.eventId || json.id || null;
                     token = json.token;
-                } catch (e2) {
-                    const m = qrData.match(/[?&]event_id=([^&]+)/);
-                    eventId = m ? m[1] : null;
-                    const m2 = qrData.match(/[?&]token=([^&]+)/);
-                    token = m2 ? m2[1] : null;
+                } catch {
+                    const sessionMatch = rawData.match(/[?&]session_id=([^&]+)/);
+                    sessionId = sessionMatch ? decodeURIComponent(sessionMatch[1]) : null;
+
+                    const eventMatch = rawData.match(/[?&]event_id=([^&]+)/);
+                    eventId = eventMatch ? decodeURIComponent(eventMatch[1]) : null;
+
+                    const tokenMatch = rawData.match(/[?&]token=([^&]+)/);
+                    token = tokenMatch ? decodeURIComponent(tokenMatch[1]) : null;
                 }
             }
 
-            if (!eventId || !token) throw new Error("Invalid QR format");
+            if (!token) throw new Error('Invalid QR format');
 
             const fingerprint = await getFingerprint();
 
-            const response = await api.post('/attendance', {
-                event_id: eventId,
+            const payload = {
                 token: token,
                 fingerprint: fingerprint,
                 device_info: navigator.userAgent
-            });
+            };
+
+            if (sessionId) payload.session_id = sessionId;
+            if (eventId) payload.event_id = eventId;
+
+            const response = await api.post('/attendance', payload);
 
             processAttendanceResponse(response.data, false);
 
         } catch (error) {
             console.error(error);
-            const msg = error.response?.data?.error || error.message;
+            const parsedError = parseAttendanceError(error);
             setScanResult({
                 status: 'error',
-                title: msg.includes('Proxy') ? 'Proxy Blocked' : 'Error',
-                message: msg
+                title: parsedError.title,
+                message: parsedError.message
             });
         } finally {
             isSubmittingRef.current = false;
@@ -203,11 +240,11 @@ export default function StudentAttendance() {
             setManualCode('');
             setManualEventId('');
         } catch (error) {
-            const msg = error.response?.data?.error || error.message;
+            const parsedError = parseAttendanceError(error);
             setScanResult({
                 status: 'error',
-                title: 'Error',
-                message: msg
+                title: parsedError.title,
+                message: parsedError.message
             });
         } finally {
             setIsSubmitting(false);

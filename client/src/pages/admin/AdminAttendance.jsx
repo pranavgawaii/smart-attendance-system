@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import AdminLayout from '../../components/admin/AdminLayout';
-import { Search, Eye } from 'lucide-react';
+import PageHeader from '../../components/PageHeader';
+import StatusBadge from '../../components/StatusBadge';
+import { Search, Eye, Calendar } from 'lucide-react';
 
 export default function AdminAttendance() {
     const [events, setEvents] = useState([]);
@@ -28,26 +30,6 @@ export default function AdminAttendance() {
     const filteredEvents = events.filter(e =>
         e.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
-
-    const getStatusBadge = (state) => {
-        let color = '#71717a'; // Zinc-500
-        let bg = '#f4f4f5'; // Zinc-100
-        let label = 'NOT STARTED';
-
-        if (state === 'ACTIVE') { color = '#18181b'; bg = '#f4f4f5'; label = 'LIVE'; } // Zinc-900 / Zinc-100
-        else if (state === 'PAUSED') { color = '#52525b'; bg = '#f4f4f5'; label = 'PAUSED'; } // Zinc-600 / Zinc-100
-        else if (state === 'STOPPED') { color = '#71717a'; bg = '#f4f4f5'; label = 'CLOSED'; } // Zinc-500 / Zinc-100
-
-        return (
-            <span style={{
-                color: color, backgroundColor: bg, padding: '4px 10px',
-                borderRadius: '20px', fontSize: '0.75rem', fontWeight: '700',
-                letterSpacing: '0.02em', textTransform: 'uppercase'
-            }}>
-                {label}
-            </span>
-        );
-    };
 
     return (
         <AdminLayout title="Attendance Reports">

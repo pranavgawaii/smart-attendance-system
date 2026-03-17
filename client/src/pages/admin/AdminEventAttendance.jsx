@@ -102,51 +102,6 @@ export default function AdminEventAttendance() {
         return matchesSearch && matchesFilter;
     });
 
-    const getStatusBadge = (status) => {
-        let color = '#475569';
-        let bg = '#f1f5f9';
-
-        if (status === 'PRESENT') { color = '#18181b'; bg = '#f4f4f5'; } // Zinc-900 / Zinc-100
-        else if (status === 'ABSENT') { color = '#71717a'; bg = '#f4f4f5'; } // Zinc-500 / Zinc-100
-        else if (status === 'REVOKED') { color = '#a1a1aa'; bg = '#f4f4f5'; } // Zinc-400 / Zinc-100
-
-        return (
-            <span style={{
-                color: color, backgroundColor: bg, padding: '4px 10px',
-                borderRadius: '20px', fontSize: '0.75rem', fontWeight: '700',
-                letterSpacing: '0.02em', textTransform: 'uppercase'
-            }}>
-                {status}
-            </span>
-        );
-    };
-
-    const actionButtons = (
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-            <button onClick={downloadCsv} style={{
-                background: 'white', color: '#18181b', border: '1px solid #e4e4e7',
-                padding: '0.5rem 1rem', borderRadius: '8px', fontWeight: '600',
-                fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
-            }}>
-                <Download size={16} strokeWidth={1.5} /> CSV
-            </button>
-            <button onClick={downloadPdf} style={{
-                background: 'white', color: '#18181b', border: '1px solid #e4e4e7',
-                padding: '0.5rem 1rem', borderRadius: '8px', fontWeight: '600',
-                fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
-            }}>
-                <Download size={16} strokeWidth={1.5} /> PDF
-            </button>
-            <button onClick={() => fetchAttendance()} style={{
-                background: 'white', color: '#18181b', border: '1px solid #e2e8f0',
-                padding: '0.5rem 1rem', borderRadius: '8px', fontWeight: '600',
-                fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
-            }}>
-                <RefreshCw size={16} strokeWidth={1.5} /> Refresh
-            </button>
-        </div>
-    );
-
     return (
         <AdminLayout title="Attendance Logs">
             <PageHeader

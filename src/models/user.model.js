@@ -44,14 +44,40 @@ const updateUser = async (id, { name, enrollment_no, branch, academic_year }) =>
   return data;
 };
 
-const findAll = async () => {
-  const { data, error } = await supabase
+const findAll = async ({ page, limit, role, q } = {}) => {
+  const hasPagination = Number.isFinite(Number(page)) || Number.isFinite(Number(limit));
+  const safePage = Math.max(Number(page) || 1, 1);
+  const safeLimit = Math.min(Math.max(Number(limit) || 20, 1), 200);
+
+  let query = supabase
     .from(TABLE_NAME)
-    .select('id, name, email, enrollment_no, branch, role, academic_year, user_status, created_at')
+    .select('id, name, email, enrollment_no, branch, role, academic_year, user_status, created_at', { count: 'exact' })
     .order('created_at', { ascending: false });
 
+  if (role) {
+    query = query.eq('role', role);
+  }
+
+  if (q) {
+    const escaped = String(q).replace(/%/g, '\\%').replace(/,/g, '\\,');
+    query = query.or(`name.ilike.%${escaped}%,email.ilike.%${escaped}%,enrollment_no.ilike.%${escaped}%`);
+  }
+
+  if (hasPagination) {
+    const from = (safePage - 1) * safeLimit;
+    const to = from + safeLimit - 1;
+    query = query.range(from, to);
+  }
+
+  const { data, error, count } = await query;
+
   if (error) throw error;
-  return data;
+
+  if (hasPagination || role || q) {
+    return { rows: data || [], count: count || 0 };
+  }
+
+  return data || [];
 };
 
 const adminUpdate = async (id, { name, enrollment_no, branch, academic_year, user_status }) => {

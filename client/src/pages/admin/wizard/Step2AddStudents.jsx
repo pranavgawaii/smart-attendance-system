@@ -17,7 +17,6 @@ MIT010,Zara Khan,zara.khan@example.com,9876543219`; // Truncated for brevity in 
 
 export default function Step2AddStudents({ formData, updateFormData, nextStep, prevStep }) {
     const [csvFile, setCsvFile] = useState(null);
-    const [parsing, setParsing] = useState(false);
     const [parseResult, setParseResult] = useState(null);
     const [inputMode, setInputMode] = useState('csv'); // 'csv', 'manual', 'db'
     const [manualStudents, setManualStudents] = useState(formData.students || []);
@@ -40,7 +39,7 @@ export default function Step2AddStudents({ formData, updateFormData, nextStep, p
         if (inputMode === 'db' && dbStudents.length === 0) {
             fetchDbStudents();
         }
-    }, [inputMode]);
+    }, [inputMode, dbStudents.length]);
 
     const fetchDbStudents = async () => {
         setLoadingDb(true);
@@ -84,7 +83,6 @@ export default function Step2AddStudents({ formData, updateFormData, nextStep, p
     };
 
     const parseCSV = async (file) => {
-        setParsing(true);
         const reader = new FileReader();
 
         reader.onload = async (e) => {
@@ -101,7 +99,6 @@ export default function Step2AddStudents({ formData, updateFormData, nextStep, p
                         success: false,
                         error: `Missing required columns: ${missingCols.join(', ')}`
                     });
-                    setParsing(false);
                     return;
                 }
 
@@ -132,13 +129,12 @@ export default function Step2AddStudents({ formData, updateFormData, nextStep, p
 
                 updateFormData({ students: students, validStudents: students });
 
-            } catch (error) {
+            } catch {
                 setParseResult({
                     success: false,
                     error: 'Failed to parse CSV file.'
                 });
             }
-            setParsing(false);
         };
         reader.readAsText(file);
     };

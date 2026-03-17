@@ -1,10 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const { supabase } = require('../config/db');
-const { authenticateToken } = require('../middlewares/auth.middleware');
+const { requireRole } = require('../middlewares/auth.middleware');
+
+const ADMIN_ROLES = ['admin', 'super_admin', 'coordinator_admin'];
 
 // Get all labs
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', requireRole(ADMIN_ROLES), async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('labs')
@@ -20,7 +22,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Get enabled labs only
-router.get('/enabled', authenticateToken, async (req, res) => {
+router.get('/enabled', requireRole(ADMIN_ROLES), async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('labs')
@@ -37,7 +39,7 @@ router.get('/enabled', authenticateToken, async (req, res) => {
 });
 
 // Get single lab
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id', requireRole(ADMIN_ROLES), async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('labs')
@@ -56,7 +58,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
 });
 
 // Create lab
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', requireRole(ADMIN_ROLES), async (req, res) => {
     try {
         const { lab_name, capacity, status = 'enabled' } = req.body;
 
@@ -89,7 +91,7 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Update lab
-router.put('/:id', authenticateToken, async (req, res) => {
+router.put('/:id', requireRole(ADMIN_ROLES), async (req, res) => {
     try {
         const { lab_name, capacity, status } = req.body;
         const updates = {};
@@ -127,7 +129,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 });
 
 // Delete lab
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', requireRole(ADMIN_ROLES), async (req, res) => {
     try {
         const { error } = await supabase
             .from('labs')

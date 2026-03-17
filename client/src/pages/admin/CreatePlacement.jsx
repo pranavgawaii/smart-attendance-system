@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -32,13 +32,7 @@ export default function CreatePlacement() {
     const [selectedYears, setSelectedYears] = useState([]);
     const [selectedBranches, setSelectedBranches] = useState([]);
 
-    useEffect(() => {
-        if (id) {
-            fetchDriveDetails();
-        }
-    }, [id]);
-
-    const fetchDriveDetails = async () => {
+    const fetchDriveDetails = useCallback(async () => {
         setLoading(true);
         try {
             // Reusing the public API (which includes eligibility in response logic?)
@@ -94,7 +88,13 @@ export default function CreatePlacement() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [id, navigate, token]);
+
+    useEffect(() => {
+        if (id) {
+            fetchDriveDetails();
+        }
+    }, [id, fetchDriveDetails]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

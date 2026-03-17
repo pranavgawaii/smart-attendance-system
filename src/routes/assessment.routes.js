@@ -1,19 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const assessmentController = require('../controllers/assessment.controller');
-const { authenticateToken } = require('../middlewares/auth.middleware'); // Admin check assumed
+const { requireRole } = require('../middlewares/auth.middleware');
 
-router.get('/', authenticateToken, assessmentController.getAssessments);
-router.post('/', authenticateToken, assessmentController.createAssessment);
-router.get('/:id', authenticateToken, assessmentController.getAssessmentDetails);
-router.post('/:id/candidates', authenticateToken, assessmentController.addCandidates);
-router.delete('/:id/candidates/:userId', authenticateToken, assessmentController.removeCandidate);
+const ADMIN_ROLES = ['admin', 'super_admin', 'coordinator_admin'];
 
-router.post('/:id/allocations/generate', authenticateToken, assessmentController.generateAllocations);
-router.post('/:id/allocations/confirm', authenticateToken, assessmentController.confirmAllocations);
-router.get('/:id/allocations', authenticateToken, assessmentController.getAllocations);
-router.put('/:id/allocations/:allocationId', authenticateToken, assessmentController.updateAllocation);
-router.get('/:id/allocations/export/csv', authenticateToken, assessmentController.exportAllocationsCsv);
-router.get('/:id/allocations/export/pdf', authenticateToken, assessmentController.exportAllocationsPdf);
+router.get('/', requireRole(ADMIN_ROLES), assessmentController.getAssessments);
+router.post('/', requireRole(ADMIN_ROLES), assessmentController.createAssessment);
+router.get('/:id', requireRole(ADMIN_ROLES), assessmentController.getAssessmentDetails);
+router.post('/:id/candidates', requireRole(ADMIN_ROLES), assessmentController.addCandidates);
+router.delete('/:id/candidates/:userId', requireRole(ADMIN_ROLES), assessmentController.removeCandidate);
+
+router.post('/:id/allocations/generate', requireRole(ADMIN_ROLES), assessmentController.generateAllocations);
+router.post('/:id/allocations/confirm', requireRole(ADMIN_ROLES), assessmentController.confirmAllocations);
+router.get('/:id/allocations', requireRole(ADMIN_ROLES), assessmentController.getAllocations);
+router.put('/:id/allocations/:allocationId', requireRole(ADMIN_ROLES), assessmentController.updateAllocation);
+router.get('/:id/allocations/export/csv', requireRole(ADMIN_ROLES), assessmentController.exportAllocationsCsv);
+router.get('/:id/allocations/export/pdf', requireRole(ADMIN_ROLES), assessmentController.exportAllocationsPdf);
 
 module.exports = router;

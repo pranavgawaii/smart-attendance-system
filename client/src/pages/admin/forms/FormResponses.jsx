@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, Filter, X, Loader2, Eye, CheckCircle, XCircle, Clock, ChevronDown } from 'lucide-react';
 import AdminLayout from '../../../components/admin/AdminLayout';
@@ -23,11 +23,7 @@ export default function FormResponses() {
     const [selectedResponse, setSelectedResponse] = useState(null);
     const [saving, setSaving] = useState(false);
 
-    useEffect(() => {
-        fetchData();
-    }, [id]);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             const formRes = await api.get(`/forms/${id}`);
             setForm(formRes.data.form);
@@ -40,7 +36,11 @@ export default function FormResponses() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [id]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     const updateResponseStatus = async (responseId, newStatus, notes) => {
         setSaving(true);
@@ -60,8 +60,42 @@ export default function FormResponses() {
 
     const getAnswerValue = (response, fieldLabel) => {
         const field = fields.find(f => f.label.toLowerCase().includes(fieldLabel.toLowerCase()));
-        if (!field) return '—';
-        return response.answers?.[field.id] || '—';
+
+        // 1. Direct match by ID (best)
+        if (field && response.answers?.[field.id]) {
+            return response.answers[field.id];
+        }
+
+        // 2. Heuristic: If current ID not found, check for ANY orphaned ID that might contain this data
+        // For existing common cases like Name/Email where the ID changed due to a save
+        if (response.answers) {
+            const orphanedEntries = Object.entries(response.answers).filter(([answerId]) => !fields.find(f => f.id === answerId));
+
+            // If it's the "Name" column
+            if (fieldLabel.toLowerCase() === 'name') {
+                // Try to find a string value that isn't email-like and isn't too short
+                const likelyName = orphanedEntries.find((entry) =>
+                    typeof entry[1] === 'string'
+                    && entry[1].length > 2
+                    && !entry[1].includes('@')
+                    && !entry[1].match(/^[0-9]+$/)
+                );
+                if (likelyName) return likelyName[1];
+            }
+
+            // If it's "Email"
+            if (fieldLabel.toLowerCase() === 'email') {
+                const likelyEmail = orphanedEntries.find((entry) => typeof entry[1] === 'string' && entry[1].includes('@'));
+                if (likelyEmail) return likelyEmail[1];
+            }
+
+            // Fallback: If we have orphaned data, just show the first one for the "Name" column if nothing else found
+            if (fieldLabel.toLowerCase() === 'name' && orphanedEntries.length > 0) {
+                return orphanedEntries[0][1];
+            }
+        }
+
+        return '—';
     };
 
     const filteredResponses = statusFilter === 'all'
@@ -264,6 +298,18 @@ export default function FormResponses() {
                                         </p>
                                     </div>
                                 ))}
+
+                                {/* Orphaned / Legacy Data */}
+                                {Object.entries(selectedResponse.answers || {}).map(([id, value]) => {
+                                    const fieldExists = fields.find(f => f.id === id);
+                                    if (fieldExists) return null;
+                                    return (
+                                        <div key={id} className="border-b border-zinc-50 pb-3 bg-zinc-50/50 p-2 rounded">
+                                            <p className="text-[10px] text-zinc-400 mb-1 italic">Legacy / Deleted Field (ID: {id.slice(0, 8)}...)</p>
+                                            <p className="text-sm text-zinc-900 whitespace-pre-wrap">{value}</p>
+                                        </div>
+                                    );
+                                })}
                             </div>
 
                             <div className="text-xs text-zinc-400 pt-4 border-t border-zinc-100">

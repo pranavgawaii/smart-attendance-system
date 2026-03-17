@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import AdminLayout from '../../components/admin/AdminLayout';
@@ -26,20 +26,21 @@ export default function AdminHome() {
         submissions: [] // Mock or fetched
     });
 
-    useEffect(() => {
-        fetchAllData();
-    }, []);
-
-    const fetchAllData = async () => {
+    const fetchAllData = useCallback(async () => {
         try {
-            const [usersRes, eventsRes, assessmentsRes, drivesRes] = await Promise.allSettled([
-                api.get('/users').catch(e => ({ data: [] })),
-                api.get('/events').catch(e => ({ data: [] })),
-                api.get('/assessments').catch(e => ({ data: [] })),
-                api.get('/placement/drives').catch(e => ({ data: [] }))
+            const [usersRes, eventsRes, assessmentsRes] = await Promise.allSettled([
+                api.get('/users').catch(() => ({ data: [] })),
+                api.get('/events').catch(() => ({ data: [] })),
+                api.get('/assessments').catch(() => ({ data: [] }))
             ]);
 
-            const newCounts = { ...counts };
+            const newCounts = {
+                students: 0,
+                sessions: { total: 0, active: 0, liveSession: null },
+                assessments: { total: 0, published: 0, list: [] },
+                placements: { total: 0, open: 0 },
+                submissions: []
+            };
 
             if (usersRes.status === 'fulfilled') {
                 const users = Array.isArray(usersRes.value.data) ? usersRes.value.data : [];
@@ -69,7 +70,11 @@ export default function AdminHome() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        fetchAllData();
+    }, [fetchAllData]);
 
     const liveSession = counts.sessions.liveSession;
 

@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Smartphone, ShieldCheck, BarChart3, MapPin, Menu, X, ChevronDown, Mail, Linkedin, Twitter, Globe, Instagram, Facebook } from 'lucide-react';
 import './LandingPage.css';
 import mitLogo from '../assets/mitadtlogo.png';
-import heroVideo from '../assets/itbuilding.mp4';
 
 const LandingPage = () => {
     const [isScrolled, setIsScrolled] = useState(false);
@@ -94,9 +93,9 @@ const LandingPage = () => {
                     loop
                     muted
                     playsInline
-                    preload="auto"
+                    preload="none"
                 >
-                    <source src={heroVideo} type="video/mp4" />
+                    <source src="/media/itbuilding.mp4" type="video/mp4" />
                 </video>
                 <div className="hero-overlay">
                     <div className="hero-content">

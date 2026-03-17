@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Building2, MapPin, Briefcase, Calendar, CheckCircle, XCircle, Search, Filter, ChevronRight, Clock, DollarSign, Globe, ArrowLeft, Home } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -13,11 +13,7 @@ export default function StudentPlacements() {
     const [applyingId, setApplyingId] = useState(null);
     const [filterEligible, setFilterEligible] = useState(false);
 
-    useEffect(() => {
-        fetchData();
-    }, []);
-
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             setLoading(true);
             const drivesRes = await fetch('/api/placement/drives', {
@@ -38,7 +34,11 @@ export default function StudentPlacements() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [token]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     const handleApply = async (driveId) => {
         if (!window.confirm("Confirm application to this drive?")) return;
@@ -345,4 +345,3 @@ function JobMeta({ label, value }) {
         </div>
     );
 }
-

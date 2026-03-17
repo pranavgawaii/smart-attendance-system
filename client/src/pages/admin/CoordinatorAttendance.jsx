@@ -131,10 +131,6 @@ export default function CoordinatorAttendance() {
         setShowPreview(false);
     };
 
-    const yearBadge = (year) => {
-        return 'bg-zinc-100 text-zinc-600 border border-zinc-200';
-    };
-
     return (
         <AdminLayout title="Mark Coordinator Attendance">
             <div className="max-w-5xl mx-auto space-y-6">

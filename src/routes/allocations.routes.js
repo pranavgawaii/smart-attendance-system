@@ -1,10 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const { supabase } = require('../config/db');
-const { authenticateToken } = require('../middlewares/auth.middleware');
+const { requireRole, requireSelfOrRole } = require('../middlewares/auth.middleware');
+
+const ADMIN_ROLES = ['admin', 'super_admin', 'coordinator_admin'];
 
 // Create allocations (allocation algorithm)
-router.post('/create', authenticateToken, async (req, res) => {
+router.post('/create', requireRole(ADMIN_ROLES), async (req, res) => {
     try {
         const { assessment_id, students, labs, seating_mode } = req.body;
 
@@ -91,7 +93,7 @@ router.post('/create', authenticateToken, async (req, res) => {
 });
 
 // Get allocations for an assessment
-router.get('/assessment/:assessmentId', authenticateToken, async (req, res) => {
+router.get('/assessment/:assessmentId', requireRole(ADMIN_ROLES), async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('allocations')
@@ -114,7 +116,7 @@ router.get('/assessment/:assessmentId', authenticateToken, async (req, res) => {
 });
 
 // Get allocation for a student
-router.get('/student/:studentId', authenticateToken, async (req, res) => {
+router.get('/student/:studentId', requireSelfOrRole({ param: 'studentId', roles: ADMIN_ROLES }), async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('allocations')
@@ -154,7 +156,7 @@ router.get('/student/:studentId', authenticateToken, async (req, res) => {
 });
 
 // Delete allocation
-router.delete('/:id', authenticateToken, async (req, res) => {
+router.delete('/:id', requireRole(ADMIN_ROLES), async (req, res) => {
     try {
         const { error } = await supabase
             .from('allocations')

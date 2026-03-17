@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Save, Plus, Trash2, ChevronUp, ChevronDown, Loader2, ArrowLeft, Sparkles, GripVertical } from 'lucide-react';
 import AdminLayout from '../../../components/admin/AdminLayout';
@@ -19,7 +19,7 @@ const COORDINATOR_TEMPLATE = [
     { label: 'Department', field_type: 'select', required: true, options: { choices: ['SOC', 'SOE', 'SODT', 'SOM'] } },
     { label: 'Year', field_type: 'select', required: true, options: { choices: ['FY', 'SY', 'TY', 'LY'] } },
     { label: 'CGPA', field_type: 'number', required: true },
-    { label: 'Why do you want to be a placement coordinator?', field_type: 'long_text', required: true },
+    { label: 'Why do you want to be a Placement student coordinator?', field_type: 'long_text', required: true },
     { label: 'Any past experience in coordination/events?', field_type: 'long_text', required: false }
 ];
 
@@ -31,7 +31,8 @@ export default function FormBuilder() {
     const [form, setForm] = useState({
         title: '',
         description: '',
-        status: 'draft'
+        status: 'draft',
+        deadline: ''
     });
     const [themeSettings, setThemeSettings] = useState({
         primaryColor: '#6366f1',
@@ -42,16 +43,13 @@ export default function FormBuilder() {
     const [saving, setSaving] = useState(false);
     const [errors, setErrors] = useState({});
 
-    useEffect(() => {
-        if (isEditMode) {
-            fetchForm();
-        }
-    }, [id]);
-
-    const fetchForm = async () => {
+    const fetchForm = useCallback(async () => {
         try {
             const res = await api.get(`/forms/${id}`);
-            setForm(res.data.form);
+            setForm({
+                ...res.data.form,
+                deadline: res.data.form.deadline ? new Date(res.data.form.deadline).toISOString().slice(0, 16) : ''
+            });
             setFields(res.data.fields || []);
             if (res.data.form.theme_settings) {
                 setThemeSettings(res.data.form.theme_settings);
@@ -61,7 +59,13 @@ export default function FormBuilder() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [id]);
+
+    useEffect(() => {
+        if (isEditMode) {
+            fetchForm();
+        }
+    }, [isEditMode, fetchForm]);
 
     const addField = () => {
         setFields([
@@ -98,7 +102,7 @@ export default function FormBuilder() {
 
     const applyTemplate = () => {
         if (fields.length > 0 && !confirm('This will replace existing fields. Continue?')) return;
-        setForm({ ...form, title: 'Placement Coordinator Application', description: 'Apply to become a placement coordinator for the upcoming academic year.' });
+        setForm({ ...form, title: 'Placement student coordinator Application', description: 'Apply to become a Placement student coordinator for the upcoming academic year.' });
         setFields(COORDINATOR_TEMPLATE.map((f, i) => ({
             ...f,
             id: `temp-${Date.now()}-${i}`,
@@ -130,6 +134,7 @@ export default function FormBuilder() {
                     title: form.title,
                     description: form.description,
                     status: form.status,
+                    deadline: form.deadline || null,
                     theme_settings: themeSettings,
                     fields
                 });
@@ -138,6 +143,7 @@ export default function FormBuilder() {
                     title: form.title,
                     description: form.description,
                     status: form.status,
+                    deadline: form.deadline || null,
                     theme_settings: themeSettings,
                     fields
                 });
@@ -232,6 +238,17 @@ export default function FormBuilder() {
                                         <option value="active">Active (Public)</option>
                                         <option value="closed">Closed</option>
                                     </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-medium text-zinc-700 mb-1.5">Application Deadline</label>
+                                    <input
+                                        type="datetime-local"
+                                        value={form.deadline}
+                                        onChange={(e) => setForm({ ...form, deadline: e.target.value })}
+                                        className="w-full px-3 py-2 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-400 transition-all"
+                                    />
+                                    <p className="text-[10px] text-zinc-400 mt-1">Form will close automatically after this time</p>
                                 </div>
 
                                 <div className="pt-4 border-t border-zinc-100">

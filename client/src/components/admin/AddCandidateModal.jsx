@@ -82,7 +82,7 @@ export default function AddCandidateModal({ assessmentId, onClose, onSuccess }) 
         try {
             await api.post(`/assessments/${assessmentId}/candidates`, { userIds: validIds });
             onSuccess();
-        } catch (error) {
+        } catch {
             alert('Failed to upload candidates');
         }
     };
@@ -131,7 +131,7 @@ export default function AddCandidateModal({ assessmentId, onClose, onSuccess }) 
         try {
             await api.post(`/assessments/${assessmentId}/candidates`, { userIds: Array.from(selectedIds) });
             onSuccess();
-        } catch (error) {
+        } catch {
             alert('Failed to add candidates');
         }
     };

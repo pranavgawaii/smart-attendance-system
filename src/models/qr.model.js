@@ -32,6 +32,19 @@ const getLatestToken = async (session_id) => {
   return data;
 };
 
+// Get latest N tokens for a session (used for rotation-boundary tolerance)
+const getLatestTokensForSession = async (session_id, limit = 2) => {
+  const { data, error } = await supabase
+    .from('qr_tokens')
+    .select('*')
+    .eq('session_id', session_id)
+    .order('generated_at', { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return data || [];
+};
+
 // Verify if a token is valid for a session
 const verifyToken = async (session_id, token) => {
   try {
@@ -89,6 +102,7 @@ const getSessionByToken = findByToken;
 module.exports = {
   createToken,
   getLatestToken,
+  getLatestTokensForSession,
   verifyToken,
   findByToken,
   cleanupOrphanedSessions,

@@ -87,7 +87,7 @@ export default function SeatAllocation() {
                     : a
             );
             setAllocations(updated);
-        } catch (error) {
+        } catch {
             setErrorMsg('Real-time sync failed. Please refresh.');
         }
     };
@@ -120,7 +120,6 @@ export default function SeatAllocation() {
                     const pageWidth = doc.internal.pageSize.width;
                     const headerY = 15;
                     const logoWidth = 35; // Adjusted proportional width
-                    const logoHeight = 12; // Aspect ratio placeholder
 
                     // Title on LEFT side
                     doc.setTextColor(51, 51, 51);
@@ -477,7 +476,7 @@ export default function SeatAllocation() {
                                 {/* Student List */}
                                 <div className="flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar">
                                     <div className="space-y-3">
-                                        {studentsInLab.map((a, idx) => (
+                                        {studentsInLab.map((a) => (
                                             <div
                                                 key={a.id}
                                                 className="group/row flex items-center justify-between p-4 bg-white border border-zinc-50 rounded-2xl hover:border-zinc-200 hover:bg-zinc-50/50 transition-all cursor-default"

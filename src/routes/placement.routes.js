@@ -3,10 +3,12 @@ const router = express.Router();
 const placementController = require('../controllers/placement.controller');
 const { authenticateToken, authorizeRole } = require('../middlewares/auth.middleware');
 
+const ADMIN_ROLES = ['admin', 'super_admin', 'coordinator_admin'];
+
 // Admin Routes
-router.post('/admin/drives', authenticateToken, authorizeRole(['admin']), placementController.createDrive);
-router.put('/admin/drives/:id', authenticateToken, authorizeRole(['admin']), placementController.updateDrive);
-router.delete('/admin/drives/:id', authenticateToken, authorizeRole(['admin']), placementController.deleteDrive);
+router.post('/admin/drives', authenticateToken, authorizeRole(ADMIN_ROLES), placementController.createDrive);
+router.put('/admin/drives/:id', authenticateToken, authorizeRole(ADMIN_ROLES), placementController.updateDrive);
+router.delete('/admin/drives/:id', authenticateToken, authorizeRole(ADMIN_ROLES), placementController.deleteDrive);
 
 // Student Routes
 // Note: 'getAllDrives' computes eligibility based on the logged-in user, usually student.
