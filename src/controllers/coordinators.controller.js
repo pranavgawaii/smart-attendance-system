@@ -6,11 +6,12 @@ const path = require('path');
 const LETTER_MARGINS = { top: 42, bottom: 52, left: 56, right: 56 };
 const HEADER_TOP = 34;
 const HEADER_LOGO_BOX = { width: 190, height: 74 };
-const HEADER_HEIGHT = 118;
+const HEADER_HEIGHT = 102;
 const TABLE_HEADER_HEIGHT = 32;
 const TABLE_CELL_PADDING_X = 10;
 const TABLE_CELL_PADDING_Y = 8;
 const MIN_TABLE_ROW_HEIGHT = 28;
+const SIGNATURE_GAP = 24;
 const SIGNATURE_BLOCK_HEIGHT = 84;
 
 const resolveLetterheadPath = () => {
@@ -27,7 +28,7 @@ const drawLetterHeader = (doc) => {
     const pageWidth = doc.page.width;
     const contentWidth = pageWidth - left - right;
     const logoPath = resolveLetterheadPath();
-    const logoWidth = 190;
+    const logoWidth = 156;
     const logoX = pageWidth - right - logoWidth;
     const textX = left;
     const textWidth = Math.max(contentWidth - logoWidth - 20, 160);
@@ -48,14 +49,6 @@ const drawLetterHeader = (doc) => {
             align: 'left'
         })
         .text('and Placement Cell (CN-CRTP)', textX, HEADER_TOP + 42, {
-            width: textWidth,
-            align: 'left'
-        });
-
-    doc.fillColor('#4B5563')
-        .font('Helvetica')
-        .fontSize(10)
-        .text('MIT-ADT University, Pune, India', textX, HEADER_TOP + 65, {
             width: textWidth,
             align: 'left'
         });
@@ -332,12 +325,12 @@ const generateAttendancePDF = async (req, res) => {
             });
         });
 
-        if (rowY + SIGNATURE_BLOCK_HEIGHT > bottomLimit()) {
+        if (rowY + SIGNATURE_GAP + SIGNATURE_BLOCK_HEIGHT > bottomLimit()) {
             doc.addPage();
             rowY = doc.page.margins.top;
         }
 
-        doc.y = rowY + 28;
+        doc.y = rowY + SIGNATURE_GAP;
         doc.fillColor('#333333');
         doc.font(bodyFont).fontSize(fontSize).text('Regards,', doc.page.margins.left);
         doc.moveDown(0.5);
