@@ -1,6 +1,6 @@
 const { createClient } = require('@supabase/supabase-js');
+const { isProduction, shouldFailFast } = require('./runtime');
 
-const isProduction = process.env.NODE_ENV === 'production';
 const configuredSupabaseUrl = process.env.SUPABASE_URL?.trim();
 const fallbackSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 const supabaseUrl = configuredSupabaseUrl || (!isProduction ? fallbackSupabaseUrl : null);
@@ -13,10 +13,10 @@ const missingRequired = [
 
 if (missingRequired.length > 0) {
   const message = `[Config] Missing required Supabase environment variable(s): ${missingRequired.join(', ')}`;
-  if (isProduction) {
+  if (shouldFailFast) {
     throw new Error(message);
   }
-  console.warn(`${message}. Backend features may fail until variables are configured.`);
+  console.error(`${message}. Backend features will remain unavailable until variables are configured.`);
 }
 
 // Server-side Supabase client initialization

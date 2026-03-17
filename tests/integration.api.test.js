@@ -2,7 +2,10 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 process.env.NODE_ENV = 'test';
-process.env.JWT_SECRET = '';
+process.env.SUPABASE_URL = 'https://example.supabase.co';
+process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-test-key';
+process.env.JWT_SECRET = 'jwt-secret-test-key';
+process.env.QR_HMAC_SECRET = 'qr-secret-test-key';
 process.env.PUBLIC_FORM_RATE_LIMIT_WINDOW_MS = '60000';
 process.env.PUBLIC_FORM_RATE_LIMIT_MAX = '1';
 

@@ -1,16 +1,39 @@
 const { supabase } = require('../config/db');
+const { getMissingRuntimeEnv } = require('../config/runtime');
 
 const checkHealth = (req, res) => {
-    res.status(200).json({
-        success: true,
-        status: 'OK',
-        message: 'Server is healthy',
+    const missingRuntimeEnv = getMissingRuntimeEnv();
+    const isConfigured = missingRuntimeEnv.length === 0;
+
+    res.status(isConfigured ? 200 : 503).json({
+        success: isConfigured,
+        status: isConfigured ? 'OK' : 'DEGRADED',
+        message: isConfigured ? 'Server is healthy' : 'Server configuration is incomplete',
+        code: isConfigured ? undefined : 'SERVER_MISCONFIGURED',
         timestamp: new Date().toISOString()
     });
 };
 
 const checkDeep = async (req, res) => {
     try {
+        const missingRuntimeEnv = getMissingRuntimeEnv();
+
+        if (missingRuntimeEnv.length > 0 || !supabase) {
+            return res.status(503).json({
+                success: false,
+                status: 'DEGRADED',
+                code: 'SERVER_MISCONFIGURED',
+                error: 'Server configuration is incomplete',
+                timestamp: new Date().toISOString(),
+                services: {
+                    database: {
+                        healthy: false,
+                        error: 'Database client is unavailable'
+                    }
+                }
+            });
+        }
+
         const [usersResult, activeEventsResult] = await Promise.all([
             supabase
                 .from('user_profiles')

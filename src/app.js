@@ -28,6 +28,7 @@ const { authRateLimiter, attendanceRateLimiter } = require('./middlewares/rate-l
 const { attachRequestContext, requestLogger } = require('./middlewares/request-context.middleware');
 const { authenticateToken, requireRole, verifySuperAdmin } = require('./middlewares/auth.middleware');
 const { sendApiError } = require('./utils/api-response');
+const { getMissingRuntimeEnv } = require('./config/runtime');
 
 const app = express();
 app.disable('x-powered-by');
@@ -96,6 +97,17 @@ const ADMIN_ROLES = ['admin', 'super_admin', 'coordinator_admin'];
 // Routes - Consolidated under /api
 const apiRouter = express.Router();
 apiRouter.use('/health', healthRoutes);
+apiRouter.use((req, res, next) => {
+    const missingRuntimeEnv = getMissingRuntimeEnv();
+
+    if (missingRuntimeEnv.length === 0) {
+        return next();
+    }
+
+    return sendApiError(res, 503, 'SERVER_MISCONFIGURED', 'Service is temporarily unavailable', {
+        request_id: req.requestId
+    });
+});
 apiRouter.use('/auth', authRateLimiter, authRoutes);
 apiRouter.use('/users', userRoutes);
 apiRouter.use('/events', authenticateToken, requireRole(ADMIN_ROLES), eventRoutes);

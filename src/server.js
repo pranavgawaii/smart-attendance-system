@@ -1,22 +1,9 @@
 require('dotenv').config();
+const { logRuntimeIssues } = require('./config/runtime');
 const app = require('./app');
 
 const PORT = process.env.PORT || 3000;
-const isProduction = process.env.NODE_ENV === 'production';
-
-const requiredProdEnv = [
-    'SUPABASE_URL',
-    'SUPABASE_SERVICE_ROLE_KEY',
-    'JWT_SECRET',
-    'QR_HMAC_SECRET'
-];
-
-const missingProdEnv = requiredProdEnv.filter((name) => !process.env[name]);
-if (isProduction && missingProdEnv.length > 0) {
-    throw new Error(
-        `[Startup] Missing required environment variables in production: ${missingProdEnv.join(', ')}`
-    );
-}
+logRuntimeIssues('server');
 
 // Validate required environment variables (warn but don't crash in serverless)
 if (!process.env.ADMIN_EMAIL) {
