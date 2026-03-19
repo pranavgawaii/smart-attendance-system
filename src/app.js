@@ -130,6 +130,8 @@ apiRouter.use('/admin-management', authenticateToken, verifySuperAdmin, adminMan
 apiRouter.use('/forms', formsRoutes);
 
 app.use('/api', apiRouter);
+// Fallback for when reverse proxy strips the prefix
+app.use(apiRouter);
 
 // Global Error Handler (Ensure JSON response)
 app.use((err, req, res, next) => {
