@@ -77,11 +77,20 @@ app.use(cors({
             return callback(null, true);
         }
 
-        if (!isProduction && corsAllowlist.length === 0) {
-            return callback(null, true);
+        // If an explicit allowlist is configured, enforce it strictly
+        if (corsAllowlist.length > 0) {
+            if (corsAllowlist.includes(origin)) {
+                return callback(null, true);
+            }
+            const corsError = new Error('Origin not allowed by CORS policy');
+            corsError.status = 403;
+            corsError.code = 'CORS_ORIGIN_DENIED';
+            return callback(corsError);
         }
 
-        if (corsAllowlist.includes(origin)) {
+        // In development OR when running on Vercel with no explicit allowlist,
+        // allow all origins (frontend & API share the same Vercel deployment)
+        if (!isProduction || process.env.VERCEL) {
             return callback(null, true);
         }
 
