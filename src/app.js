@@ -72,6 +72,11 @@ app.use(cors({
             return callback(null, true);
         }
 
+        // Allow Vercel preview or production URLs dynamically
+        if (origin.endsWith('.vercel.app')) {
+            return callback(null, true);
+        }
+
         if (!isProduction && corsAllowlist.length === 0) {
             return callback(null, true);
         }

@@ -27,7 +27,6 @@ database/
 
 # Temporary files
 temp/
-api/
 scripts/
 
 # Test outputs
