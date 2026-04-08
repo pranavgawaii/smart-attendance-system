@@ -1,4 +1,4 @@
-# 🎓 Smart Attendance Portal
+# 🎓 Smart Attendance Portal For Students
 
 <div align="center">
 
