@@ -16,16 +16,40 @@
 
 ## 📋 Table of Contents
 
-- [Problem Statement](#-problem-statement)
-- [Solution Overview](#-solution-overview)
-- [Key Features](#-key-features)
-- [Tech Stack](#-tech-stack)
-- [System Architecture](#-system-architecture)
+- [Project Structure](#-project-structure)
 - [Installation](#-installation)
 - [Deployment](#-deployment)
 - [Security](#-security)
 - [Contributing](#-contributing)
 - [License](#-license)
+
+---
+
+## 🏗️ Project Structure
+
+The project has been reorganized into a modular, professional layout:
+
+```text
+smart-attendance-system/
+├── api/                # Vercel serverless entry points
+├── database/           # SQL migration and schema files
+├── docs/               # Technical documentation
+├── frontend/           # React + Vite frontend application
+│   ├── public/         # Static assets (logos, media)
+│   └── src/            # Frontend source code
+├── logs/               # Application and server logs
+├── modules/            # Self-contained feature modules
+│   └── coordinator/    # Coordinator export bundle
+├── scripts/            # Infrastructure and utility scripts
+│   └── debug/          # Database and user testing utilities
+├── server/             # Node.js + Express backend application
+│   ├── controllers/    # API request handlers
+│   ├── models/         # Database models/queries
+│   └── routes/         # Express route definitions
+├── tests/              # Test suites for backend and integration
+├── vercel.json         # Vercel deployment configuration
+└── package.json        # Main project configuration
+```
 
 ---
 
@@ -150,7 +174,7 @@ Designed for **scalability, security, and user experience**, this system transfo
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    CLIENT (React + Vite)                │
+│                    FRONTEND (React + Vite)              │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │
 │  │   Admin      │  │   Student    │  │  Projector   │ │
 │  │  Dashboard   │  │  Dashboard   │  │     View     │ │
@@ -196,7 +220,7 @@ Designed for **scalability, security, and user experience**, this system transfo
 - **npm** or **yarn**
 - **Supabase Account** (free tier available)
 
-### Backend Setup
+### Quick Start
 
 1. **Clone the repository**
    ```bash
@@ -204,7 +228,7 @@ Designed for **scalability, security, and user experience**, this system transfo
    cd smart-attendance-system
    ```
 
-2. **Install dependencies**
+2. **Install root dependencies**
    ```bash
    npm install
    ```
@@ -219,67 +243,24 @@ Designed for **scalability, security, and user experience**, this system transfo
    SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
    JWT_SECRET=your_secure_secret_key
    QR_HMAC_SECRET=your_qr_hmac_secret
-   CORS_ALLOWED_ORIGINS=http://localhost:5175,http://localhost:3000
-   REQUEST_BODY_LIMIT=1mb
-
-   AUTH_RATE_LIMIT_WINDOW_MS=900000
-   AUTH_RATE_LIMIT_MAX=40
-   ATTENDANCE_RATE_LIMIT_WINDOW_MS=60000
-   ATTENDANCE_RATE_LIMIT_MAX=120
-   PUBLIC_FORM_RATE_LIMIT_WINDOW_MS=600000
-   PUBLIC_FORM_RATE_LIMIT_MAX=20
+   CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
    ```
 
-4. **Set up database**
-   
-   Run the SQL migration in your Supabase SQL Editor:
-   ```sql
-   -- Create placement_coordinators table
-   CREATE TABLE placement_coordinators (
-       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-       name VARCHAR(255) NOT NULL,
-       enrollment_no VARCHAR(50) NOT NULL UNIQUE,
-       email VARCHAR(255) NOT NULL,
-       department VARCHAR(50) NOT NULL,
-       year VARCHAR(10) NOT NULL,
-       created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-   );
-   ```
-
-5. **Start the development server**
+4. **Start the backend server**
    ```bash
    npm run dev
    ```
+   *Server will run on `http://localhost:5001`*
+
+5. **Setup frontend**
    
-   Server will run on `http://localhost:5001`
-
-### Frontend Setup
-
-1. **Navigate to client directory**
+   In a new terminal:
    ```bash
-   cd client
-   ```
-
-2. **Install dependencies**
-   ```bash
+   cd frontend
    npm install
-   ```
-
-3. **Configure environment variables**
-   
-   Create a `.env` file in the `client` directory:
-   ```env
-   VITE_API_BASE_URL=/api
-   VITE_SUPABASE_URL=https://your-project.supabase.co
-   VITE_SUPABASE_ANON_KEY=your_anon_key
-   ```
-
-4. **Start the development server**
-   ```bash
    npm run dev
    ```
-   
-   Client will run on `http://localhost:5175`
+   *Client will run on `http://localhost:5173`*
 
 ---
 
@@ -289,25 +270,23 @@ Designed for **scalability, security, and user experience**, this system transfo
 
 1. **Connect GitHub repository** to Vercel
 2. **Configure build settings**:
-   - Root Directory: `client`
+   - Framework: `Vite`
+   - Root Directory: `.`
    - Build Command: `npm run build`
-   - Output Directory: `dist`
+   - Output Directory: `frontend/dist`
 3. **Add environment variables**:
    - `VITE_API_BASE_URL`
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
-4. **Deploy**: Automatic on every push to `main`
 
 ### Backend (Vercel Serverless)
 
-1. **Use the included `vercel.json`** configuration
+1. **Use the included `vercel.json`** configuration (maps `/api/*` to `api/index.js`)
 2. **Add environment variables** in Vercel dashboard:
    - `JWT_SECRET`
-   - `ADMIN_EMAIL`
    - `SUPABASE_URL`
-   - `SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY`
-3. **Deploy**: Automatic on every push to `main`
+
 
 ### Database (Supabase)
 

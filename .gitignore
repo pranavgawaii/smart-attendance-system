@@ -21,13 +21,8 @@ diag.txt
 get_logo_base64.js
 cleanup.sh
 
-# Database & SQL files
-database/
-*.sql
-
 # Temporary files
 temp/
-scripts/
 
 # Test outputs
 test_output.pdf

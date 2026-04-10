@@ -43,17 +43,17 @@ jobs:
       - name: Enforce npmjs registry
         run: npm config set registry https://registry.npmjs.org
 
-      - name: Install client dependencies
-        run: npm --prefix client ci
+      - name: Install frontend dependencies
+        run: npm --prefix frontend ci
 
       - name: Run frontend lint
-        run: npm --prefix client run lint
+        run: npm --prefix frontend run lint
 
       - name: Build frontend
-        run: npm --prefix client run build
+        run: npm --prefix frontend run build
 
       - name: Enforce bundle budgets
-        run: npm --prefix client run check:bundle-budget
+        run: npm --prefix frontend run check:bundle-budget
         env:
           BUNDLE_BUDGET_MAX_JS_KB: "1200"
           BUNDLE_BUDGET_MAX_ASSET_KB: "2000"

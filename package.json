@@ -1,12 +1,12 @@
 {
   "name": "smart-attendance-system",
   "version": "1.0.0",
-  "main": "src/server.js",
+  "main": "server/server.js",
   "scripts": {
-    "start": "node src/server.js",
-    "build": "cd client && npm install && npm run build",
+    "start": "node server/server.js",
+    "build": "cd frontend && npm install && npm run build",
     "vercel-build": "node -e \"console.log('API function build ready')\"",
-    "dev": "nodemon src/server.js",
+    "dev": "nodemon server/server.js",
     "migrate": "node scripts/migrate.js",
     "test": "node --test tests/**/*.test.js"
   },
